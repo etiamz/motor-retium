@@ -14,9 +14,9 @@ constructorDeclaration
 
 term
     : BACKSLASH SYMBOL+ RIGHT_ARROW term # lambdaTerm
-    | LET SYMBOL ASSIGN term SEMICOLON term # letTerm
-    | LET EXCLAMATION SYMBOL ASSIGN term SEMICOLON term # strictLetTerm
-    | LET CONSTRUCTOR SYMBOL* ASSIGN term SEMICOLON term # destructuringLetTerm
+    | LET SYMBOL ASSIGN term IN term # letTerm
+    | LET EXCLAMATION SYMBOL ASSIGN term IN term # strictLetTerm
+    | LET CONSTRUCTOR SYMBOL* ASSIGN term IN term # destructuringLetTerm
     | IF term THEN term ELSE term # ifThenElseTerm
     | CASE term OF LEFT_BRACE case (SEMICOLON case)* RIGHT_BRACE # caseTerm
     | application # applicationTerm
@@ -133,7 +133,7 @@ RIGHT_BRACE : '}' ;
 BACKSLASH : '\\' ;
 COMMA : ',' ;
 RIGHT_ARROW : '->' ;
-ASSIGN : ':=' ;
+ASSIGN : '=' ;
 DOT_DOT : '..' ;
 COLON : ':' ;
 SEMICOLON : ';' ;
@@ -164,8 +164,8 @@ INTEGER_AND : '&' ;
 INTEGER_XOR : '^' ;
 SHIFT_LEFT : '<<' ;
 SHIFT_RIGHT : '>>' ;
-EQUALS : '=' ;
-NOT_EQUALS : '!=' ;
+EQUALS : '==' ;
+NOT_EQUALS : '/=' ;
 LESS : '<' ;
 LESS_OR_EQUALS : '<=' ;
 GREATER : '>' ;
@@ -202,7 +202,7 @@ REMEMBER : '$remember' ;
 IF : 'if' ; THEN : 'then' ; ELSE : 'else' ;
 CASE : 'case' ; OF : 'of' ;
 FIX : 'fix' ;
-LET : 'let' ;
+LET : 'let' ; IN : 'in' ;
 WHERE : 'where' ;
 
 // Types.
