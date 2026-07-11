@@ -19,6 +19,7 @@ term
     | LET CONSTRUCTOR SYMBOL* ASSIGN term IN term # destructuringLetTerm
     | IF term THEN term ELSE term # ifThenElseTerm
     | CASE term OF LEFT_BRACE case (SEMICOLON case)* RIGHT_BRACE # caseTerm
+    | application APPLY term # nonStrictApplyTerm
     | application STRICT_APPLY term # strictApplyTerm
     | application # applicationTerm
     ;
@@ -137,6 +138,7 @@ DOT_DOT : '..' ;
 COLON : ':' ;
 SEMICOLON : ';' ;
 STRICT_LET : '!' ;
+APPLY : '$' ;
 STRICT_APPLY : '$!' ;
 
 // Logical operators.

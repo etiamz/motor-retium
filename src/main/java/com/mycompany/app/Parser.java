@@ -356,6 +356,11 @@ public final class Parser {
         }
 
         @Override
+        public Term visitNonStrictApplyTerm(final MotorParser.NonStrictApplyTermContext ctx) {
+            return new Term.Application(visit(ctx.application()), visit(ctx.term()));
+        }
+
+        @Override
         public Term visitStrictApplyTerm(final MotorParser.StrictApplyTermContext ctx) {
             return new Term.StrictApplication(visit(ctx.application()), visit(ctx.term()));
         }
