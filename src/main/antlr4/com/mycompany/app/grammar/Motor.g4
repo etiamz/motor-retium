@@ -13,7 +13,7 @@ constructorDeclaration
     ;
 
 term
-    : BACKSLASH SYMBOL (COMMA SYMBOL)* RIGHT_ARROW term # lambdaTerm
+    : BACKSLASH SYMBOL+ RIGHT_ARROW term # lambdaTerm
     | LET SYMBOL ASSIGN term SEMICOLON term # letTerm
     | LET EXCLAMATION SYMBOL ASSIGN term SEMICOLON term # strictLetTerm
     | LET CONSTRUCTOR SYMBOL* ASSIGN term SEMICOLON term # destructuringLetTerm
