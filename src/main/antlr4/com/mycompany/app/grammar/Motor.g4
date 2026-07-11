@@ -38,8 +38,11 @@ atom
     | LEFT_PARENTHESIS term DOT_DOT RIGHT_PARENTHESIS # rangeFromTerm
     | LEFT_PARENTHESIS DOT_DOT term RIGHT_PARENTHESIS # rangeToTerm
     | LEFT_PARENTHESIS DOT_DOT RIGHT_PARENTHESIS # rangeFullTerm
+    | LEFT_PARENTHESIS application op2 application RIGHT_PARENTHESIS # infixTerm
+    | LEFT_PARENTHESIS op2 RIGHT_PARENTHESIS # operatorTerm
     | LEFT_PARENTHESIS term RIGHT_PARENTHESIS # groupTerm
-    | operator # operatorTerm
+    | op1 # op1Term
+    | intrinsic # intrinsicTerm
     | CONSTRUCTOR # constructorTerm
     | TRUE # trueTerm
     | FALSE # falseTerm
@@ -51,11 +54,6 @@ atom
     | REFERENCE # referenceTerm
     ;
 
-operator
-    : op1
-    | op2
-    ;
-
 op1
     : NOT
     | INTEGER_TY
@@ -64,16 +62,6 @@ op1
     | STRING_OF_CHARACTER
     | NEGATE
     | INTEGER_NOT
-    | FFS
-    | CLZ
-    | CTZ
-    | CLRSB
-    | POPCOUNT
-    | PARITY
-    | STRLEN
-    | PANIC
-    | MEMORY
-    | HASH
     ;
 
 op2
@@ -95,11 +83,32 @@ op2
     | LESS_OR_EQUALS
     | GREATER
     | GREATER_OR_EQUALS
-    | MIN
-    | MAX
     | CHARACTER_AT
     | SLICE
     | PLUS_PLUS
+    ;
+
+intrinsic
+    : intrinsic1
+    | intrinsic2
+    ;
+
+intrinsic1
+    : FFS
+    | CLZ
+    | CTZ
+    | CLRSB
+    | POPCOUNT
+    | PARITY
+    | STRLEN
+    | PANIC
+    | MEMORY
+    | HASH
+    ;
+
+intrinsic2
+    : MIN
+    | MAX
     | STRCMP
     | STRCHR
     | STRRCHR
@@ -131,13 +140,13 @@ SEMICOLON : ';' ;
 EXCLAMATION : '!' ;
 
 // Logical operators.
-NOT : '!boolean' ;
+NOT : 'not' ;
 AND : '&&' ;
 OR : '||' ;
 
 // Mixed-type operators.
 STRING_OF_CHARACTER : '#' ;
-NEGATE : '-integer' ;
+NEGATE : 'negate' ;
 INTEGER_NOT : '~' ;
 FFS : '$ffs' ;
 CLZ : '$clz' ;

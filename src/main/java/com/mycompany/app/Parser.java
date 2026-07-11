@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 
 public final class Parser {
     private static final Map<String, Primitives.Operator> INTEGER_TY_OPS = Map.ofEntries(
@@ -375,8 +376,29 @@ public final class Parser {
         }
 
         @Override
+        public Term visitInfixTerm(final MotorParser.InfixTermContext ctx) {
+            final var op = operatorOf(ctx.op2().getStart());
+            return new Term.Application(
+                    new Term.Application(op, visit(ctx.application(0))),
+                    visit(ctx.application(1)));
+        }
+
+        @Override
         public Term visitOperatorTerm(final MotorParser.OperatorTermContext ctx) {
-            final var token = ctx.operator().getStart();
+            return operatorOf(ctx.op2().getStart());
+        }
+
+        @Override
+        public Term visitOp1Term(final MotorParser.Op1TermContext ctx) {
+            return operatorOf(ctx.op1().getStart());
+        }
+
+        @Override
+        public Term visitIntrinsicTerm(final MotorParser.IntrinsicTermContext ctx) {
+            return operatorOf(ctx.intrinsic().getStart());
+        }
+
+        private Term operatorOf(final Token token) {
             final int op = token.getType();
             if (INTEGER_TY_OPS.containsKey(token.getText())) {
                 return new Term.Operator(INTEGER_TY_OPS.get(token.getText()));
