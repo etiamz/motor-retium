@@ -142,6 +142,7 @@ public final class OperatorSaturator {
 
     private static Term apply(final Primitives.Operator op, final List<Term> ts) {
         return switch (op) {
+            case Primitives.Fix _ -> new Term.Fix(ts.get(0));
             case Primitives.Not _ -> new Term.Not(ts.get(0));
             case Primitives.And _ -> new Term.And(ts.get(0), ts.get(1));
             case Primitives.Or _ -> new Term.Or(ts.get(0), ts.get(1));

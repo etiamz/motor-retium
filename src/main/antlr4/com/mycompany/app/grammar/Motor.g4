@@ -34,8 +34,7 @@ application
     ;
 
 atom
-    : LEFT_PARENTHESIS FIX term RIGHT_PARENTHESIS # fixTerm
-    | LEFT_PARENTHESIS term DOT_DOT term RIGHT_PARENTHESIS # rangeTerm
+    : LEFT_PARENTHESIS term DOT_DOT term RIGHT_PARENTHESIS # rangeTerm
     | LEFT_PARENTHESIS term DOT_DOT RIGHT_PARENTHESIS # rangeFromTerm
     | LEFT_PARENTHESIS DOT_DOT term RIGHT_PARENTHESIS # rangeToTerm
     | LEFT_PARENTHESIS DOT_DOT RIGHT_PARENTHESIS # rangeFullTerm
@@ -55,7 +54,8 @@ atom
     ;
 
 op1
-    : NOT
+    : FIX
+    | NOT
     | INTEGER_TY
     | BIGINT_TY
     | STRING_TY

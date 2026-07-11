@@ -32,6 +32,7 @@ public final class Parser {
             Map.entry("i64", new Primitives.IntegerOf(IntegerTy.I64)));
 
     private static final Map<Integer, Primitives.Operator> UNARY_OPS = Map.ofEntries(
+            Map.entry(MotorParser.FIX, new Primitives.Fix()),
             Map.entry(MotorParser.NOT, new Primitives.Not()),
             Map.entry(MotorParser.BIGINT_TY, new Primitives.BigIntegerOf()),
             Map.entry(MotorParser.STRING_TY, new Primitives.StringOf()),
@@ -363,11 +364,6 @@ public final class Parser {
         @Override
         public Term visitStrictApplyTerm(final MotorParser.StrictApplyTermContext ctx) {
             return new Term.StrictApplication(visit(ctx.application()), visit(ctx.term()));
-        }
-
-        @Override
-        public Term visitFixTerm(final MotorParser.FixTermContext ctx) {
-            return new Term.Fix(visit(ctx.term()));
         }
 
         @Override

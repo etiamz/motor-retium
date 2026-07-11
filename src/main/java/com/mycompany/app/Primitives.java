@@ -3,8 +3,15 @@ package com.mycompany.app;
 import com.mycompany.app.CheckedInteger.IntegerTy;
 
 public final class Primitives {
-    public sealed interface Operator permits Not, And, Or, StrictOp1, StrictOp2 {
+    public sealed interface Operator permits Not, And, Or, Fix, StrictOp1, StrictOp2 {
         public int arity();
+    }
+
+    public record Fix() implements Operator {
+        @Override
+        public int arity() {
+            return 1;
+        }
     }
 
     public record Not() implements Operator {
