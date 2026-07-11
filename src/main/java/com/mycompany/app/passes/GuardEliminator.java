@@ -6,17 +6,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public final class GuardEliminator {
     private GuardEliminator() {
     }
 
-    // Transformes all `when` guards into if-then-else expressions: same-constructor case-groups of
-    // the form `C x1 ... xN when b1 -> t1, ..., C z1 ... zN -> tN` become `C f1 ... fN -> if
-    // b1[f1/x1, ..., fN/xN] then t1[f1/x1, ..., fN/xN] else if ... else tN[f1/z1, ..., fN/zN]`,
-    // where `f1 ... fN` are freshly generated variables.
+    // Transformes all `|`-guards into if-then-else expressions: same-constructor case-groups of the
+    // form `C x1 ... xN | b1, ..., bK -> t1; ...; C z1 ... zN -> tN` become single case-statements
+    // of the form `C f1 ... fN -> if (b1 && (... && bK))[f1/x1, ..., fN/xN] then t1[f1/x1, ...,
+    // fN/xN] else if ... else tN[f1/z1, ..., fN/zN]`, where `f1 ... fN` are fresh variables not
+    // occurring anywhere else.
     public static Program eliminate(final Program program) {
         final var main = eliminate(program.main(), new LinkedHashSet<>());
         final var definitions = new LinkedHashMap<String, Term>();
@@ -84,7 +84,7 @@ public final class GuardEliminator {
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
-                myCase.guard().map(guard -> eliminate(guard, banlistx)),
+                myCase.guards().stream().map(guard -> eliminate(guard, banlistx)).toList(),
                 eliminate(myCase.t(), banlistx));
     }
 
@@ -102,9 +102,9 @@ public final class GuardEliminator {
             final var name = representative.name();
             assert branches
                     .stream()
-                    .allMatch(myCase -> myCase.guard().isPresent())
+                    .allMatch(myCase -> !myCase.guards().isEmpty())
                     : String.format("Unreachable case(s) in the group `%s`", name);
-            assert fallback.guard().isEmpty()
+            assert fallback.guards().isEmpty()
                     : String.format("No fallback case in the group `%s`", name);
         }
         return List.copyOf(groups.values());
@@ -129,8 +129,10 @@ public final class GuardEliminator {
                         myCase -> new Term.Case(
                                 myCase.name(),
                                 ys,
-                                myCase.guard()
-                                        .map(guard -> guard.rename(myCase.xs(), ys, banlistx)),
+                                myCase.guards()
+                                        .stream()
+                                        .map(guard -> guard.rename(myCase.xs(), ys, banlistx))
+                                        .toList(),
                                 myCase.t().rename(myCase.xs(), ys, banlistx)))
                 .toList();
     }
@@ -143,13 +145,24 @@ public final class GuardEliminator {
         final var fallback = group.getLast();
         final var name = fallback.name();
         final var parameters = fallback.xs();
-        assert fallback.guard().isEmpty(); // checked in `groupCases`
+        assert fallback.guards().isEmpty(); // checked in `groupCases`
         Term body = fallback.t();
         for (final var myCase : branches.reversed()) {
-            final var guard = myCase.guard().get(); // checked in `groupCases`
+            final var condition = foldGuards(myCase.guards());
             final var consequent = myCase.t();
-            body = new Term.IfThenElse(guard, consequent, body);
+            body = new Term.IfThenElse(condition, consequent, body);
         }
-        return new Term.Case(name, parameters, Optional.empty(), body);
+        return new Term.Case(name, parameters, List.of(), body);
+    }
+
+    // Folds a non-empty guard sequence `b1, ..., bN` into `(b1 && (... && bN))`, mirroring
+    // Haskell's `infixr 3` association.
+    private static Term foldGuards(final List<Term> guards) {
+        assert !guards.isEmpty(); // checked in `groupCases`
+        Term condition = guards.getLast();
+        for (final var guard : guards.subList(0, guards.size() - 1).reversed()) {
+            condition = new Term.And(guard, condition);
+        }
+        return condition;
     }
 }

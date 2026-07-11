@@ -53,7 +53,7 @@ public sealed interface Term {
     public record Match(Term s, List<Case> cases) implements Term {
     }
 
-    public record Case(String name, List<String> xs, Optional<Term> guard, Term t) {
+    public record Case(String name, List<String> xs, List<Term> guards, Term t) {
     }
 
     public record Not(Term t) implements Term {
@@ -142,7 +142,7 @@ public sealed interface Term {
         return new Case(
                 myCase.name(),
                 ys,
-                myCase.guard().map(guard -> guard.rename(renamingx, banlistx)),
+                myCase.guards().stream().map(guard -> guard.rename(renamingx, banlistx)).toList(),
                 myCase.t().rename(renamingx, banlistx));
     }
 
@@ -197,7 +197,7 @@ public sealed interface Term {
                 final var fvSet = s.freeVariables();
                 for (final var myCase : cases) {
                     final var caseFvSet = myCase.t().freeVariables();
-                    myCase.guard().ifPresent(guard -> caseFvSet.addAll(guard.freeVariables()));
+                    myCase.guards().forEach(guard -> caseFvSet.addAll(guard.freeVariables()));
                     myCase.xs().forEach(caseFvSet::remove);
                     fvSet.addAll(caseFvSet);
                 }
@@ -247,7 +247,7 @@ public sealed interface Term {
             case Match(var s, var cases) -> {
                 final var refs = s.references();
                 for (final var myCase : cases) {
-                    myCase.guard().ifPresent(guard -> refs.addAll(guard.references()));
+                    myCase.guards().forEach(guard -> refs.addAll(guard.references()));
                     refs.addAll(myCase.t().references());
                 }
                 yield refs;

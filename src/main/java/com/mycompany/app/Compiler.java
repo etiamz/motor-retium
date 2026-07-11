@@ -117,10 +117,10 @@ public final class Compiler {
                     final var myCase = cases.get(i);
                     final var name = myCase.name();
                     final var xs = myCase.xs();
-                    final var guard = myCase.guard();
-                    if (guard.isPresent()) {
+                    final var guard = myCase.guards();
+                    if (!guard.isEmpty()) {
                         throw new IllegalStateException(
-                                String.format("Uneliminated `when` guard for `%s`", name));
+                                String.format("Uneliminated `|`-guard for `%s`", name));
                     }
                     Term handler = myCase.t();
                     for (int j = xs.size() - 1; j >= 0; j--) {

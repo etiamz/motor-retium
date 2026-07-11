@@ -23,7 +23,7 @@ term
     ;
 
 case
-    : CONSTRUCTOR SYMBOL* (INTEGER_OR term)? RIGHT_ARROW term
+    : CONSTRUCTOR SYMBOL* (INTEGER_OR term (COMMA term)*)? RIGHT_ARROW term
     ;
 
 application

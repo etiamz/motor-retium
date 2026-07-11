@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
 
 public final class SharedVariableHoister {
     private SharedVariableHoister() {
@@ -95,14 +94,14 @@ public final class SharedVariableHoister {
     }
 
     private static Term.Case hoistCase(final Term.Case myCase, final List<String> vars) {
-        if (myCase.guard().isPresent()) {
-            throw new IllegalStateException("`when` guards must be already eliminated");
+        if (!myCase.guards().isEmpty()) {
+            throw new IllegalStateException("`|`-guards must be already eliminated");
         }
         Term t = hoist(myCase.t());
         for (final var x : vars.reversed()) {
             t = new Term.Lambda(x, t);
         }
-        return new Term.Case(myCase.name(), myCase.xs(), Optional.empty(), t);
+        return new Term.Case(myCase.name(), myCase.xs(), List.of(), t);
     }
 
     private static List<String> sharedVariables(final Term t1, final Term t2) {

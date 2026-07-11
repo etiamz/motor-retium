@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public final class StrictnessAnalyzer {
@@ -224,13 +223,13 @@ public final class StrictnessAnalyzer {
     }
 
     private static Term.Case annotateCase(final Environment phi, final Term.Case myCase) {
-        if (myCase.guard().isPresent()) {
-            throw new IllegalStateException("`when` guards must be already eliminated");
+        if (!myCase.guards().isEmpty()) {
+            throw new IllegalStateException("`|`-guards must be already eliminated");
         }
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
-                Optional.empty(),
+                List.of(),
                 annotate(phi, myCase.t()));
     }
 }

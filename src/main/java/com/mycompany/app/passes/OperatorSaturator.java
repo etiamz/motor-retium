@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -112,15 +111,15 @@ public final class OperatorSaturator {
     }
 
     private static Term.Case saturateCase(final Term.Case myCase, final Set<String> banlist) {
-        if (myCase.guard().isPresent()) {
-            throw new IllegalStateException("`when` guards must be already eliminated");
+        if (!myCase.guards().isEmpty()) {
+            throw new IllegalStateException("`|`-guards must be already eliminated");
         }
         final var banlistx = new LinkedHashSet<>(banlist);
         banlistx.addAll(myCase.xs());
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
-                Optional.empty(),
+                List.of(),
                 saturate(myCase.t(), banlistx));
     }
 

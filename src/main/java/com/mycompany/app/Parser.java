@@ -283,7 +283,7 @@ public final class Parser {
             checkArity(ctx, name, parameters.size());
             final var s = visit(ctx.term(0));
             final var xs = List.copyOf(seen);
-            final Optional<Term> guard = Optional.empty();
+            final List<Term> guard = List.of();
             final var continuation = visit(ctx.term(1));
             return new Term.Match(s, List.of(new Term.Case(name, xs, guard, continuation)));
         }
@@ -297,13 +297,13 @@ public final class Parser {
         }
 
         @Override
-        public Term visitMatchTerm(final MotorParser.MatchTermContext ctx) {
+        public Term visitCaseTerm(final MotorParser.CaseTermContext ctx) {
             for (int i = 0; i < ctx.case_().size(); i++) {
                 final var myCase = ctx.case_(i);
                 final var name = myCase.CONSTRUCTOR().getText();
                 final var prefix = ctx.case_().subList(0, i);
                 final var suffix = ctx.case_().subList(i + 1, ctx.case_().size());
-                final Predicate<MotorParser.CaseContext> isFallback = c -> c.WHEN() == null &&
+                final Predicate<MotorParser.CaseContext> isFallback = c -> c.INTEGER_OR() == null &&
                         c.CONSTRUCTOR().getText().equals(name);
                 if (prefix.stream().anyMatch(isFallback)) {
                     throw error(
@@ -312,7 +312,7 @@ public final class Parser {
                             "Found a provably unreachable case for `%s`",
                             name);
                 }
-                if (myCase.WHEN() != null && suffix.stream().noneMatch(isFallback)) {
+                if (myCase.INTEGER_OR() != null && suffix.stream().noneMatch(isFallback)) {
                     throw error(
                             filename,
                             myCase,
@@ -337,14 +337,11 @@ public final class Parser {
                         final var name = myCase.CONSTRUCTOR().getText();
                         checkArity(myCase, name, parameters.size());
                         final var xs = List.copyOf(seen);
-                        final Optional<Term> guard;
-                        if (myCase.WHEN() == null) {
-                            guard = Optional.empty();
-                        } else {
-                            guard = Optional.of(visit(myCase.term(0)));
-                        }
-                        final var t = visit(myCase.term().getLast());
-                        return new Term.Case(name, xs, guard, t);
+                        final var terms = myCase.term();
+                        final var guards = terms.subList(0, terms.size() - 1).stream()
+                                .map(this::visit).toList();
+                        final var t = visit(terms.getLast());
+                        return new Term.Case(name, xs, guards, t);
                     })
                     .toList();
             return new Term.Match(s, cases);
