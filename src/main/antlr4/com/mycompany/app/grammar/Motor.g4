@@ -224,7 +224,7 @@ REFERENCE : '&' '_'? [a-zA-Z] [a-zA-Z0-9]* '\''* ;
 CONSTRUCTOR : [A-Z] [a-zA-Z0-9]* '\''* ;
 
 // Skipped.
-COMMENT : '//' ~[\r\n]* -> skip ;
+COMMENT : '--' ~[\r\n]* -> skip ;
 WHITESPACE : [ \t\r\n]+ -> skip ;
 
 fragment IntegerTy : 'u8' | 'u16' | 'u32' | 'u64' | 'i8' | 'i16' | 'i32' | 'i64' ;
