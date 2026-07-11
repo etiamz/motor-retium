@@ -18,12 +18,12 @@ term
     | LET EXCLAMATION SYMBOL ASSIGN term SEMICOLON term # strictLetTerm
     | LET CONSTRUCTOR SYMBOL* ASSIGN term SEMICOLON term # destructuringLetTerm
     | IF term THEN term ELSE term # ifThenElseTerm
-    | MATCH term LEFT_BRACE case (COMMA case)* RIGHT_BRACE # matchTerm
+    | CASE term OF LEFT_BRACE case (SEMICOLON case)* RIGHT_BRACE # caseTerm
     | application # applicationTerm
     ;
 
 case
-    : CONSTRUCTOR SYMBOL* (WHEN term)? RIGHT_ARROW term
+    : CONSTRUCTOR SYMBOL* (INTEGER_OR term)? RIGHT_ARROW term
     ;
 
 application
@@ -200,8 +200,7 @@ REMEMBER : '$remember' ;
 
 // Keywords.
 IF : 'if' ; THEN : 'then' ; ELSE : 'else' ;
-MATCH : 'match' ;
-WHEN : 'when' ;
+CASE : 'case' ; OF : 'of' ;
 FIX : 'fix' ;
 LET : 'let' ;
 WHERE : 'where' ;
