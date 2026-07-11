@@ -10,9 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -167,9 +166,20 @@ public final class Parser {
         private final String filename;
         private final Map<String, Term> definitions = new LinkedHashMap<>();
         private final Map<String, Integer> arities = new LinkedHashMap<>();
+        private final Set<String> globals = new LinkedHashSet<>();
+        // A multiset: the same variable can be bound at several nesting levels at once.
+        private final Map<String, Integer> bound = new LinkedHashMap<>();
 
         private Builder(final String filename) {
             this.filename = filename;
+        }
+
+        private void push(final String x) {
+            bound.merge(x, 1, Integer::sum);
+        }
+
+        private void pop(final String x) {
+            bound.merge(x, -1, Integer::sum);
         }
 
         @Override
@@ -196,54 +206,31 @@ public final class Parser {
                 arities.put(name, arity);
             }
             for (final var d : ctx.definition()) {
-                final var name = d.REFERENCE().getText().substring(1);
-                if (definitions.containsKey(name)) {
+                final var name = d.SYMBOL(0).getText();
+                if (!globals.add(name)) {
                     throw error(filename, d, "Found a duplicate definition: `%s`", name);
                 }
-                final var parameters = d.SYMBOL();
+            }
+            for (final var d : ctx.definition()) {
+                final var name = d.SYMBOL(0).getText();
+                final var parameters = d.SYMBOL().subList(1, d.SYMBOL().size());
+                parameters.forEach(p -> push(p.getText()));
                 Term body = visit(d.term());
+                parameters.forEach(p -> pop(p.getText()));
                 for (int i = parameters.size() - 1; i >= 0; i--) {
                     body = new Term.Lambda(parameters.get(i).getText(), body);
                 }
-                final var fvSet = body.freeVariables();
-                if (!fvSet.isEmpty()) {
-                    throw new SyntaxError(
-                            String.format(
-                                    "Unbound variable(s) in `%s`: %s",
-                                    name,
-                                    fvSet.stream().collect(Collectors.joining("`, `", "`", "`"))));
-                }
                 definitions.put(name, body);
             }
-            final var main = visit(ctx.term());
-            final var fvSet = main.freeVariables();
-            if (!fvSet.isEmpty()) {
-                throw new SyntaxError(
-                        String.format(
-                                "Unbound variable(s): %s",
-                                fvSet.stream().collect(Collectors.joining("`, `", "`", "`"))));
-            }
-            final var refs = Stream.concat(Stream.of(main), definitions.values().stream())
-                    .flatMap(t -> t.references().stream())
-                    .filter(name -> !definitions.containsKey(name))
-                    .distinct()
-                    .toList();
-            if (!refs.isEmpty()) {
-                throw new SyntaxError(
-                        String.format(
-                                "Undefined reference(s): %s",
-                                refs
-                                        .stream()
-                                        .map(name -> "&" + name)
-                                        .collect(Collectors.joining("`, `", "`", "`"))));
-            }
-            return main;
+            return visit(ctx.term());
         }
 
         @Override
         public Term visitLambdaTerm(final MotorParser.LambdaTermContext ctx) {
             final var parameters = ctx.SYMBOL();
+            parameters.forEach(p -> push(p.getText()));
             Term result = visit(ctx.term());
+            parameters.forEach(p -> pop(p.getText()));
             for (int i = parameters.size() - 1; i >= 0; i--) {
                 result = new Term.Lambda(parameters.get(i).getText(), result);
             }
@@ -253,17 +240,21 @@ public final class Parser {
         @Override
         public Term visitLetTerm(final MotorParser.LetTermContext ctx) {
             final var x = ctx.SYMBOL().getText();
-            final var t1 = ctx.term(0);
-            final var t2 = ctx.term(1);
-            return new Term.Application(new Term.Lambda(x, visit(t2)), visit(t1));
+            final var t1 = visit(ctx.term(0));
+            push(x);
+            final var t2 = visit(ctx.term(1));
+            pop(x);
+            return new Term.Application(new Term.Lambda(x, t2), t1);
         }
 
         @Override
         public Term visitStrictLetTerm(final MotorParser.StrictLetTermContext ctx) {
             final var x = ctx.SYMBOL().getText();
-            final var t1 = ctx.term(0);
-            final var t2 = ctx.term(1);
-            return new Term.StrictApplication(new Term.Lambda(x, visit(t2)), visit(t1));
+            final var t1 = visit(ctx.term(0));
+            push(x);
+            final var t2 = visit(ctx.term(1));
+            pop(x);
+            return new Term.StrictApplication(new Term.Lambda(x, t2), t1);
         }
 
         @Override
@@ -284,7 +275,9 @@ public final class Parser {
             final var s = visit(ctx.term(0));
             final var xs = List.copyOf(seen);
             final List<Term> guard = List.of();
+            xs.forEach(this::push);
             final var continuation = visit(ctx.term(1));
+            xs.forEach(this::pop);
             return new Term.Match(s, List.of(new Term.Case(name, xs, guard, continuation)));
         }
 
@@ -338,9 +331,11 @@ public final class Parser {
                         checkArity(myCase, name, parameters.size());
                         final var xs = List.copyOf(seen);
                         final var terms = myCase.term();
+                        xs.forEach(this::push);
                         final var guards = terms.subList(0, terms.size() - 1).stream()
                                 .map(this::visit).toList();
                         final var t = visit(terms.getLast());
+                        xs.forEach(this::pop);
                         return new Term.Case(name, xs, guards, t);
                     })
                     .toList();
@@ -508,12 +503,14 @@ public final class Parser {
 
         @Override
         public Term visitVariableTerm(final MotorParser.VariableTermContext ctx) {
-            return new Term.Variable(ctx.SYMBOL().getText());
-        }
-
-        @Override
-        public Term visitReferenceTerm(final MotorParser.ReferenceTermContext ctx) {
-            return new Term.Reference(ctx.REFERENCE().getText().substring(1));
+            final var x = ctx.SYMBOL().getText();
+            if (bound.getOrDefault(x, 0) > 0) {
+                return new Term.Variable(x);
+            }
+            if (globals.contains(x)) {
+                return new Term.Reference(x);
+            }
+            throw error(filename, ctx, "Variable not in scope: `%s`", x);
         }
     }
 }

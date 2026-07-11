@@ -5,7 +5,7 @@ program
     ;
 
 definition
-    : REFERENCE SYMBOL* ASSIGN term SEMICOLON
+    : SYMBOL SYMBOL* ASSIGN term SEMICOLON
     ;
 
 constructorDeclaration
@@ -51,7 +51,6 @@ atom
     | CHARACTER # characterTerm
     | STRING # stringTerm
     | SYMBOL # variableTerm
-    | REFERENCE # referenceTerm
     ;
 
 op1
@@ -220,7 +219,6 @@ STRING : '"' ( Escape | ~[\u{0}-\u{1F}"\\\u{7F}-\u{10FFFF}] )* '"' ;
 
 // Identifiers.
 SYMBOL : ('_' | [a-z]) [a-zA-Z0-9]* '\''* ;
-REFERENCE : '&' '_'? [a-zA-Z] [a-zA-Z0-9]* '\''* ;
 CONSTRUCTOR : [A-Z] [a-zA-Z0-9]* '\''* ;
 
 // Skipped.
