@@ -222,7 +222,10 @@ public final class Parser {
                 }
                 definitions.put(name, body);
             }
-            return visit(ctx.term());
+            if (!globals.contains("main")) {
+                throw new SyntaxError("No `main` definition");
+            }
+            return new Term.Reference("main");
         }
 
         @Override

@@ -1,7 +1,7 @@
 grammar Motor;
 
 program
-    : term (WHERE (definition | constructorDeclaration)+)? EOF
+    : (definition | constructorDeclaration)+ EOF
     ;
 
 definition
@@ -200,9 +200,8 @@ REMEMBER : '$remember' ;
 // Keywords.
 IF : 'if' ; THEN : 'then' ; ELSE : 'else' ;
 CASE : 'case' ; OF : 'of' ;
-FIX : 'fix' ;
 LET : 'let' ; IN : 'in' ;
-WHERE : 'where' ;
+FIX : 'fix' ;
 
 // Types.
 INTEGER_TY : IntegerTy ;
