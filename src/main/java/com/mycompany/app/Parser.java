@@ -357,7 +357,7 @@ public final class Parser {
 
         @Override
         public Term visitStrictApplyTerm(final MotorParser.StrictApplyTermContext ctx) {
-            return new Term.StrictApplication(visit(ctx.application()), visit(ctx.atom()));
+            return new Term.StrictApplication(visit(ctx.application()), visit(ctx.term()));
         }
 
         @Override

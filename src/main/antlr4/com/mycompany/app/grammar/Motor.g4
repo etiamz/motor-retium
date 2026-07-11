@@ -15,10 +15,11 @@ constructorDeclaration
 term
     : BACKSLASH SYMBOL+ RIGHT_ARROW term # lambdaTerm
     | LET SYMBOL ASSIGN term IN term # letTerm
-    | LET EXCLAMATION SYMBOL ASSIGN term IN term # strictLetTerm
+    | LET STRICT_LET SYMBOL ASSIGN term IN term # strictLetTerm
     | LET CONSTRUCTOR SYMBOL* ASSIGN term IN term # destructuringLetTerm
     | IF term THEN term ELSE term # ifThenElseTerm
     | CASE term OF LEFT_BRACE case (SEMICOLON case)* RIGHT_BRACE # caseTerm
+    | application STRICT_APPLY term # strictApplyTerm
     | application # applicationTerm
     ;
 
@@ -28,7 +29,6 @@ case
 
 application
     : application atom # applyTerm
-    | application EXCLAMATION atom # strictApplyTerm
     | atom # atomTerm
     ;
 
@@ -136,7 +136,8 @@ ASSIGN : '=' ;
 DOT_DOT : '..' ;
 COLON : ':' ;
 SEMICOLON : ';' ;
-EXCLAMATION : '!' ;
+STRICT_LET : '!' ;
+STRICT_APPLY : '$!' ;
 
 // Logical operators.
 NOT : 'not' ;
