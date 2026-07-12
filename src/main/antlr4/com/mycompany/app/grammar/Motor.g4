@@ -1,31 +1,33 @@
 grammar Motor;
 
 program
-    : (definition | constructorDeclaration)+ EOF
-    ;
-
-definition
-    : SYMBOL SYMBOL* ASSIGN term SEMICOLON
+    : constructorDeclaration* definition+ EOF
     ;
 
 constructorDeclaration
-    : CONSTRUCTOR COLON INTEGER SEMICOLON
+    : CONSTRUCTOR ':' INTEGER ';'
+    ;
+
+definition
+    : SYMBOL SYMBOL* '=' term ';'
     ;
 
 term
-    : BACKSLASH SYMBOL+ RIGHT_ARROW term # lambdaTerm
-    | LET SYMBOL ASSIGN term IN term # letTerm
-    | LET STRICT_LET SYMBOL ASSIGN term IN term # strictLetTerm
-    | LET CONSTRUCTOR SYMBOL* ASSIGN term IN term # destructuringLetTerm
-    | IF term THEN term ELSE term # ifThenElseTerm
-    | CASE term OF LEFT_BRACE case (SEMICOLON case)* RIGHT_BRACE # caseTerm
-    | application APPLY term # nonStrictApplyTerm
-    | application STRICT_APPLY term # strictApplyTerm
+    : '\\' SYMBOL+ '->' term # lambdaTerm
+    | 'let' SYMBOL '=' term 'in' term # letTerm
+    | 'let' '!' SYMBOL '=' term 'in' term # strictLetTerm
+    | 'let' CONSTRUCTOR SYMBOL* '=' term 'in' term # destructuringLetTerm
+    | 'if' term 'then' term 'else' term # ifThenElseTerm
+    | 'case' term 'of' '{' case (';' case)* '}' # caseTerm
+    | application '$' term # nonStrictApplyTerm
+    | application '$!' term # strictApplyTerm
+    | left=application? '..' right=application? # rangeTerm
+    | left=application? '..=' right=application # inclusiveRangeTerm
     | application # applicationTerm
     ;
 
 case
-    : CONSTRUCTOR SYMBOL* (INTEGER_OR term (COMMA term)*)? RIGHT_ARROW term
+    : CONSTRUCTOR SYMBOL* ('|' term (',' term)*)? '->' term
     ;
 
 application
@@ -34,58 +36,27 @@ application
     ;
 
 atom
-    : LEFT_PARENTHESIS term DOT_DOT term RIGHT_PARENTHESIS # rangeTerm
-    | LEFT_PARENTHESIS term DOT_DOT RIGHT_PARENTHESIS # rangeFromTerm
-    | LEFT_PARENTHESIS DOT_DOT term RIGHT_PARENTHESIS # rangeToTerm
-    | LEFT_PARENTHESIS DOT_DOT RIGHT_PARENTHESIS # rangeFullTerm
-    | LEFT_PARENTHESIS application op2 application RIGHT_PARENTHESIS # infixTerm
-    | LEFT_PARENTHESIS op2 RIGHT_PARENTHESIS # operatorTerm
-    | LEFT_PARENTHESIS term RIGHT_PARENTHESIS # groupTerm
+    : '(' application op2 application ')' # infixTerm
+    | '(' op2 ')' # operatorTerm
+    | '(' term ')' # groupTerm
     | op1 # op1Term
     | intrinsic # intrinsicTerm
     | CONSTRUCTOR # constructorTerm
     | TRUE # trueTerm
     | FALSE # falseTerm
-    | INTEGER COLON INTEGER_TY # integerTerm
-    | INTEGER COLON BIGINT_TY # bigIntegerTerm
+    | INTEGER_LITERAL # integerTerm
+    | BIG_INTEGER_LITERAL # bigIntegerTerm
     | CHARACTER # characterTerm
     | STRING # stringTerm
     | SYMBOL # variableTerm
     ;
 
 op1
-    : FIX
-    | NOT
-    | INTEGER_TY
-    | BIGINT_TY
-    | STRING_TY
-    | STRING_OF_CHARACTER
-    | NEGATE
-    | INTEGER_NOT
+    : 'fix' | 'not' | 'negate' | INTEGER_TY | BIG_INTEGER_TY | STRING_TY | '#'
     ;
 
 op2
-    : AND
-    | OR
-    | ADD
-    | SUBTRACT
-    | MULTIPLY
-    | DIVIDE
-    | REMAINDER
-    | INTEGER_OR
-    | INTEGER_AND
-    | INTEGER_XOR
-    | SHIFT_LEFT
-    | SHIFT_RIGHT
-    | EQUALS
-    | NOT_EQUALS
-    | LESS
-    | LESS_OR_EQUALS
-    | GREATER
-    | GREATER_OR_EQUALS
-    | CHARACTER_AT
-    | SLICE
-    | PLUS_PLUS
+    : '&&' | '||' | '+' | '-' | '*' | '/' | '%' | '|' | '&' | '^' | '<<' | '>>' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '@' | '@@' | '++'
     ;
 
 intrinsic
@@ -94,134 +65,31 @@ intrinsic
     ;
 
 intrinsic1
-    : FFS
-    | CLZ
-    | CTZ
-    | CLRSB
-    | POPCOUNT
-    | PARITY
-    | STRLEN
-    | PANIC
-    | MEMORY
-    | HASH
+    : '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$memory' | '$hash'
     ;
 
 intrinsic2
-    : MIN
-    | MAX
-    | STRCMP
-    | STRCHR
-    | STRRCHR
-    | STRSTR
-    | STRRSTR
-    | STRSPN
-    | STRCSPN
-    | STRPBRK
-    | STRRSPN
-    | STRRCSPN
-    | STRRPBRK
-    | STARTSWITH
-    | ENDSWITH
-    | REMEMBER
+    : '$min' | '$max' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$remember'
     ;
-
-// Punctuation.
-LEFT_PARENTHESIS : '(' ;
-RIGHT_PARENTHESIS : ')' ;
-LEFT_BRACE : '{' ;
-RIGHT_BRACE : '}' ;
-BACKSLASH : '\\' ;
-COMMA : ',' ;
-RIGHT_ARROW : '->' ;
-ASSIGN : '=' ;
-DOT_DOT : '..' ;
-COLON : ':' ;
-SEMICOLON : ';' ;
-STRICT_LET : '!' ;
-APPLY : '$' ;
-STRICT_APPLY : '$!' ;
-
-// Logical operators.
-NOT : 'not' ;
-AND : '&&' ;
-OR : '||' ;
-
-// Mixed-type operators.
-STRING_OF_CHARACTER : '#' ;
-NEGATE : 'negate' ;
-INTEGER_NOT : '~' ;
-FFS : '$ffs' ;
-CLZ : '$clz' ;
-CTZ : '$ctz' ;
-CLRSB : '$clrsb' ;
-POPCOUNT : '$popcount' ;
-PARITY : '$parity' ;
-ADD : '+' ;
-SUBTRACT : '-' ;
-MULTIPLY : '*' ;
-DIVIDE : '/' ;
-REMAINDER : '%' ;
-INTEGER_OR : '|' ;
-INTEGER_AND : '&' ;
-INTEGER_XOR : '^' ;
-SHIFT_LEFT : '<<' ;
-SHIFT_RIGHT : '>>' ;
-EQUALS : '==' ;
-NOT_EQUALS : '/=' ;
-LESS : '<' ;
-LESS_OR_EQUALS : '<=' ;
-GREATER : '>' ;
-GREATER_OR_EQUALS : '>=' ;
-MIN : '$min' ;
-MAX : '$max' ;
-
-// String operators.
-STRLEN : '$strlen' ;
-PANIC : '$panic' ;
-CHARACTER_AT : '@' ;
-SLICE : '@@' ;
-PLUS_PLUS : '++' ;
-STRCMP : '$strcmp' ;
-STRCHR : '$strchr' ;
-STRRCHR : '$strrchr' ;
-STRSTR : '$strstr' ;
-STRRSTR : '$strrstr' ;
-STRSPN : '$strspn' ;
-STRCSPN : '$strcspn' ;
-STRPBRK : '$strpbrk' ;
-STRRSPN : '$strrspn' ;
-STRRCSPN : '$strrcspn' ;
-STRRPBRK : '$strrpbrk' ;
-STARTSWITH : '$startswith' ;
-ENDSWITH : '$endswith' ;
-
-// Memory operators.
-MEMORY : '$memory' ;
-HASH : '$hash' ;
-REMEMBER : '$remember' ;
-
-// Keywords.
-IF : 'if' ; THEN : 'then' ; ELSE : 'else' ;
-CASE : 'case' ; OF : 'of' ;
-LET : 'let' ; IN : 'in' ;
-FIX : 'fix' ;
 
 // Types.
 INTEGER_TY : IntegerTy ;
-BIGINT_TY : 'bigint' ;
+BIG_INTEGER_TY : 'bigint' ;
 STRING_TY : 'string' ;
 
 // Literals.
 TRUE : 'true' ;
 FALSE : 'false' ;
+INTEGER_LITERAL : '-'? UnsignedInteger IntegerTy ;
+BIG_INTEGER_LITERAL : '-'? UnsignedInteger 'bigint' ;
 INTEGER : '-'? UnsignedInteger ;
 // Permit onely printable ASCII code points in characters and strings.
 CHARACTER : '\'' ( Escape | ~[\u{0}-\u{1F}'\\\u{7F}-\u{10FFFF}] ) '\'' ;
 STRING : '"' ( Escape | ~[\u{0}-\u{1F}"\\\u{7F}-\u{10FFFF}] )* '"' ;
 
 // Identifiers.
-SYMBOL : ('_' | [a-z]) [a-zA-Z0-9]* '\''* ;
-CONSTRUCTOR : [A-Z] [a-zA-Z0-9]* '\''* ;
+SYMBOL : ('_' | [a-z]) [a-zA-Z0-9_']* ;
+CONSTRUCTOR : [A-Z] [a-zA-Z0-9_']* ;
 
 // Skipped.
 COMMENT : '--' ~[\r\n]* -> skip ;

@@ -40,6 +40,11 @@
       <artifactId>antlr4-runtime</artifactId>
       <version>${antlr.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.13.1</version>
+    </dependency>
   </dependencies>
   <build>
     <finalName>motor-retium</finalName>

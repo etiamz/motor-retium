@@ -97,10 +97,11 @@ public final class OperatorSaturator {
                 new Term.And(saturate(t1, banlist), saturate(t2, banlist));
             case Term.Or(var t1, var t2) ->
                 new Term.Or(saturate(t1, banlist), saturate(t2, banlist));
-            case Term.Range(var t1, var t2) ->
+            case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(
                         t1.map(t -> saturate(t, banlist)),
-                        t2.map(t -> saturate(t, banlist)));
+                        t2.map(t -> saturate(t, banlist)),
+                        inclusive);
             case Term.StrictOp1(var op, var t) ->
                 new Term.StrictOp1(op, saturate(t, banlist));
             case Term.StrictOp2(var t1, var op, var t2) ->

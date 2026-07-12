@@ -65,7 +65,7 @@ public sealed interface Term {
     public record Or(Term t1, Term t2) implements Term {
     }
 
-    public record Range(Optional<Term> t1, Optional<Term> t2) implements Term {
+    public record Range(Optional<Term> t1, Optional<Term> t2, boolean inclusive) implements Term {
     }
 
     public record StrictOp1(Primitives.StrictOp1 op, Term t) implements Term {
@@ -113,10 +113,11 @@ public sealed interface Term {
                 new And(t1.rename(renaming, banlist), t2.rename(renaming, banlist));
             case Or(var t1, var t2) ->
                 new Or(t1.rename(renaming, banlist), t2.rename(renaming, banlist));
-            case Range(var t1, var t2) ->
+            case Range(var t1, var t2, var inclusive) ->
                 new Range(
                         t1.map(t -> t.rename(renaming, banlist)),
-                        t2.map(t -> t.rename(renaming, banlist)));
+                        t2.map(t -> t.rename(renaming, banlist)),
+                        inclusive);
             case StrictOp1(var op, var t) ->
                 new StrictOp1(op, t.rename(renaming, banlist));
             case StrictOp2(var t1, var op, var t2) ->
@@ -209,7 +210,7 @@ public sealed interface Term {
                 union(t1, t2);
             case Or(var t1, var t2) ->
                 union(t1, t2);
-            case Range(var t1, var t2) ->
+            case Range(var t1, var t2, var _) ->
                 union(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) ->
                 t.freeVariables();
@@ -258,7 +259,7 @@ public sealed interface Term {
                 unionReferences(t1, t2);
             case Or(var t1, var t2) ->
                 unionReferences(t1, t2);
-            case Range(var t1, var t2) ->
+            case Range(var t1, var t2, var _) ->
                 unionReferences(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) ->
                 t.references();

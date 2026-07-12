@@ -124,7 +124,7 @@ public final class StrictnessAnalyzer {
                 demand(phi, t1);
             case Term.Or(var t1, var _) ->
                 demand(phi, t1);
-            case Term.Range(var t1, var t2) -> {
+            case Term.Range(var t1, var t2, var _) -> {
                 final var result = new LinkedHashSet<String>();
                 t1.ifPresent(t -> result.addAll(demand(phi, t)));
                 t2.ifPresent(t -> result.addAll(demand(phi, t)));
@@ -207,10 +207,11 @@ public final class StrictnessAnalyzer {
                 new Term.And(annotate(phi, t1), annotate(phi, t2));
             case Term.Or(var t1, var t2) ->
                 new Term.Or(annotate(phi, t1), annotate(phi, t2));
-            case Term.Range(var t1, var t2) ->
+            case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(
                         t1.map(t -> annotate(phi, t)),
-                        t2.map(t -> annotate(phi, t)));
+                        t2.map(t -> annotate(phi, t)),
+                        inclusive);
             case Term.StrictOp1(var op, var t) ->
                 new Term.StrictOp1(op, annotate(phi, t));
             case Term.StrictOp2(var t1, var op, var t2) ->

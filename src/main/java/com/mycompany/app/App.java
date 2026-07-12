@@ -50,9 +50,9 @@ public final class App {
             case AFalse _ -> "false";
             case AInteger i -> {
                 final String suffix = (i.ty().isSigned ? "i" : "u") + i.ty().bits;
-                yield i.data.show() + ":" + suffix;
+                yield i.data.show() + suffix;
             }
-            case ABigInteger i -> i.data.show() + ":bigint";
+            case ABigInteger i -> i.data.show() + "bigint";
             case AString s -> s.data.toString();
             case AIdentity _ -> "<identity>";
             case ALambda _ -> "<function>";

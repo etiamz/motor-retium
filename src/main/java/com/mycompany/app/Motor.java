@@ -13,7 +13,6 @@ import com.mycompany.app.Primitives.Clz;
 import com.mycompany.app.Primitives.Ctz;
 import com.mycompany.app.Primitives.Ffs;
 import com.mycompany.app.Primitives.Hash;
-import com.mycompany.app.Primitives.IntegerNot;
 import com.mycompany.app.Primitives.IntegerOf;
 import com.mycompany.app.Primitives.Memory;
 import com.mycompany.app.Primitives.Negate;
@@ -339,14 +338,6 @@ public final class Motor {
                 final AStrictOp1 op1 = this;
                 final Agent data = op1.a.chase();
                 switch (data) {
-                    case AInteger i when op1.op instanceof StringOf -> {
-                        final var r = new AString(MyString.ofAscii(i.data.show()));
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op instanceof StringOf -> {
-                        final var r = new AString(MyString.ofAscii(i.data.show()));
-                        op1.b.forward(r.a);
-                    }
                     case ATrue _ when op1.op instanceof StringOf -> {
                         final var r = new AString(MyString.ofAscii("true"));
                         op1.b.forward(r.a);
@@ -355,8 +346,24 @@ public final class Motor {
                         final var r = new AString(MyString.ofAscii("false"));
                         op1.b.forward(r.a);
                     }
+                    case AInteger i when op1.op instanceof StringOf -> {
+                        final var r = new AString(MyString.ofAscii(i.data.show()));
+                        op1.b.forward(r.a);
+                    }
+                    case ABigInteger i when op1.op instanceof StringOf -> {
+                        final var r = new AString(MyString.ofAscii(i.data.show()));
+                        op1.b.forward(r.a);
+                    }
                     case AInteger i when op1.op instanceof StringOfCharacter && i.ty() == U8 -> {
                         final var r = new AString(MyString.ofByte(i.data.toInt()));
+                        op1.b.forward(r.a);
+                    }
+                    case ATrue _ when op1.op instanceof IntegerOf tyy -> {
+                        final var r = new AInteger(tyy.target().one());
+                        op1.b.forward(r.a);
+                    }
+                    case AFalse _ when op1.op instanceof IntegerOf tyy -> {
+                        final var r = new AInteger(tyy.target().zero());
                         op1.b.forward(r.a);
                     }
                     case AInteger i when op1.op instanceof IntegerOf tyy -> {
@@ -365,6 +372,14 @@ public final class Motor {
                     }
                     case ABigInteger i when op1.op instanceof IntegerOf tyy -> {
                         final var r = new AInteger(i.data.toCheckedInteger(tyy.target()));
+                        op1.b.forward(r.a);
+                    }
+                    case ATrue _ when op1.op instanceof BigIntegerOf -> {
+                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(U8.one()));
+                        op1.b.forward(r.a);
+                    }
+                    case AFalse _ when op1.op instanceof BigIntegerOf -> {
+                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(U8.zero()));
                         op1.b.forward(r.a);
                     }
                     case AInteger i when op1.op instanceof BigIntegerOf -> {
@@ -377,14 +392,6 @@ public final class Motor {
                     }
                     case ABigInteger i when op1.op instanceof Negate -> {
                         final var r = new ABigInteger(i.data.negate());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op instanceof IntegerNot -> {
-                        final var r = new AInteger(i.data.not());
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op instanceof IntegerNot -> {
-                        final var r = new ABigInteger(i.data.not());
                         op1.b.forward(r.a);
                     }
                     case AInteger i when op1.op instanceof Ffs -> {
@@ -572,6 +579,30 @@ public final class Motor {
                             op2.b.forward(new AFalse().a);
                         }
                     }
+                    case Operands(ATrue b1, ATrue _) when op2.op == STRICT_OR ->
+                        op2.b.forward(b1.a);
+                    case Operands(ATrue b1, AFalse _) when op2.op == STRICT_OR ->
+                        op2.b.forward(b1.a);
+                    case Operands(AFalse _, ATrue b2) when op2.op == STRICT_OR ->
+                        op2.b.forward(b2.a);
+                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_OR ->
+                        op2.b.forward(b1.a);
+                    case Operands(ATrue b1, ATrue _) when op2.op == STRICT_AND ->
+                        op2.b.forward(b1.a);
+                    case Operands(ATrue _, AFalse b2) when op2.op == STRICT_AND ->
+                        op2.b.forward(b2.a);
+                    case Operands(AFalse b1, ATrue _) when op2.op == STRICT_AND ->
+                        op2.b.forward(b1.a);
+                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_AND ->
+                        op2.b.forward(b1.a);
+                    case Operands(ATrue _, ATrue _) when op2.op == STRICT_XOR ->
+                        op2.b.forward(new AFalse().a);
+                    case Operands(ATrue b1, AFalse _) when op2.op == STRICT_XOR ->
+                        op2.b.forward(b1.a);
+                    case Operands(AFalse _, ATrue b2) when op2.op == STRICT_XOR ->
+                        op2.b.forward(b2.a);
+                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_XOR ->
+                        op2.b.forward(b1.a);
                     case Operands(ATrue b1, ATrue _) when op2.op == MIN ->
                         op2.b.forward(b1.a);
                     case Operands(ATrue _, AFalse b2) when op2.op == MIN ->
@@ -643,9 +674,9 @@ public final class Motor {
                             case MULTIPLY -> ty.multiply(x, y);
                             case DIVIDE -> ty.divide(x, y);
                             case REMAINDER -> ty.remainder(x, y);
-                            case INTEGER_OR -> ty.or(x, y);
-                            case INTEGER_AND -> ty.and(x, y);
-                            case INTEGER_XOR -> ty.xor(x, y);
+                            case STRICT_OR -> ty.or(x, y);
+                            case STRICT_AND -> ty.and(x, y);
+                            case STRICT_XOR -> ty.xor(x, y);
                             case SHIFT_LEFT -> ty.shiftLeft(x, y);
                             case SHIFT_RIGHT -> ty.shiftRight(x, y);
                             default -> crash("Unknown operation");
@@ -660,9 +691,9 @@ public final class Motor {
                             case MULTIPLY -> x.multiply(y);
                             case DIVIDE -> x.divide(y);
                             case REMAINDER -> x.remainder(y);
-                            case INTEGER_OR -> x.or(y);
-                            case INTEGER_AND -> x.and(y);
-                            case INTEGER_XOR -> x.xor(y);
+                            case STRICT_OR -> x.or(y);
+                            case STRICT_AND -> x.and(y);
+                            case STRICT_XOR -> x.xor(y);
                             case SHIFT_LEFT -> x.shiftLeft(y);
                             case SHIFT_RIGHT -> x.shiftRight(y);
                             default -> crash("Unknown operation");
@@ -688,15 +719,16 @@ public final class Motor {
                         op2.b.forward(r.a);
                     }
                     case Operands(AString body, ARange rng) when op2.op == SLICE -> {
-                        final var r = body.slice(rng.start, rng.end);
+                        final var r = body.slice(rng.start, rng.end, rng.inclusive);
                         op2.b.forward(r.a);
                     }
                     case Operands(AString body, ARangeFrom rng) when op2.op == SLICE -> {
-                        final var r = body.slice(rng.start, body.data.length());
+                        final boolean inclusive = false;
+                        final var r = body.slice(rng.start, body.data.length(), inclusive);
                         op2.b.forward(r.a);
                     }
                     case Operands(AString body, ARangeTo rng) when op2.op == SLICE -> {
-                        final var r = body.slice(0, rng.end);
+                        final var r = body.slice(0, rng.end, rng.inclusive);
                         op2.b.forward(r.a);
                     }
                     case Operands(AString body, ARangeFull _) when op2.op == SLICE -> {
@@ -977,6 +1009,8 @@ public final class Motor {
             switch (data) {
                 case ATrue _ -> not.b.forward(new AFalse().a);
                 case AFalse _ -> not.b.forward(new ATrue().a);
+                case AInteger i -> not.b.forward(new AInteger(i.data.not()).a);
+                case ABigInteger i -> not.b.forward(new ABigInteger(i.data.not()).a);
                 case ASuperposition sup -> {
                     final var notx = new ANot();
                     final var notxx = new ANot();
@@ -1098,11 +1132,13 @@ public final class Motor {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
+        public final boolean inclusive;
 
-        public ADoRange() {
+        public ADoRange(final boolean inclusive) {
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
+            this.inclusive = inclusive;
         }
 
         private void interact() {
@@ -1110,12 +1146,12 @@ public final class Motor {
             final Agent left = doRng.a.chase(), right = doRng.c.chase();
             switch (new Operands(left, right)) {
                 case Operands(AInteger i1, AInteger i2) when i1.ty() == U64 && i2.ty() == U64 -> {
-                    final var rng = new ARange(i1.value(), i2.value());
+                    final var rng = new ARange(i1.value(), i2.value(), doRng.inclusive);
                     doRng.b.forward(rng.a);
                 }
                 case Operands(ASuperposition sup, _) -> {
-                    final var doRngx = new ADoRange();
-                    final var doRngxx = new ADoRange();
+                    final var doRngx = new ADoRange(doRng.inclusive);
+                    final var doRngxx = new ADoRange(doRng.inclusive);
                     final var supx = sup; // reuse
                     final var dup = new ADuplicator(sup.label);
                     doRng.b.forward(supx.a);
@@ -1128,8 +1164,8 @@ public final class Motor {
                     doRngxx.c.setProducer(dup.c);
                 }
                 case Operands(AInteger i, ASuperposition sup) -> {
-                    final var doRngx = new ADoRange();
-                    final var doRngxx = new ADoRange();
+                    final var doRngx = new ADoRange(doRng.inclusive);
+                    final var doRngxx = new ADoRange(doRng.inclusive);
                     final var supx = sup; // reuse
                     doRng.b.forward(supx.a);
                     doRngx.c.setProducer(sup.b.producer());
@@ -1203,10 +1239,12 @@ public final class Motor {
     public static final class ADoRangeTo implements Agent {
         public final Consumer a;
         public final Producer b;
+        public final boolean inclusive;
 
-        public ADoRangeTo() {
+        public ADoRangeTo(final boolean inclusive) {
             this.a = new Consumer(null);
             this.b = new Producer(this);
+            this.inclusive = inclusive;
         }
 
         private void interact() {
@@ -1214,12 +1252,12 @@ public final class Motor {
             final Agent data = doRng.a.chase();
             switch (data) {
                 case AInteger i when i.ty() == U64 -> {
-                    final var rng = new ARangeTo(i.value());
+                    final var rng = new ARangeTo(i.value(), doRng.inclusive);
                     doRng.b.forward(rng.a);
                 }
                 case ASuperposition sup -> {
-                    final var doRngx = new ADoRangeTo();
-                    final var doRngxx = new ADoRangeTo();
+                    final var doRngx = new ADoRangeTo(doRng.inclusive);
+                    final var doRngxx = new ADoRangeTo(doRng.inclusive);
                     final var supx = sup; // reuse
                     doRng.b.forward(supx.a);
                     doRngx.a.setProducer(sup.b.producer());
@@ -1671,9 +1709,10 @@ public final class Motor {
                 case ABigInteger i -> new Commute(i.a, new ABigInteger(i.data).a);
                 case AString s -> new Commute(s.a, new AString(s.data).a);
                 case AMemory mem -> new Commute(mem.a, new AMemory(mem.set).a);
-                case ARange rng -> new Commute(rng.a, new ARange(rng.start, rng.end).a);
+                case ARange rng ->
+                    new Commute(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
                 case ARangeFrom rng -> new Commute(rng.a, new ARangeFrom(rng.start).a);
-                case ARangeTo rng -> new Commute(rng.a, new ARangeTo(rng.end).a);
+                case ARangeTo rng -> new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
                 case ARangeFull rng -> new Commute(rng.a, new ARangeFull().a);
                 case AIdentity id -> new Commute(id.a, new AIdentity().a);
                 default -> {
@@ -1764,11 +1803,14 @@ public final class Motor {
             this.a = new Producer(this);
         }
 
-        public AString slice(final long start, final long end) {
+        public AString slice(final long start, final long end, final boolean inclusive) {
+            if (inclusive && end == -1L) {
+                return panic("Out of bounds: %s", SLICE.describe());
+            }
             final int i, j;
             try {
                 i = U64.toInt(start);
-                j = U64.toInt(end);
+                j = U64.toInt(inclusive ? end + 1 : end);
             } catch (final CheckedInteger.OutOfRange e) {
                 return panic("Out of range: %s", Primitives.describe(e.ty));
             }
@@ -1796,11 +1838,13 @@ public final class Motor {
 
     public static final class ARange implements Agent {
         public final long start, end;
+        public final boolean inclusive;
         public final Producer a;
 
-        public ARange(final long start, final long end) {
+        public ARange(final long start, final long end, final boolean inclusive) {
             this.start = start;
             this.end = end;
+            this.inclusive = inclusive;
             this.a = new Producer(this);
         }
 
@@ -1819,10 +1863,12 @@ public final class Motor {
 
     public static final class ARangeTo implements Agent {
         public final long end;
+        public final boolean inclusive;
         public final Producer a;
 
-        public ARangeTo(final long end) {
+        public ARangeTo(final long end, final boolean inclusive) {
             this.end = end;
+            this.inclusive = inclusive;
             this.a = new Producer(this);
         }
 

@@ -65,10 +65,11 @@ public final class GuardEliminator {
                 new Term.And(eliminate(t1, banlist), eliminate(t2, banlist));
             case Term.Or(var t1, var t2) ->
                 new Term.Or(eliminate(t1, banlist), eliminate(t2, banlist));
-            case Term.Range(var t1, var t2) ->
+            case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(
                         t1.map(t -> eliminate(t, banlist)),
-                        t2.map(t -> eliminate(t, banlist)));
+                        t2.map(t -> eliminate(t, banlist)),
+                        inclusive);
             case Term.StrictOp1(var op, var t) ->
                 new Term.StrictOp1(op, eliminate(t, banlist));
             case Term.StrictOp2(var t1, var op, var t2) ->

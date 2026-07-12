@@ -166,24 +166,25 @@ public final class Compiler {
                 merge(fvSet, compile(builder, t2, agent.c()));
                 yield fvSet;
             }
-            case Term.Range(var t1, var t2) when t1.isPresent() && t2.isPresent() -> {
-                final var agent = builder.mkDoRange();
+            case Term.Range(var t1, var t2, var inclusive) when t1.isPresent()
+                    && t2.isPresent() -> {
+                final var agent = builder.mkDoRange(inclusive);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1.get(), agent.a());
                 merge(fvSet, compile(builder, t2.get(), agent.c()));
                 yield fvSet;
             }
-            case Term.Range(var t1, var _) when t1.isPresent() -> {
+            case Term.Range(var t1, var _, var _) when t1.isPresent() -> {
                 final var agent = builder.mkDoRangeFrom();
                 output.setProducer(agent.b());
                 yield compile(builder, t1.get(), agent.a());
             }
-            case Term.Range(var _, var t2) when t2.isPresent() -> {
-                final var agent = builder.mkDoRangeTo();
+            case Term.Range(var _, var t2, var inclusive) when t2.isPresent() -> {
+                final var agent = builder.mkDoRangeTo(inclusive);
                 output.setProducer(agent.b());
                 yield compile(builder, t2.get(), agent.a());
             }
-            case Term.Range(var _, var _) -> {
+            case Term.Range(var _, var _, var _) -> {
                 output.setProducer(builder.mkRangeFull().a());
                 yield new TermInterface();
             }

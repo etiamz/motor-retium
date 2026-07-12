@@ -43,13 +43,13 @@ public final class Template {
     private record KOr() implements Kind {
     }
 
-    private record KDoRange() implements Kind {
+    private record KDoRange(boolean inclusive) implements Kind {
     }
 
     private record KDoRangeFrom() implements Kind {
     }
 
-    private record KDoRangeTo() implements Kind {
+    private record KDoRangeTo(boolean inclusive) implements Kind {
     }
 
     private record KRangeFull() implements Kind {
@@ -242,8 +242,8 @@ public final class Template {
             producers[j++] = agent.b;
             consumers[i++] = agent.c;
         }
-        for (final KDoRange _ : doRngKinds) {
-            final var agent = new Motor.ADoRange();
+        for (final KDoRange kind : doRngKinds) {
+            final var agent = new Motor.ADoRange(kind.inclusive());
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
             consumers[i++] = agent.c;
@@ -253,8 +253,8 @@ public final class Template {
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
         }
-        for (final KDoRangeTo _ : doRngToKinds) {
-            final var agent = new Motor.ADoRangeTo();
+        for (final KDoRangeTo kind : doRngToKinds) {
+            final var agent = new Motor.ADoRangeTo(kind.inclusive());
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
         }
@@ -977,11 +977,11 @@ public final class Template {
             return new AOr(a, b, c);
         }
 
-        public ADoRange mkDoRange() {
+        public ADoRange mkDoRange(final boolean inclusive) {
             final Consumer a = new Consumer();
             final Producer b = new Producer();
             final Consumer c = new Consumer();
-            agents.add(new Agent(new KDoRange(), new Port[]{a, b, c}));
+            agents.add(new Agent(new KDoRange(inclusive), new Port[]{a, b, c}));
             return new ADoRange(a, b, c);
         }
 
@@ -992,10 +992,10 @@ public final class Template {
             return new ADoRangeFrom(a, b);
         }
 
-        public ADoRangeTo mkDoRangeTo() {
+        public ADoRangeTo mkDoRangeTo(final boolean inclusive) {
             final Consumer a = new Consumer();
             final Producer b = new Producer();
-            agents.add(new Agent(new KDoRangeTo(), new Port[]{a, b}));
+            agents.add(new Agent(new KDoRangeTo(inclusive), new Port[]{a, b}));
             return new ADoRangeTo(a, b);
         }
 

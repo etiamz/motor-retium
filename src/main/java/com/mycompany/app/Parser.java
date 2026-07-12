@@ -4,14 +4,15 @@ import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.grammar.MotorBaseVisitor;
 import com.mycompany.app.grammar.MotorLexer;
 import com.mycompany.app.grammar.MotorParser;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -19,6 +20,10 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.tree.Trees;
+import org.apache.commons.text.StringEscapeUtils;
 
 public final class Parser {
     private static final Map<String, Primitives.Operator> INTEGER_TY_OPS = Map.ofEntries(
@@ -31,63 +36,62 @@ public final class Parser {
             Map.entry("i32", new Primitives.IntegerOf(IntegerTy.I32)),
             Map.entry("i64", new Primitives.IntegerOf(IntegerTy.I64)));
 
-    private static final Map<Integer, Primitives.Operator> UNARY_OPS = Map.ofEntries(
-            Map.entry(MotorParser.FIX, new Primitives.Fix()),
-            Map.entry(MotorParser.NOT, new Primitives.Not()),
-            Map.entry(MotorParser.BIGINT_TY, new Primitives.BigIntegerOf()),
-            Map.entry(MotorParser.STRING_TY, new Primitives.StringOf()),
-            Map.entry(MotorParser.STRING_OF_CHARACTER, new Primitives.StringOfCharacter()),
-            Map.entry(MotorParser.NEGATE, new Primitives.Negate()),
-            Map.entry(MotorParser.INTEGER_NOT, new Primitives.IntegerNot()),
-            Map.entry(MotorParser.FFS, new Primitives.Ffs()),
-            Map.entry(MotorParser.CLZ, new Primitives.Clz()),
-            Map.entry(MotorParser.CTZ, new Primitives.Ctz()),
-            Map.entry(MotorParser.CLRSB, new Primitives.Clrsb()),
-            Map.entry(MotorParser.POPCOUNT, new Primitives.Popcount()),
-            Map.entry(MotorParser.PARITY, new Primitives.Parity()),
-            Map.entry(MotorParser.STRLEN, new Primitives.Strlen()),
-            Map.entry(MotorParser.PANIC, new Primitives.Panic()),
-            Map.entry(MotorParser.MEMORY, new Primitives.Memory()),
-            Map.entry(MotorParser.HASH, new Primitives.Hash()));
+    private static final Map<String, Primitives.Operator> UNARY_OPS = Map.ofEntries(
+            Map.entry("fix", new Primitives.Fix()),
+            Map.entry("not", new Primitives.Not()),
+            Map.entry("bigint", new Primitives.BigIntegerOf()),
+            Map.entry("string", new Primitives.StringOf()),
+            Map.entry("#", new Primitives.StringOfCharacter()),
+            Map.entry("negate", new Primitives.Negate()),
+            Map.entry("$ffs", new Primitives.Ffs()),
+            Map.entry("$clz", new Primitives.Clz()),
+            Map.entry("$ctz", new Primitives.Ctz()),
+            Map.entry("$clrsb", new Primitives.Clrsb()),
+            Map.entry("$popcount", new Primitives.Popcount()),
+            Map.entry("$parity", new Primitives.Parity()),
+            Map.entry("$strlen", new Primitives.Strlen()),
+            Map.entry("$panic", new Primitives.Panic()),
+            Map.entry("$memory", new Primitives.Memory()),
+            Map.entry("$hash", new Primitives.Hash()));
 
-    private static final Map<Integer, Primitives.Operator> BINARY_OPS = Map.ofEntries(
-            Map.entry(MotorParser.AND, new Primitives.And()),
-            Map.entry(MotorParser.OR, new Primitives.Or()),
-            Map.entry(MotorParser.ADD, Primitives.StrictOp2.ADD),
-            Map.entry(MotorParser.SUBTRACT, Primitives.StrictOp2.SUBTRACT),
-            Map.entry(MotorParser.MULTIPLY, Primitives.StrictOp2.MULTIPLY),
-            Map.entry(MotorParser.DIVIDE, Primitives.StrictOp2.DIVIDE),
-            Map.entry(MotorParser.REMAINDER, Primitives.StrictOp2.REMAINDER),
-            Map.entry(MotorParser.INTEGER_OR, Primitives.StrictOp2.INTEGER_OR),
-            Map.entry(MotorParser.INTEGER_AND, Primitives.StrictOp2.INTEGER_AND),
-            Map.entry(MotorParser.INTEGER_XOR, Primitives.StrictOp2.INTEGER_XOR),
-            Map.entry(MotorParser.SHIFT_LEFT, Primitives.StrictOp2.SHIFT_LEFT),
-            Map.entry(MotorParser.SHIFT_RIGHT, Primitives.StrictOp2.SHIFT_RIGHT),
-            Map.entry(MotorParser.EQUALS, Primitives.StrictOp2.EQUALS),
-            Map.entry(MotorParser.NOT_EQUALS, Primitives.StrictOp2.NOT_EQUALS),
-            Map.entry(MotorParser.LESS, Primitives.StrictOp2.LESS),
-            Map.entry(MotorParser.LESS_OR_EQUALS, Primitives.StrictOp2.LESS_OR_EQUALS),
-            Map.entry(MotorParser.GREATER, Primitives.StrictOp2.GREATER),
-            Map.entry(MotorParser.GREATER_OR_EQUALS, Primitives.StrictOp2.GREATER_OR_EQUALS),
-            Map.entry(MotorParser.MIN, Primitives.StrictOp2.MIN),
-            Map.entry(MotorParser.MAX, Primitives.StrictOp2.MAX),
-            Map.entry(MotorParser.CHARACTER_AT, Primitives.StrictOp2.CHARACTER_AT),
-            Map.entry(MotorParser.SLICE, Primitives.StrictOp2.SLICE),
-            Map.entry(MotorParser.PLUS_PLUS, Primitives.StrictOp2.PLUS_PLUS),
-            Map.entry(MotorParser.STRCMP, Primitives.StrictOp2.STRCMP),
-            Map.entry(MotorParser.STRCHR, Primitives.StrictOp2.STRCHR),
-            Map.entry(MotorParser.STRRCHR, Primitives.StrictOp2.STRRCHR),
-            Map.entry(MotorParser.STRSTR, Primitives.StrictOp2.STRSTR),
-            Map.entry(MotorParser.STRRSTR, Primitives.StrictOp2.STRRSTR),
-            Map.entry(MotorParser.STRSPN, Primitives.StrictOp2.STRSPN),
-            Map.entry(MotorParser.STRCSPN, Primitives.StrictOp2.STRCSPN),
-            Map.entry(MotorParser.STRPBRK, Primitives.StrictOp2.STRPBRK),
-            Map.entry(MotorParser.STRRSPN, Primitives.StrictOp2.STRRSPN),
-            Map.entry(MotorParser.STRRCSPN, Primitives.StrictOp2.STRRCSPN),
-            Map.entry(MotorParser.STRRPBRK, Primitives.StrictOp2.STRRPBRK),
-            Map.entry(MotorParser.STARTSWITH, Primitives.StrictOp2.STARTSWITH),
-            Map.entry(MotorParser.ENDSWITH, Primitives.StrictOp2.ENDSWITH),
-            Map.entry(MotorParser.REMEMBER, Primitives.StrictOp2.REMEMBER));
+    private static final Map<String, Primitives.Operator> BINARY_OPS = Map.ofEntries(
+            Map.entry("&&", new Primitives.And()),
+            Map.entry("||", new Primitives.Or()),
+            Map.entry("+", Primitives.StrictOp2.ADD),
+            Map.entry("-", Primitives.StrictOp2.SUBTRACT),
+            Map.entry("*", Primitives.StrictOp2.MULTIPLY),
+            Map.entry("/", Primitives.StrictOp2.DIVIDE),
+            Map.entry("%", Primitives.StrictOp2.REMAINDER),
+            Map.entry("|", Primitives.StrictOp2.STRICT_OR),
+            Map.entry("&", Primitives.StrictOp2.STRICT_AND),
+            Map.entry("^", Primitives.StrictOp2.STRICT_XOR),
+            Map.entry("<<", Primitives.StrictOp2.SHIFT_LEFT),
+            Map.entry(">>", Primitives.StrictOp2.SHIFT_RIGHT),
+            Map.entry("==", Primitives.StrictOp2.EQUALS),
+            Map.entry("!=", Primitives.StrictOp2.NOT_EQUALS),
+            Map.entry("<", Primitives.StrictOp2.LESS),
+            Map.entry("<=", Primitives.StrictOp2.LESS_OR_EQUALS),
+            Map.entry(">", Primitives.StrictOp2.GREATER),
+            Map.entry(">=", Primitives.StrictOp2.GREATER_OR_EQUALS),
+            Map.entry("$min", Primitives.StrictOp2.MIN),
+            Map.entry("$max", Primitives.StrictOp2.MAX),
+            Map.entry("@", Primitives.StrictOp2.CHARACTER_AT),
+            Map.entry("@@", Primitives.StrictOp2.SLICE),
+            Map.entry("++", Primitives.StrictOp2.PLUS_PLUS),
+            Map.entry("$strcmp", Primitives.StrictOp2.STRCMP),
+            Map.entry("$strchr", Primitives.StrictOp2.STRCHR),
+            Map.entry("$strrchr", Primitives.StrictOp2.STRRCHR),
+            Map.entry("$strstr", Primitives.StrictOp2.STRSTR),
+            Map.entry("$strrstr", Primitives.StrictOp2.STRRSTR),
+            Map.entry("$strspn", Primitives.StrictOp2.STRSPN),
+            Map.entry("$strcspn", Primitives.StrictOp2.STRCSPN),
+            Map.entry("$strpbrk", Primitives.StrictOp2.STRPBRK),
+            Map.entry("$strrspn", Primitives.StrictOp2.STRRSPN),
+            Map.entry("$strrcspn", Primitives.StrictOp2.STRRCSPN),
+            Map.entry("$strrpbrk", Primitives.StrictOp2.STRRPBRK),
+            Map.entry("$startswith", Primitives.StrictOp2.STARTSWITH),
+            Map.entry("$endswith", Primitives.StrictOp2.ENDSWITH),
+            Map.entry("$remember", Primitives.StrictOp2.REMEMBER));
 
     private static final Map<String, IntegerTy> INTEGER_TYPES = Map.ofEntries(
             Map.entry("u8", IntegerTy.U8),
@@ -168,19 +172,18 @@ public final class Parser {
         private final Map<String, Term> definitions = new LinkedHashMap<>();
         private final Map<String, Integer> arities = new LinkedHashMap<>();
         private final Set<String> globals = new LinkedHashSet<>();
-        // A multiset: the same variable can be bound at several nesting levels at once.
-        private final Map<String, Integer> bound = new LinkedHashMap<>();
+        private final List<String> bound = new ArrayList<>();
 
         private Builder(final String filename) {
             this.filename = filename;
         }
 
         private void push(final String x) {
-            bound.merge(x, 1, Integer::sum);
+            bound.add(x);
         }
 
         private void pop(final String x) {
-            bound.merge(x, -1, Integer::sum);
+            bound.remove(x);
         }
 
         @Override
@@ -208,6 +211,9 @@ public final class Parser {
             }
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();
+                if (name.equals("_")) {
+                    throw error(filename, d, "`_` cannot be a definition name");
+                }
                 if (!globals.add(name)) {
                     throw error(filename, d, "Found a duplicate definition: `%s`", name);
                 }
@@ -215,11 +221,12 @@ public final class Parser {
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();
                 final var parameters = d.SYMBOL().subList(1, d.SYMBOL().size());
-                parameters.forEach(p -> push(p.getText()));
+                final var parameterNames = bindingNames(d, parameters);
+                parameterNames.forEach(this::push);
                 Term body = visit(d.term());
-                parameters.forEach(p -> pop(p.getText()));
-                for (int i = parameters.size() - 1; i >= 0; i--) {
-                    body = new Term.Lambda(parameters.get(i).getText(), body);
+                parameterNames.forEach(this::pop);
+                for (int i = parameterNames.size() - 1; i >= 0; i--) {
+                    body = new Term.Lambda(parameterNames.get(i), body);
                 }
                 definitions.put(name, body);
             }
@@ -232,18 +239,19 @@ public final class Parser {
         @Override
         public Term visitLambdaTerm(final MotorParser.LambdaTermContext ctx) {
             final var parameters = ctx.SYMBOL();
-            parameters.forEach(p -> push(p.getText()));
+            final var parameterNames = bindingNames(ctx, parameters);
+            parameterNames.forEach(this::push);
             Term result = visit(ctx.term());
-            parameters.forEach(p -> pop(p.getText()));
-            for (int i = parameters.size() - 1; i >= 0; i--) {
-                result = new Term.Lambda(parameters.get(i).getText(), result);
+            parameterNames.forEach(this::pop);
+            for (int i = parameterNames.size() - 1; i >= 0; i--) {
+                result = new Term.Lambda(parameterNames.get(i), result);
             }
             return result;
         }
 
         @Override
         public Term visitLetTerm(final MotorParser.LetTermContext ctx) {
-            final var x = ctx.SYMBOL().getText();
+            final var x = bindingNames(ctx, List.of(ctx.SYMBOL())).getFirst();
             final var t1 = visit(ctx.term(0));
             push(x);
             final var t2 = visit(ctx.term(1));
@@ -253,7 +261,7 @@ public final class Parser {
 
         @Override
         public Term visitStrictLetTerm(final MotorParser.StrictLetTermContext ctx) {
-            final var x = ctx.SYMBOL().getText();
+            final var x = bindingNames(ctx, List.of(ctx.SYMBOL())).getFirst();
             final var t1 = visit(ctx.term(0));
             push(x);
             final var t2 = visit(ctx.term(1));
@@ -265,19 +273,19 @@ public final class Parser {
         public Term visitDestructuringLetTerm(final MotorParser.DestructuringLetTermContext ctx) {
             final var name = ctx.CONSTRUCTOR().getText();
             final var parameters = ctx.SYMBOL();
+            final var xs = bindingNames(ctx, parameters);
             final var seen = new LinkedHashSet<String>();
-            for (final var p : parameters) {
-                if (!seen.add(p.getText())) {
+            for (final var x : xs) {
+                if (!seen.add(x)) {
                     throw error(
                             filename,
                             ctx,
                             "Found a duplicate variable in a `let` pattern: `%s`",
-                            p.getText());
+                            x);
                 }
             }
             checkArity(ctx, name, parameters.size());
             final var s = visit(ctx.term(0));
-            final var xs = List.copyOf(seen);
             final List<Term> guard = List.of();
             xs.forEach(this::push);
             final var continuation = visit(ctx.term(1));
@@ -300,7 +308,7 @@ public final class Parser {
                 final var name = myCase.CONSTRUCTOR().getText();
                 final var prefix = ctx.case_().subList(0, i);
                 final var suffix = ctx.case_().subList(i + 1, ctx.case_().size());
-                final Predicate<MotorParser.CaseContext> isFallback = c -> c.INTEGER_OR() == null &&
+                final Predicate<MotorParser.CaseContext> isFallback = c -> c.term().size() == 1 &&
                         c.CONSTRUCTOR().getText().equals(name);
                 if (prefix.stream().anyMatch(isFallback)) {
                     throw error(
@@ -309,7 +317,7 @@ public final class Parser {
                             "Found a provably unreachable case for `%s`",
                             name);
                 }
-                if (myCase.INTEGER_OR() != null && suffix.stream().noneMatch(isFallback)) {
+                if (myCase.term().size() > 1 && suffix.stream().noneMatch(isFallback)) {
                     throw error(
                             filename,
                             myCase,
@@ -321,23 +329,26 @@ public final class Parser {
             final var cases = ctx.case_().stream()
                     .map(myCase -> {
                         final var parameters = myCase.SYMBOL();
+                        final var xs = bindingNames(myCase, parameters);
                         final var seen = new LinkedHashSet<String>();
-                        for (final var p : parameters) {
-                            if (!seen.add(p.getText())) {
+                        for (final var x : xs) {
+                            if (!seen.add(x)) {
                                 throw error(
                                         filename,
                                         myCase,
                                         "Found a duplicate variable in a case pattern: `%s`",
-                                        p.getText());
+                                        x);
                             }
                         }
                         final var name = myCase.CONSTRUCTOR().getText();
                         checkArity(myCase, name, parameters.size());
-                        final var xs = List.copyOf(seen);
                         final var terms = myCase.term();
                         xs.forEach(this::push);
-                        final var guards = terms.subList(0, terms.size() - 1).stream()
-                                .map(this::visit).toList();
+                        final var guards = terms
+                                .subList(0, terms.size() - 1)
+                                .stream()
+                                .map(this::visit)
+                                .toList();
                         final var t = visit(terms.getLast());
                         xs.forEach(this::pop);
                         return new Term.Case(name, xs, guards, t);
@@ -394,20 +405,6 @@ public final class Parser {
             return operatorOf(ctx.intrinsic().getStart());
         }
 
-        private Term operatorOf(final Token token) {
-            final int op = token.getType();
-            if (INTEGER_TY_OPS.containsKey(token.getText())) {
-                return new Term.Operator(INTEGER_TY_OPS.get(token.getText()));
-            }
-            if (UNARY_OPS.containsKey(op)) {
-                return new Term.Operator(UNARY_OPS.get(op));
-            }
-            if (BINARY_OPS.containsKey(op)) {
-                return new Term.Operator(BINARY_OPS.get(op));
-            }
-            throw new IllegalStateException(String.format("Unknown operator %d", op));
-        }
-
         @Override
         public Term visitGroupTerm(final MotorParser.GroupTermContext ctx) {
             return visit(ctx.term());
@@ -415,22 +412,18 @@ public final class Parser {
 
         @Override
         public Term visitRangeTerm(final MotorParser.RangeTermContext ctx) {
-            return new Term.Range(Optional.of(visit(ctx.term(0))), Optional.of(visit(ctx.term(1))));
+            final var left = Optional.ofNullable(ctx.left).map(this::visit);
+            final var right = Optional.ofNullable(ctx.right).map(this::visit);
+            final boolean inclusive = false;
+            return new Term.Range(left, right, inclusive);
         }
 
         @Override
-        public Term visitRangeFromTerm(final MotorParser.RangeFromTermContext ctx) {
-            return new Term.Range(Optional.of(visit(ctx.term())), Optional.empty());
-        }
-
-        @Override
-        public Term visitRangeToTerm(final MotorParser.RangeToTermContext ctx) {
-            return new Term.Range(Optional.empty(), Optional.of(visit(ctx.term())));
-        }
-
-        @Override
-        public Term visitRangeFullTerm(final MotorParser.RangeFullTermContext ctx) {
-            return new Term.Range(Optional.empty(), Optional.empty());
+        public Term visitInclusiveRangeTerm(final MotorParser.InclusiveRangeTermContext ctx) {
+            final var left = Optional.ofNullable(ctx.left).map(this::visit);
+            final var right = Optional.of(visit(ctx.right));
+            final boolean inclusive = true;
+            return new Term.Range(left, right, inclusive);
         }
 
         @Override
@@ -445,23 +438,39 @@ public final class Parser {
 
         @Override
         public Term visitIntegerTerm(final MotorParser.IntegerTermContext ctx) {
-            final var i = ctx.INTEGER().getText();
-            final var suffix = ctx.INTEGER_TY().getText();
-            final var ty = INTEGER_TYPES.get(suffix);
-            try {
-                return new Term.IntegerLiteral(Objects.requireNonNull(ty).ofString(i));
-            } catch (final CheckedInteger.OutOfRange e) {
-                throw error(filename, ctx, "`%s:%s` is out of range", i, suffix);
+            final var text = ctx.INTEGER_LITERAL().getText();
+            for (final var entry : INTEGER_TYPES.entrySet()) {
+                final var suffix = entry.getKey();
+                if (text.endsWith(suffix)) {
+                    final var i = text.substring(0, text.length() - suffix.length());
+                    try {
+                        return new Term.IntegerLiteral(entry.getValue().ofString(i));
+                    } catch (final CheckedInteger.OutOfRange e) {
+                        throw error(filename, ctx, "`%s` is out of range", text);
+                    }
+                }
             }
+            throw new IllegalStateException(
+                    String.format(
+                            "Unrecognized integer literal: `%s`",
+                            StringEscapeUtils.escapeJava(text)));
         }
 
         @Override
         public Term visitBigIntegerTerm(final MotorParser.BigIntegerTermContext ctx) {
-            final var i = ctx.INTEGER().getText();
+            final var text = ctx.BIG_INTEGER_LITERAL().getText();
+            final var suffix = "bigint";
+            if (!text.endsWith(suffix)) {
+                throw new IllegalStateException(
+                        String.format(
+                                "Unrecognized big integer literal: `%s`",
+                                StringEscapeUtils.escapeJava(text)));
+            }
+            final var i = text.substring(0, text.length() - suffix.length());
             try {
                 return new Term.BigIntegerLiteral(MyBigInteger.ofString(i));
             } catch (final MyBigInteger.OutOfRange e) {
-                throw error(filename, ctx, "`%s:bigint` is out of range", i);
+                throw error(filename, ctx, "`%s` is out of range", text);
             }
         }
 
@@ -489,6 +498,18 @@ public final class Parser {
             return new Term.Constructor(name, List.of(), arity);
         }
 
+        @Override
+        public Term visitVariableTerm(final MotorParser.VariableTermContext ctx) {
+            final var x = ctx.SYMBOL().getText();
+            if (bound.contains(x)) {
+                return new Term.Variable(x);
+            }
+            if (globals.contains(x)) {
+                return new Term.Reference(x);
+            }
+            throw error(filename, ctx, "Variable not in scope: `%s`", x);
+        }
+
         private void checkArity(final ParserRuleContext ctx, final String name, final int actual) {
             final var expected = arities.get(name);
             if (expected == null) {
@@ -505,16 +526,42 @@ public final class Parser {
             }
         }
 
-        @Override
-        public Term visitVariableTerm(final MotorParser.VariableTermContext ctx) {
-            final var x = ctx.SYMBOL().getText();
-            if (bound.getOrDefault(x, 0) > 0) {
-                return new Term.Variable(x);
+        private Term operatorOf(final Token token) {
+            final var text = token.getText();
+            if (INTEGER_TY_OPS.containsKey(text)) {
+                return new Term.Operator(INTEGER_TY_OPS.get(text));
             }
-            if (globals.contains(x)) {
-                return new Term.Reference(x);
+            if (UNARY_OPS.containsKey(text)) {
+                return new Term.Operator(UNARY_OPS.get(text));
             }
-            throw error(filename, ctx, "Variable not in scope: `%s`", x);
+            if (BINARY_OPS.containsKey(text)) {
+                return new Term.Operator(BINARY_OPS.get(text));
+            }
+            throw new IllegalStateException(
+                    String.format("Unknown operator: `%s`", StringEscapeUtils.escapeJava(text)));
+        }
+
+        private static Set<String> freeVariables(final ParseTree tree) {
+            final var result = new LinkedHashSet<String>();
+            for (final var node : Trees.findAllTokenNodes(tree, MotorLexer.SYMBOL)) {
+                result.add(node.getText());
+            }
+            return result;
+        }
+
+        private static List<String> bindingNames(
+                final ParserRuleContext site,
+                final List<TerminalNode> parameters) {
+            final var banlist = freeVariables(site);
+            return IntStream.range(0, parameters.size())
+                    .mapToObj(i -> {
+                        final var p = parameters.get(i).getText();
+                        if (p.equals("_")) {
+                            return Term.freshen("v" + i, banlist);
+                        }
+                        return p;
+                    })
+                    .toList();
         }
     }
 }

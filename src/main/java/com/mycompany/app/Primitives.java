@@ -36,8 +36,8 @@ public final class Primitives {
     }
 
     public sealed interface StrictOp1 extends Operator
-            permits IntegerOf, BigIntegerOf, StringOf, StringOfCharacter, Negate, IntegerNot, Ffs,
-            Clz, Ctz, Clrsb, Popcount, Parity, Strlen, Panic, Memory, Hash {
+            permits IntegerOf, BigIntegerOf, StringOf, StringOfCharacter, Negate, Ffs, Clz, Ctz,
+            Clrsb, Popcount, Parity, Strlen, Panic, Memory, Hash {
         public String describe();
 
         @Override
@@ -73,12 +73,6 @@ public final class Primitives {
     public record Negate() implements StrictOp1 {
         public String describe() {
             return "negation";
-        }
-    }
-
-    public record IntegerNot() implements StrictOp1 {
-        public String describe() {
-            return "bitwise negation";
         }
     }
 
@@ -149,9 +143,9 @@ public final class Primitives {
         MULTIPLY("multiplication"),
         DIVIDE("division"),
         REMAINDER("remainder"),
-        INTEGER_OR("bitwise disjunction"),
-        INTEGER_AND("bitwise conjunction"),
-        INTEGER_XOR("bitwise exclusive disjunction"),
+        STRICT_OR("strict disjunction"),
+        STRICT_AND("strict conjunction"),
+        STRICT_XOR("strict exclusive disjunction"),
         SHIFT_LEFT("left shift"),
         SHIFT_RIGHT("right shift"),
         EQUALS("equals"),
@@ -199,10 +193,10 @@ public final class Primitives {
         public boolean isComparison() {
             return switch (this) {
                 case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> true;
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, INTEGER_OR, INTEGER_AND,
-                        INTEGER_XOR, SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, CHARACTER_AT, SLICE,
-                        PLUS_PLUS, STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN,
-                        STRPBRK, STRRSPN, STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, REMEMBER ->
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
+                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, CHARACTER_AT, SLICE, PLUS_PLUS, STRCMP,
+                        STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN,
+                        STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, REMEMBER ->
                     false;
             };
         }

@@ -61,10 +61,11 @@ public final class SharedVariableHoister {
                 new Term.And(hoist(t1), hoist(t2));
             case Term.Or(var t1, var t2) ->
                 new Term.Or(hoist(t1), hoist(t2));
-            case Term.Range(var t1, var t2) ->
+            case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(
                         t1.map(SharedVariableHoister::hoist),
-                        t2.map(SharedVariableHoister::hoist));
+                        t2.map(SharedVariableHoister::hoist),
+                        inclusive);
             case Term.StrictOp1(var op, var t) ->
                 new Term.StrictOp1(op, hoist(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
