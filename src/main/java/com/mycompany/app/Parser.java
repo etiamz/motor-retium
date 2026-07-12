@@ -26,33 +26,22 @@ import org.antlr.v4.runtime.tree.Trees;
 import org.apache.commons.text.StringEscapeUtils;
 
 public final class Parser {
-    private static final Map<String, Primitives.Operator> INTEGER_TY_OPS = Map.ofEntries(
-            Map.entry("u8", new Primitives.IntegerOf(IntegerTy.U8)),
-            Map.entry("u16", new Primitives.IntegerOf(IntegerTy.U16)),
-            Map.entry("u32", new Primitives.IntegerOf(IntegerTy.U32)),
-            Map.entry("u64", new Primitives.IntegerOf(IntegerTy.U64)),
-            Map.entry("i8", new Primitives.IntegerOf(IntegerTy.I8)),
-            Map.entry("i16", new Primitives.IntegerOf(IntegerTy.I16)),
-            Map.entry("i32", new Primitives.IntegerOf(IntegerTy.I32)),
-            Map.entry("i64", new Primitives.IntegerOf(IntegerTy.I64)));
-
     private static final Map<String, Primitives.Operator> UNARY_OPS = Map.ofEntries(
             Map.entry("fix", new Primitives.Fix()),
             Map.entry("not", new Primitives.Not()),
-            Map.entry("bigint", new Primitives.BigIntegerOf()),
-            Map.entry("string", new Primitives.StringOf()),
-            Map.entry("#", new Primitives.StringOfCharacter()),
-            Map.entry("negate", new Primitives.Negate()),
-            Map.entry("$ffs", new Primitives.Ffs()),
-            Map.entry("$clz", new Primitives.Clz()),
-            Map.entry("$ctz", new Primitives.Ctz()),
-            Map.entry("$clrsb", new Primitives.Clrsb()),
-            Map.entry("$popcount", new Primitives.Popcount()),
-            Map.entry("$parity", new Primitives.Parity()),
-            Map.entry("$strlen", new Primitives.Strlen()),
-            Map.entry("$panic", new Primitives.Panic()),
-            Map.entry("$memory", new Primitives.Memory()),
-            Map.entry("$hash", new Primitives.Hash()));
+            Map.entry("$show", Primitives.StrictOp1.STRING_OF),
+            Map.entry("$chr", Primitives.StrictOp1.STRING_OF_CHARACTER),
+            Map.entry("negate", Primitives.StrictOp1.NEGATE),
+            Map.entry("$ffs", Primitives.StrictOp1.FFS),
+            Map.entry("$clz", Primitives.StrictOp1.CLZ),
+            Map.entry("$ctz", Primitives.StrictOp1.CTZ),
+            Map.entry("$clrsb", Primitives.StrictOp1.CLRSB),
+            Map.entry("$popcount", Primitives.StrictOp1.POPCOUNT),
+            Map.entry("$parity", Primitives.StrictOp1.PARITY),
+            Map.entry("$strlen", Primitives.StrictOp1.STRLEN),
+            Map.entry("$panic", Primitives.StrictOp1.PANIC),
+            Map.entry("$hash", Primitives.StrictOp1.HASH),
+            Map.entry("$memory", Primitives.StrictOp1.MEMORY));
 
     private static final Map<String, Primitives.Operator> BINARY_OPS = Map.ofEntries(
             Map.entry("$", new Primitives.Apply()),
@@ -77,6 +66,7 @@ public final class Parser {
             Map.entry(">=", Primitives.StrictOp2.GREATER_OR_EQUALS),
             Map.entry("$min", Primitives.StrictOp2.MIN),
             Map.entry("$max", Primitives.StrictOp2.MAX),
+            Map.entry("$oftype", Primitives.StrictOp2.OFTYPE),
             Map.entry("@", Primitives.StrictOp2.CHARACTER_AT),
             Map.entry("@@", Primitives.StrictOp2.SLICE),
             Map.entry("++", Primitives.StrictOp2.PLUS_PLUS),
@@ -366,13 +356,8 @@ public final class Parser {
         }
 
         @Override
-        public Term visitNonStrictApplyTerm(final MotorParser.NonStrictApplyTermContext ctx) {
-            return new Term.Application(visit(ctx.term(0)), visit(ctx.term(1)));
-        }
-
-        @Override
-        public Term visitStrictApplyTerm(final MotorParser.StrictApplyTermContext ctx) {
-            return new Term.StrictApplication(visit(ctx.term(0)), visit(ctx.term(1)));
+        public Term visitApplyOpTerm(final MotorParser.ApplyOpTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
         }
 
         @Override
@@ -668,9 +653,6 @@ public final class Parser {
 
         private Term operatorOf(final Token token) {
             final var text = token.getText();
-            if (INTEGER_TY_OPS.containsKey(text)) {
-                return new Term.Operator(INTEGER_TY_OPS.get(text));
-            }
             if (UNARY_OPS.containsKey(text)) {
                 return new Term.Operator(UNARY_OPS.get(text));
             }

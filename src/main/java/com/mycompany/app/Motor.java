@@ -1,28 +1,15 @@
 package com.mycompany.app;
 
 import static com.mycompany.app.CheckedInteger.IntegerTy.*;
+import static com.mycompany.app.Primitives.StrictOp1.*;
 import static com.mycompany.app.Primitives.StrictOp2.*;
 
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.CheckedInteger.Value;
 import com.mycompany.app.Port.Consumer;
 import com.mycompany.app.Port.Producer;
-import com.mycompany.app.Primitives.BigIntegerOf;
-import com.mycompany.app.Primitives.Clrsb;
-import com.mycompany.app.Primitives.Clz;
-import com.mycompany.app.Primitives.Ctz;
-import com.mycompany.app.Primitives.Ffs;
-import com.mycompany.app.Primitives.Hash;
-import com.mycompany.app.Primitives.IntegerOf;
-import com.mycompany.app.Primitives.Memory;
-import com.mycompany.app.Primitives.Negate;
-import com.mycompany.app.Primitives.Parity;
-import com.mycompany.app.Primitives.Popcount;
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
-import com.mycompany.app.Primitives.StringOf;
-import com.mycompany.app.Primitives.StringOfCharacter;
-import com.mycompany.app.Primitives.Strlen;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -338,125 +325,97 @@ public final class Motor {
                 final AStrictOp1 op1 = this;
                 final Agent data = op1.a.chase();
                 switch (data) {
-                    case ATrue _ when op1.op instanceof StringOf -> {
+                    case ATrue _ when op1.op == STRING_OF -> {
                         final var r = new AString(MyString.ofAscii("true"));
                         op1.b.forward(r.a);
                     }
-                    case AFalse _ when op1.op instanceof StringOf -> {
+                    case AFalse _ when op1.op == STRING_OF -> {
                         final var r = new AString(MyString.ofAscii("false"));
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof StringOf -> {
+                    case AInteger i when op1.op == STRING_OF -> {
                         final var r = new AString(MyString.ofAscii(i.data.show()));
                         op1.b.forward(r.a);
                     }
-                    case ABigInteger i when op1.op instanceof StringOf -> {
+                    case ABigInteger i when op1.op == STRING_OF -> {
                         final var r = new AString(MyString.ofAscii(i.data.show()));
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof StringOfCharacter && i.ty() == U8 -> {
+                    case AString s when op1.op == STRING_OF ->
+                        op1.b.forward(s.a);
+                    case AInteger i when op1.op == STRING_OF_CHARACTER && i.ty() == U8 -> {
                         final var r = new AString(MyString.ofByte(i.data.toInt()));
                         op1.b.forward(r.a);
                     }
-                    case ATrue _ when op1.op instanceof IntegerOf tyy -> {
-                        final var r = new AInteger(tyy.target().one());
-                        op1.b.forward(r.a);
-                    }
-                    case AFalse _ when op1.op instanceof IntegerOf tyy -> {
-                        final var r = new AInteger(tyy.target().zero());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op instanceof IntegerOf tyy -> {
-                        final var r = new AInteger(i.data.convertTo(tyy.target()));
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op instanceof IntegerOf tyy -> {
-                        final var r = new AInteger(i.data.toCheckedInteger(tyy.target()));
-                        op1.b.forward(r.a);
-                    }
-                    case ATrue _ when op1.op instanceof BigIntegerOf -> {
-                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(U8.one()));
-                        op1.b.forward(r.a);
-                    }
-                    case AFalse _ when op1.op instanceof BigIntegerOf -> {
-                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(U8.zero()));
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op instanceof BigIntegerOf -> {
-                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(i.data));
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op instanceof Negate -> {
+                    case AInteger i when op1.op == NEGATE -> {
                         final var r = new AInteger(i.data.negate());
                         op1.b.forward(r.a);
                     }
-                    case ABigInteger i when op1.op instanceof Negate -> {
+                    case ABigInteger i when op1.op == NEGATE -> {
                         final var r = new ABigInteger(i.data.negate());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Ffs -> {
+                    case AInteger i when op1.op == FFS -> {
                         final var r = new AInteger(i.data.ffs());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Clz -> {
+                    case AInteger i when op1.op == CLZ -> {
                         final var r = new AInteger(i.data.clz());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Ctz -> {
+                    case AInteger i when op1.op == CTZ -> {
                         final var r = new AInteger(i.data.ctz());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Clrsb -> {
+                    case AInteger i when op1.op == CLRSB -> {
                         final var r = new AInteger(i.data.clrsb());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Popcount -> {
+                    case AInteger i when op1.op == POPCOUNT -> {
                         final var r = new AInteger(i.data.popcount());
                         op1.b.forward(r.a);
                     }
-                    case ABigInteger i when op1.op instanceof Popcount -> {
+                    case ABigInteger i when op1.op == POPCOUNT -> {
                         final var r = new AInteger(U64.ofLong(i.data.popcount()));
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Parity -> {
+                    case AInteger i when op1.op == PARITY -> {
                         final var r = new AInteger(i.data.parity());
                         op1.b.forward(r.a);
                     }
-                    case ABigInteger i when op1.op instanceof Parity -> {
+                    case ABigInteger i when op1.op == PARITY -> {
                         final var r = new AInteger(U64.ofLong(i.data.parity()));
                         op1.b.forward(r.a);
                     }
-                    case AString s when op1.op instanceof Strlen -> {
+                    case AString s when op1.op == STRLEN -> {
                         final var r = new AInteger(IntegerTy.U64.ofLong(s.data.length()));
                         op1.b.forward(r.a);
                     }
-                    case AString s when op1.op instanceof Primitives.Panic -> {
+                    case AString s when op1.op == PANIC -> {
                         panic("User panic: %s", s.data.toString());
                     }
-                    // @formatter:off
-                    case AInteger capacity when op1.op instanceof Memory && capacity.ty() == U64 -> {
-                    // @formatter:on
-                        final var r = new AMemory(capacity.data.toInt());
-                        op1.b.forward(r.a);
-                    }
-                    case ATrue _ when op1.op instanceof Hash -> {
+                    case ATrue _ when op1.op == HASH -> {
                         final var r = new AInteger(U64.one());
                         op1.b.forward(r.a);
                     }
-                    case AFalse _ when op1.op instanceof Hash -> {
+                    case AFalse _ when op1.op == HASH -> {
                         final var r = new AInteger(U64.zero());
                         op1.b.forward(r.a);
                     }
-                    case AInteger i when op1.op instanceof Hash -> {
+                    case AInteger i when op1.op == HASH -> {
                         final var r = new AInteger(new Value(U64, i.data.hash64()));
                         op1.b.forward(r.a);
                     }
-                    case ABigInteger i when op1.op instanceof Hash -> {
+                    case ABigInteger i when op1.op == HASH -> {
                         final var r = new AInteger(new Value(U64, i.data.hash64()));
                         op1.b.forward(r.a);
                     }
-                    case AString s when op1.op instanceof Hash -> {
+                    case AString s when op1.op == HASH -> {
                         final var r = new AInteger(new Value(U64, s.data.hash64()));
+                        op1.b.forward(r.a);
+                    }
+                    case AInteger capacity when op1.op == MEMORY && capacity.ty() == U64 -> {
+                        final var r = new AMemory(capacity.data.toInt());
                         op1.b.forward(r.a);
                     }
                     case ASuperposition sup -> {
@@ -664,6 +623,42 @@ public final class Motor {
                         } else {
                             op2.b.forward(s2.a);
                         }
+                    }
+                    // @formatter:off
+                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() && op2.op == OFTYPE -> {
+                    // @formatter:on
+                        op2.b.forward(i2.a);
+                    }
+                    case Operands(AInteger i1, AInteger i2) when op2.op == OFTYPE -> {
+                        final var r = new AInteger(i2.data.convertTo(i1.ty()));
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(AInteger i1, ABigInteger i2) when op2.op == OFTYPE -> {
+                        final var r = new AInteger(i2.data.toCheckedInteger(i1.ty()));
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(ABigInteger _, AInteger i2) when op2.op == OFTYPE -> {
+                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(i2.data));
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(ABigInteger _, ABigInteger i2) when op2.op == OFTYPE -> {
+                        op2.b.forward(i2.a);
+                    }
+                    case Operands(AInteger i1, ATrue _) when op2.op == OFTYPE -> {
+                        final var r = new AInteger(i1.ty().one());
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(AInteger i1, AFalse _) when op2.op == OFTYPE -> {
+                        final var r = new AInteger(i1.ty().zero());
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(ABigInteger _, ATrue _) when op2.op == OFTYPE -> {
+                        final var r = new ABigInteger(MyBigInteger.one());
+                        op2.b.forward(r.a);
+                    }
+                    case Operands(ABigInteger _, AFalse _) when op2.op == OFTYPE -> {
+                        final var r = new ABigInteger(MyBigInteger.zero());
+                        op2.b.forward(r.a);
                     }
                     case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() -> {
                         final IntegerTy ty = i1.ty();

@@ -30,8 +30,7 @@ term
     | '..' term # rangeToTerm
     | '..=' term # inclusiveRangeToTerm
     | '..' # rangeFullTerm
-    | <assoc=right> term '$' term # nonStrictApplyTerm
-    | <assoc=right> term '$!' term # strictApplyTerm
+    | <assoc=right> term op=('$' | '$!') term # applyOpTerm
     | '\\' SYMBOL+ '->' term # lambdaTerm
     | 'let' SYMBOL '=' term 'in' term # letTerm
     | 'let' '!' SYMBOL '=' term 'in' term # strictLetTerm
@@ -66,7 +65,7 @@ atom
     ;
 
 op1
-    : 'fix' | 'not' | 'negate' | INTEGER_TY | BIG_INTEGER_TY | STRING_TY | '#'
+    : 'fix' | 'not' | 'negate'
     ;
 
 op2
@@ -79,17 +78,12 @@ intrinsic
     ;
 
 intrinsic1
-    : '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$memory' | '$hash'
+    : '$show' | '$chr' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash' | '$memory'
     ;
 
 intrinsic2
-    : '$min' | '$max' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$remember'
+    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$remember'
     ;
-
-// Types.
-INTEGER_TY : IntegerTy ;
-BIG_INTEGER_TY : 'bigint' ;
-STRING_TY : 'string' ;
 
 // Literals.
 TRUE : 'true' ;

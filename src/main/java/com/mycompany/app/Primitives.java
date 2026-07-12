@@ -50,104 +50,36 @@ public final class Primitives {
         }
     }
 
-    public sealed interface StrictOp1 extends Operator
-            permits IntegerOf, BigIntegerOf, StringOf, StringOfCharacter, Negate, Ffs, Clz, Ctz,
-            Clrsb, Popcount, Parity, Strlen, Panic, Memory, Hash {
-        public String describe();
+    public enum StrictOp1 implements Operator {
+        // @formatter:off
+        STRING_OF("integer-to-string conversion"),
+        STRING_OF_CHARACTER("character-to-string conversion"),
+        NEGATE("negation"),
+        FFS("find first set"),
+        CLZ("leading-zero count"),
+        CTZ("trailing-zero count"),
+        CLRSB("leading-redundant-sign-bit count"),
+        POPCOUNT("population count"),
+        PARITY("parity"),
+        STRLEN("length computation"),
+        PANIC("panicking"),
+        HASH("hashing"),
+        MEMORY("creation of a memory");
+        // @formatter:on
+
+        private final String description;
+
+        private StrictOp1(final String description) {
+            this.description = description;
+        }
+
+        public String describe() {
+            return description;
+        }
 
         @Override
-        public default int arity() {
+        public int arity() {
             return 1;
-        }
-    }
-
-    public record IntegerOf(IntegerTy target) implements StrictOp1 {
-        public String describe() {
-            return "casting to " + Primitives.describe(target);
-        }
-    }
-
-    public record BigIntegerOf() implements StrictOp1 {
-        public String describe() {
-            return "casting to a big integer";
-        }
-    }
-
-    public record StringOf() implements StrictOp1 {
-        public String describe() {
-            return "integer-to-string conversion";
-        }
-    }
-
-    public record StringOfCharacter() implements StrictOp1 {
-        public String describe() {
-            return "character-to-string conversion";
-        }
-    }
-
-    public record Negate() implements StrictOp1 {
-        public String describe() {
-            return "negation";
-        }
-    }
-
-    public record Ffs() implements StrictOp1 {
-        public String describe() {
-            return "find first set";
-        }
-    }
-
-    public record Clz() implements StrictOp1 {
-        public String describe() {
-            return "leading-zero count";
-        }
-    }
-
-    public record Ctz() implements StrictOp1 {
-        public String describe() {
-            return "trailing-zero count";
-        }
-    }
-
-    public record Clrsb() implements StrictOp1 {
-        public String describe() {
-            return "leading-redundant-sign-bit count";
-        }
-    }
-
-    public record Popcount() implements StrictOp1 {
-        public String describe() {
-            return "population count";
-        }
-    }
-
-    public record Parity() implements StrictOp1 {
-        public String describe() {
-            return "parity";
-        }
-    }
-
-    public record Strlen() implements StrictOp1 {
-        public String describe() {
-            return "length computation";
-        }
-    }
-
-    public record Panic() implements StrictOp1 {
-        public String describe() {
-            return "panicking";
-        }
-    }
-
-    public record Memory() implements StrictOp1 {
-        public String describe() {
-            return "creation of a memory";
-        }
-    }
-
-    public record Hash() implements StrictOp1 {
-        public String describe() {
-            return "hashing";
         }
     }
 
@@ -171,6 +103,7 @@ public final class Primitives {
         GREATER_OR_EQUALS("greater-than-or-equals"),
         MIN("minimum"),
         MAX("maximum"),
+        OFTYPE("type conversion"),
         CHARACTER_AT("character access"),
         SLICE("slicing"),
         PLUS_PLUS("concatenation"),
@@ -209,8 +142,8 @@ public final class Primitives {
             return switch (this) {
                 case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> true;
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
-                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, CHARACTER_AT, SLICE, PLUS_PLUS, STRCMP,
-                        STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN,
+                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS,
+                        STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN,
                         STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, REMEMBER ->
                     false;
             };

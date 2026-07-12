@@ -38,6 +38,14 @@ public final class MyBigInteger {
         return new MyBigInteger(this.value.max(other.value));
     }
 
+    public static MyBigInteger zero() {
+        return new MyBigInteger(BigInteger.ZERO);
+    }
+
+    public static MyBigInteger one() {
+        return new MyBigInteger(BigInteger.ONE);
+    }
+
     public static MyBigInteger ofString(final String s) {
         final var n = Helpers.numeral(s);
         final BigInteger base = BigInteger.valueOf(n.radix());
@@ -54,11 +62,11 @@ public final class MyBigInteger {
     }
 
     public static MyBigInteger ofCheckedInteger(final CheckedInteger.Value value) {
-        return ofString(value.show()); // bother not
+        return ofString(value.show()); // TODO: implement proper conversion
     }
 
     public CheckedInteger.Value toCheckedInteger(final CheckedInteger.IntegerTy target) {
-        return target.ofString(this.value.toString()); // bother not
+        return target.ofString(this.value.toString()); // TODO: implement proper conversion
     }
 
     public String show() {
