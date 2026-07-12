@@ -34,7 +34,7 @@ term
     | '\\' SYMBOL+ '->' term # lambdaTerm
     | 'let' SYMBOL '=' term 'in' term # letTerm
     | 'let' '!' SYMBOL '=' term 'in' term # strictLetTerm
-    | 'let' CONSTRUCTOR SYMBOL* '=' term 'in' term # patternLetTerm
+    | 'let' CONSTRUCTOR SYMBOL* '=' term 'in' term # caseLetTerm
     | 'if' term 'then' term 'else' term # ifThenElseTerm
     | 'case' term 'of' '{' case (';' case)* '}' # caseTerm
     | application # applicationTerm

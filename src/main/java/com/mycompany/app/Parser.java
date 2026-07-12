@@ -394,7 +394,7 @@ public final class Parser {
         }
 
         @Override
-        public Term visitPatternLetTerm(final MotorParser.PatternLetTermContext ctx) {
+        public Term visitCaseLetTerm(final MotorParser.CaseLetTermContext ctx) {
             final var name = ctx.CONSTRUCTOR().getText();
             final var parameters = ctx.SYMBOL();
             final var xs = bindingNames(ctx, parameters);
