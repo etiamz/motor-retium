@@ -13,16 +13,31 @@ definition
     ;
 
 term
-    : '\\' SYMBOL+ '->' term # lambdaTerm
+    : term op=('@' | '@@') term # indexingTerm
+    | term op=('*' | '/' | '%') term # multiplicativeTerm
+    | term op=('+' | '-') term # additiveTerm
+    | term op=('<<' | '>>') term # shiftTerm
+    | term op='&' term # strictAndTerm
+    | term op='^' term # strictXorTerm
+    | term op='|' term # strictOrTerm
+    | <assoc=right> term op='++' term # concatenationTerm
+    | term op=('==' | '!=' | '<' | '<=' | '>' | '>=') term # comparisonTerm
+    | term op='&&' term # conjunctionTerm
+    | term op='||' term # disjunctionTerm
+    | term '..' term # rangeTerm
+    | term '..=' term # inclusiveRangeTerm
+    | term '..' # rangeFromTerm
+    | '..' term # rangeToTerm
+    | '..=' term # inclusiveRangeToTerm
+    | '..' # rangeFullTerm
+    | <assoc=right> term '$' term # nonStrictApplyTerm
+    | <assoc=right> term '$!' term # strictApplyTerm
+    | '\\' SYMBOL+ '->' term # lambdaTerm
     | 'let' SYMBOL '=' term 'in' term # letTerm
     | 'let' '!' SYMBOL '=' term 'in' term # strictLetTerm
-    | 'let' CONSTRUCTOR SYMBOL* '=' term 'in' term # destructuringLetTerm
+    | 'let' CONSTRUCTOR SYMBOL* '=' term 'in' term # patternLetTerm
     | 'if' term 'then' term 'else' term # ifThenElseTerm
     | 'case' term 'of' '{' case (';' case)* '}' # caseTerm
-    | application '$' term # nonStrictApplyTerm
-    | application '$!' term # strictApplyTerm
-    | left=application? '..' right=application? # rangeTerm
-    | left=application? '..=' right=application # inclusiveRangeTerm
     | application # applicationTerm
     ;
 
@@ -36,8 +51,7 @@ application
     ;
 
 atom
-    : '(' application op2 application ')' # infixTerm
-    | '(' op2 ')' # operatorTerm
+    : '(' op2 ')' # operatorTerm
     | '(' term ')' # groupTerm
     | op1 # op1Term
     | intrinsic # intrinsicTerm
@@ -56,7 +70,7 @@ op1
     ;
 
 op2
-    : '&&' | '||' | '+' | '-' | '*' | '/' | '%' | '|' | '&' | '^' | '<<' | '>>' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '@' | '@@' | '++'
+    : '&&' | '||' | '+' | '-' | '*' | '/' | '%' | '|' | '&' | '^' | '<<' | '>>' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '@' | '@@' | '++' | '$' | '$!'
     ;
 
 intrinsic

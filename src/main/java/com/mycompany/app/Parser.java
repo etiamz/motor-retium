@@ -55,6 +55,8 @@ public final class Parser {
             Map.entry("$hash", new Primitives.Hash()));
 
     private static final Map<String, Primitives.Operator> BINARY_OPS = Map.ofEntries(
+            Map.entry("$", new Primitives.Apply()),
+            Map.entry("$!", new Primitives.StrictApply()),
             Map.entry("&&", new Primitives.And()),
             Map.entry("||", new Primitives.Or()),
             Map.entry("+", Primitives.StrictOp2.ADD),
@@ -212,10 +214,10 @@ public final class Parser {
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();
                 if (name.equals("_")) {
-                    throw error(filename, d, "`_` cannot be a definition name");
+                    throw error(filename, d, "`_` cannot be a top-level definition name");
                 }
                 if (!globals.add(name)) {
-                    throw error(filename, d, "Found a duplicate definition: `%s`", name);
+                    throw error(filename, d, "Found a duplicate top-level definition: `%s`", name);
                 }
             }
             for (final var d : ctx.definition()) {
@@ -231,7 +233,7 @@ public final class Parser {
                 definitions.put(name, body);
             }
             if (!globals.contains("main")) {
-                throw new SyntaxError("No `main` definition");
+                throw new SyntaxError("No `main` top-level definition");
             }
             return new Term.Reference("main");
         }
@@ -270,7 +272,7 @@ public final class Parser {
         }
 
         @Override
-        public Term visitDestructuringLetTerm(final MotorParser.DestructuringLetTermContext ctx) {
+        public Term visitPatternLetTerm(final MotorParser.PatternLetTermContext ctx) {
             final var name = ctx.CONSTRUCTOR().getText();
             final var parameters = ctx.SYMBOL();
             final var xs = bindingNames(ctx, parameters);
@@ -369,25 +371,78 @@ public final class Parser {
 
         @Override
         public Term visitNonStrictApplyTerm(final MotorParser.NonStrictApplyTermContext ctx) {
-            return new Term.Application(visit(ctx.application()), visit(ctx.term()));
+            return new Term.Application(visit(ctx.term(0)), visit(ctx.term(1)));
         }
 
         @Override
         public Term visitStrictApplyTerm(final MotorParser.StrictApplyTermContext ctx) {
-            return new Term.StrictApplication(visit(ctx.application()), visit(ctx.term()));
+            return new Term.StrictApplication(visit(ctx.term(0)), visit(ctx.term(1)));
+        }
+
+        private Term infix(final Token op, final ParseTree left, final ParseTree right) {
+            return new Term.Application(
+                    new Term.Application(operatorOf(op), visit(left)),
+                    visit(right));
+        }
+
+        @Override
+        public Term visitIndexingTerm(final MotorParser.IndexingTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitMultiplicativeTerm(final MotorParser.MultiplicativeTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitAdditiveTerm(final MotorParser.AdditiveTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitShiftTerm(final MotorParser.ShiftTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitStrictAndTerm(final MotorParser.StrictAndTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitStrictXorTerm(final MotorParser.StrictXorTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitStrictOrTerm(final MotorParser.StrictOrTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitConcatenationTerm(final MotorParser.ConcatenationTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitComparisonTerm(final MotorParser.ComparisonTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitConjunctionTerm(final MotorParser.ConjunctionTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
+        }
+
+        @Override
+        public Term visitDisjunctionTerm(final MotorParser.DisjunctionTermContext ctx) {
+            return infix(ctx.op, ctx.term(0), ctx.term(1));
         }
 
         @Override
         public Term visitAtomTerm(final MotorParser.AtomTermContext ctx) {
             return visit(ctx.atom());
-        }
-
-        @Override
-        public Term visitInfixTerm(final MotorParser.InfixTermContext ctx) {
-            final var op = operatorOf(ctx.op2().getStart());
-            return new Term.Application(
-                    new Term.Application(op, visit(ctx.application(0))),
-                    visit(ctx.application(1)));
         }
 
         @Override
@@ -412,18 +467,44 @@ public final class Parser {
 
         @Override
         public Term visitRangeTerm(final MotorParser.RangeTermContext ctx) {
-            final var left = Optional.ofNullable(ctx.left).map(this::visit);
-            final var right = Optional.ofNullable(ctx.right).map(this::visit);
             final boolean inclusive = false;
-            return new Term.Range(left, right, inclusive);
+            return new Term.Range(
+                    Optional.of(visit(ctx.term(0))),
+                    Optional.of(visit(ctx.term(1))),
+                    inclusive);
+        }
+
+        @Override
+        public Term visitRangeFromTerm(final MotorParser.RangeFromTermContext ctx) {
+            final boolean inclusive = false;
+            return new Term.Range(Optional.of(visit(ctx.term())), Optional.empty(), inclusive);
+        }
+
+        @Override
+        public Term visitRangeToTerm(final MotorParser.RangeToTermContext ctx) {
+            final boolean inclusive = false;
+            return new Term.Range(Optional.empty(), Optional.of(visit(ctx.term())), inclusive);
+        }
+
+        @Override
+        public Term visitRangeFullTerm(final MotorParser.RangeFullTermContext ctx) {
+            final boolean inclusive = false;
+            return new Term.Range(Optional.empty(), Optional.empty(), inclusive);
         }
 
         @Override
         public Term visitInclusiveRangeTerm(final MotorParser.InclusiveRangeTermContext ctx) {
-            final var left = Optional.ofNullable(ctx.left).map(this::visit);
-            final var right = Optional.of(visit(ctx.right));
             final boolean inclusive = true;
-            return new Term.Range(left, right, inclusive);
+            return new Term.Range(
+                    Optional.of(visit(ctx.term(0))),
+                    Optional.of(visit(ctx.term(1))),
+                    inclusive);
+        }
+
+        @Override
+        public Term visitInclusiveRangeToTerm(final MotorParser.InclusiveRangeToTermContext ctx) {
+            final boolean inclusive = true;
+            return new Term.Range(Optional.empty(), Optional.of(visit(ctx.term())), inclusive);
         }
 
         @Override
@@ -526,21 +607,6 @@ public final class Parser {
             }
         }
 
-        private Term operatorOf(final Token token) {
-            final var text = token.getText();
-            if (INTEGER_TY_OPS.containsKey(text)) {
-                return new Term.Operator(INTEGER_TY_OPS.get(text));
-            }
-            if (UNARY_OPS.containsKey(text)) {
-                return new Term.Operator(UNARY_OPS.get(text));
-            }
-            if (BINARY_OPS.containsKey(text)) {
-                return new Term.Operator(BINARY_OPS.get(text));
-            }
-            throw new IllegalStateException(
-                    String.format("Unknown operator: `%s`", StringEscapeUtils.escapeJava(text)));
-        }
-
         private static Set<String> freeVariables(final ParseTree tree) {
             final var result = new LinkedHashSet<String>();
             for (final var node : Trees.findAllTokenNodes(tree, MotorLexer.SYMBOL)) {
@@ -562,6 +628,21 @@ public final class Parser {
                         return p;
                     })
                     .toList();
+        }
+
+        private Term operatorOf(final Token token) {
+            final var text = token.getText();
+            if (INTEGER_TY_OPS.containsKey(text)) {
+                return new Term.Operator(INTEGER_TY_OPS.get(text));
+            }
+            if (UNARY_OPS.containsKey(text)) {
+                return new Term.Operator(UNARY_OPS.get(text));
+            }
+            if (BINARY_OPS.containsKey(text)) {
+                return new Term.Operator(BINARY_OPS.get(text));
+            }
+            throw new IllegalStateException(
+                    String.format("Unknown operator: `%s`", StringEscapeUtils.escapeJava(text)));
         }
     }
 }
