@@ -38,9 +38,6 @@ public final class Motor {
 
     private static final ConcurrentHashMap<Object, Object> HSEARCH_TABLE = new ConcurrentHashMap<>();
 
-    private record HsearchConstructor(String name) {
-    }
-
     private final Map<String, Template> book;
     private final ForkJoinPool pool;
 
@@ -2036,6 +2033,9 @@ public final class Motor {
             case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ADuplicator _,AReference _ ->
                 false;
         };
+    }
+
+    private record HsearchConstructor(String name) {
     }
 
     private static Object hsearchData(final Agent agent) {
