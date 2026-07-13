@@ -63,8 +63,7 @@ public final class Primitives {
         PARITY("parity"),
         STRLEN("length computation"),
         PANIC("panicking"),
-        HASH("hashing"),
-        MEMORY("creation of a memory");
+        HASH("hashing");
         // @formatter:on
 
         private final String description;
@@ -120,7 +119,7 @@ public final class Primitives {
         STRRPBRK("reverse byte-set search"),
         STARTSWITH("prefix check"),
         ENDSWITH("suffix check"),
-        REMEMBER("remembering");
+        HSEARCH("hash table search");
         // @formatter:on
 
         private final String description;
@@ -144,7 +143,7 @@ public final class Primitives {
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS,
                         STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN,
-                        STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, REMEMBER ->
+                        STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, HSEARCH ->
                     false;
             };
         }

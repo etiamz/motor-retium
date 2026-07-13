@@ -6,6 +6,7 @@ import com.mycompany.app.Motor.AFalse;
 import com.mycompany.app.Motor.AIdentity;
 import com.mycompany.app.Motor.AInteger;
 import com.mycompany.app.Motor.ALambda;
+import com.mycompany.app.Motor.ANull;
 import com.mycompany.app.Motor.AString;
 import com.mycompany.app.Motor.ATrue;
 import com.mycompany.app.Motor.Agent;
@@ -46,6 +47,7 @@ public final class App {
 
     private static String show(final Motor motor, final Agent value) {
         return switch (value) {
+            case ANull _ -> "null";
             case ATrue _ -> "true";
             case AFalse _ -> "false";
             case AInteger i -> {

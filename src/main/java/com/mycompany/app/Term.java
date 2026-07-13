@@ -35,6 +35,9 @@ public sealed interface Term {
     public record Fix(Term t) implements Term {
     }
 
+    public record NullLiteral() implements Term {
+    }
+
     public record BooleanLiteral(boolean b) implements Term {
     }
 
@@ -122,7 +125,7 @@ public sealed interface Term {
                 new StrictOp1(op, t.rename(renaming, banlist));
             case StrictOp2(var t1, var op, var t2) ->
                 new StrictOp2(t1.rename(renaming, banlist), op, t2.rename(renaming, banlist));
-            case Operator _,Reference _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 this;
         };
     }
@@ -216,7 +219,7 @@ public sealed interface Term {
                 t.freeVariables();
             case StrictOp2(var t1, var _, var t2) ->
                 union(t1, t2);
-            case Operator _,Reference _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }
@@ -265,7 +268,7 @@ public sealed interface Term {
                 t.references();
             case StrictOp2(var t1, var _, var t2) ->
                 unionReferences(t1, t2);
-            case Operator _,Variable _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Variable _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }

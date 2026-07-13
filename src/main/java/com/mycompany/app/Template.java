@@ -18,7 +18,7 @@ public final class Template {
             KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KFix, KMatch,
             KDuplicator,
             // Data.
-            KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference,
+            KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference,
             KEndOfList, KLambda, KConstructor {
     }
 
@@ -76,6 +76,9 @@ public final class Template {
     private record KDuplicator() implements Kind {
     }
 
+    private record KNull() implements Kind {
+    }
+
     private record KTrue() implements Kind {
     }
 
@@ -125,6 +128,7 @@ public final class Template {
     private final KFix[] fixKinds;
     private final KMatch[] matchKinds;
     private final KDuplicator[] dupKinds;
+    private final KNull[] nullKinds;
     private final KTrue[] bTrueKinds;
     private final KFalse[] bFalseKinds;
     private final KInteger[] iKinds;
@@ -156,6 +160,7 @@ public final class Template {
             final KFix[] fixKinds,
             final KMatch[] matchKinds,
             final KDuplicator[] dupKinds,
+            final KNull[] nullKinds,
             final KTrue[] bTrueKinds,
             final KFalse[] bFalseKinds,
             final KInteger[] iKinds,
@@ -186,6 +191,7 @@ public final class Template {
         this.fixKinds = fixKinds;
         this.matchKinds = matchKinds;
         this.dupKinds = dupKinds;
+        this.nullKinds = nullKinds;
         this.bTrueKinds = bTrueKinds;
         this.bFalseKinds = bFalseKinds;
         this.iKinds = iKinds;
@@ -302,6 +308,9 @@ public final class Template {
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
             producers[j++] = agent.c;
+        }
+        for (final KNull _ : nullKinds) {
+            producers[j++] = new Motor.ANull().a;
         }
         for (final KTrue _ : bTrueKinds) {
             producers[j++] = new Motor.ATrue().a;
@@ -758,6 +767,18 @@ public final class Template {
             }
         }
 
+        public static final class ANull {
+            private final Producer a;
+
+            private ANull(final Producer a) {
+                this.a = a;
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
         public static final class ATrue {
             private final Producer a;
 
@@ -1054,6 +1075,12 @@ public final class Template {
             return new ADuplicator(a, b, c);
         }
 
+        public ANull mkNull() {
+            final Producer a = new Producer();
+            agents.add(new Agent(new KNull(), new Port[]{a}));
+            return new ANull(a);
+        }
+
         public ATrue mkTrue() {
             final Producer a = new Producer();
             agents.add(new Agent(new KTrue(), new Port[]{a}));
@@ -1176,6 +1203,7 @@ public final class Template {
             final var fixKinds = collect(KFix.class, orderedAgents);
             final var matchKinds = collect(KMatch.class, orderedAgents);
             final var dupKinds = collect(KDuplicator.class, orderedAgents);
+            final var nullKinds = collect(KNull.class, orderedAgents);
             final var bTrueKinds = collect(KTrue.class, orderedAgents);
             final var bFalseKinds = collect(KFalse.class, orderedAgents);
             final var iKinds = collect(KInteger.class, orderedAgents);
@@ -1226,6 +1254,7 @@ public final class Template {
                     fixKinds,
                     matchKinds,
                     dupKinds,
+                    nullKinds,
                     bTrueKinds,
                     bFalseKinds,
                     iKinds,

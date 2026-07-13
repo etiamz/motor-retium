@@ -200,6 +200,10 @@ public final class Compiler {
                 merge(fvSet, compile(builder, t2, agent.c()));
                 yield fvSet;
             }
+            case Term.NullLiteral() -> {
+                output.setProducer(builder.mkNull().a());
+                yield new TermInterface();
+            }
             case Term.BooleanLiteral(var b) -> {
                 output.setProducer(b ? builder.mkTrue().a() : builder.mkFalse().a());
                 yield new TermInterface();

@@ -106,7 +106,7 @@ public final class OperatorSaturator {
                 new Term.StrictOp1(op, saturate(t, banlist));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(saturate(t1, banlist), op, saturate(t2, banlist));
-            case Term.Variable _,Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

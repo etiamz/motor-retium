@@ -55,6 +55,7 @@ atom
     | op1 # op1Term
     | intrinsic # intrinsicTerm
     | CONSTRUCTOR # constructorTerm
+    | NULL # nullTerm
     | TRUE # trueTerm
     | FALSE # falseTerm
     | INTEGER_LITERAL # integerTerm
@@ -78,14 +79,15 @@ intrinsic
     ;
 
 intrinsic1
-    : '$show' | '$chr' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash' | '$memory'
+    : '$show' | '$chr' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash'
     ;
 
 intrinsic2
-    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$remember'
+    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$hsearch'
     ;
 
 // Literals.
+NULL : 'null' ;
 TRUE : 'true' ;
 FALSE : 'false' ;
 INTEGER_LITERAL : '-'? UnsignedInteger IntegerTy ;

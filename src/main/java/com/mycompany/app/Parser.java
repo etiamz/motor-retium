@@ -40,8 +40,7 @@ public final class Parser {
             Map.entry("$parity", Primitives.StrictOp1.PARITY),
             Map.entry("$strlen", Primitives.StrictOp1.STRLEN),
             Map.entry("$panic", Primitives.StrictOp1.PANIC),
-            Map.entry("$hash", Primitives.StrictOp1.HASH),
-            Map.entry("$memory", Primitives.StrictOp1.MEMORY));
+            Map.entry("$hash", Primitives.StrictOp1.HASH));
 
     private static final Map<String, Primitives.Operator> BINARY_OPS = Map.ofEntries(
             Map.entry("$", new Primitives.Apply()),
@@ -83,7 +82,7 @@ public final class Parser {
             Map.entry("$strrpbrk", Primitives.StrictOp2.STRRPBRK),
             Map.entry("$startswith", Primitives.StrictOp2.STARTSWITH),
             Map.entry("$endswith", Primitives.StrictOp2.ENDSWITH),
-            Map.entry("$remember", Primitives.StrictOp2.REMEMBER));
+            Map.entry("$hsearch", Primitives.StrictOp2.HSEARCH));
 
     private static final Set<Class<?>> RANGE_CONTEXTS = Set.of(
             MotorParser.RangeTermContext.class,
@@ -524,6 +523,11 @@ public final class Parser {
                 throw error(filename, ctx, "Constructor not declared: `%s`", name);
             }
             return new Term.Constructor(name, List.of(), arity);
+        }
+
+        @Override
+        public Term visitNullTerm(final MotorParser.NullTermContext ctx) {
+            return new Term.NullLiteral();
         }
 
         @Override
