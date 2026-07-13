@@ -38,12 +38,12 @@ public final class Motor {
 
     private static final ConcurrentHashMap<Object, Object> HSEARCH_TABLE = new ConcurrentHashMap<>();
 
+    private static final ForkJoinPool POOL = new ForkJoinPool();
+
     private final Map<String, Template> book;
-    private final ForkJoinPool pool;
 
     public Motor(final Map<String, Template> book) {
         this.book = book;
-        this.pool = new ForkJoinPool();
     }
 
     // Whether to fork a right operand or reduce it inline depends on whether the work performed by
@@ -158,7 +158,7 @@ public final class Motor {
     }
 
     private void schedule(final Heart heart, final Thunk thunk) {
-        pool.execute(() -> drive(thunk, heart));
+        POOL.execute(() -> drive(thunk, heart));
     }
 
     // Beat the heart; when the remaining fuel is zero, promote the oldest frame, if it exists. This
