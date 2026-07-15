@@ -48,7 +48,7 @@ public final class CheckedInteger {
             return this.compare(a, b) >= 0 ? new Value(this, a) : new Value(this, b);
         }
 
-        public Value ofLong(final long a) {
+        public Value of(final long a) {
             this.ensure(isSigned ? a >= min && a <= max : Long.compareUnsigned(a, max) <= 0);
             return new Value(this, a);
         }
@@ -61,7 +61,7 @@ public final class CheckedInteger {
             return new Value(this, 1L);
         }
 
-        public Value ofString(final String s) {
+        public Value parse(final String s) {
             final var n = Helpers.numeral(this, s);
             long value = 0;
             for (final char c : n.digits.toCharArray()) {

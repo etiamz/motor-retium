@@ -139,12 +139,12 @@ public final class Primitives {
 
         public boolean isComparison() {
             return switch (this) {
-                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> true;
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
-                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS,
-                        STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN,
-                        STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, HSEARCH ->
+                // @formatter:off
+                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS ->
+                    true;
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS, STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN, STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, HSEARCH ->
                     false;
+                // @formatter:on
             };
         }
     }

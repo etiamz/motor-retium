@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.Set;
 
 public final class Template {
+    // @formatter:off
     private sealed interface Kind permits
-            // The interface.
-            KRoot,
-            // Operators.
-            KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom,
-            KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KFix, KMatch,
-            KDuplicator,
-            // Data.
-            KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference,
-            KEndOfList, KLambda, KConstructor {
+        // The interface.
+        KRoot,
+        // Operators.
+        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KFix, KMatch, KDuplicator,
+        // Data.
+        KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference, KEndOfList, KLambda, KConstructor
+    {
     }
+    // @formatter:on
 
     private record KRoot() implements Kind {
     }

@@ -46,7 +46,7 @@ public final class MyBigInteger {
         return new MyBigInteger(BigInteger.ONE);
     }
 
-    public static MyBigInteger ofString(final String s) {
+    public static MyBigInteger parse(final String s) {
         final var n = Helpers.numeral(s);
         final BigInteger base = BigInteger.valueOf(n.radix());
         BigInteger value = BigInteger.ZERO;
@@ -61,12 +61,12 @@ public final class MyBigInteger {
         return new MyBigInteger(value);
     }
 
-    public static MyBigInteger ofCheckedInteger(final CheckedInteger.Value value) {
-        return ofString(value.show()); // TODO: implement proper conversion
+    public static MyBigInteger of(final CheckedInteger.Value value) {
+        return parse(value.show()); // TODO: implement proper conversion
     }
 
     public CheckedInteger.Value toCheckedInteger(final CheckedInteger.IntegerTy target) {
-        return target.ofString(this.value.toString()); // TODO: implement proper conversion
+        return target.parse(this.value.toString()); // TODO: implement proper conversion
     }
 
     public String show() {

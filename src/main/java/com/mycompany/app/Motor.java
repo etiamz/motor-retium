@@ -1,7 +1,6 @@
 package com.mycompany.app;
 
 import static com.mycompany.app.CheckedInteger.IntegerTy.*;
-import static com.mycompany.app.Primitives.StrictOp1.*;
 import static com.mycompany.app.Primitives.StrictOp2.*;
 
 import com.mycompany.app.CheckedInteger.IntegerTy;
@@ -297,15 +296,15 @@ public final class Motor {
         body.materialize(port);
     }
 
+    // @formatter:off
     public sealed interface Agent permits
-            // Operators.
-            AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom,
-            ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch,
-            ADuplicator,
-            // Data.
-            ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange,
-            ARangeFrom, ARangeTo, ARangeFull, AIdentity, AReference, AConstructor, ASuperposition {
+        // Operators.
+        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch, ADuplicator,
+        // Data.
+        ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AReference, AConstructor, ASuperposition
+    {
     }
+    // @formatter:on
 
     private record Operands(Agent first, Agent second) {
     }
@@ -323,124 +322,119 @@ public final class Motor {
 
         private void interact() {
             try {
-                final AStrictOp1 op1 = this;
-                final Agent data = op1.a.chase();
-                switch (data) {
-                    case ATrue _ when op1.op == STRING_OF -> {
-                        final var r = new AString(MyString.ofAscii("true"));
-                        op1.b.forward(r.a);
-                    }
-                    case AFalse _ when op1.op == STRING_OF -> {
-                        final var r = new AString(MyString.ofAscii("false"));
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == STRING_OF -> {
-                        final var r = new AString(MyString.ofAscii(i.data.show()));
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op == STRING_OF -> {
-                        final var r = new AString(MyString.ofAscii(i.data.show()));
-                        op1.b.forward(r.a);
-                    }
-                    case AString s when op1.op == STRING_OF ->
-                        op1.b.forward(s.a);
-                    case AInteger i when op1.op == STRING_OF_CHARACTER && i.ty() == U8 -> {
-                        final var r = new AString(MyString.ofByte(i.data.toInt()));
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == NEGATE -> {
-                        final var r = new AInteger(i.data.negate());
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op == NEGATE -> {
-                        final var r = new ABigInteger(i.data.negate());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == FFS -> {
-                        final var r = new AInteger(i.data.ffs());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == CLZ -> {
-                        final var r = new AInteger(i.data.clz());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == CTZ -> {
-                        final var r = new AInteger(i.data.ctz());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == CLRSB -> {
-                        final var r = new AInteger(i.data.clrsb());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == POPCOUNT -> {
-                        final var r = new AInteger(i.data.popcount());
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op == POPCOUNT -> {
-                        final var r = new AInteger(U64.ofLong(i.data.popcount()));
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == PARITY -> {
-                        final var r = new AInteger(i.data.parity());
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op == PARITY -> {
-                        final var r = new AInteger(U64.ofLong(i.data.parity()));
-                        op1.b.forward(r.a);
-                    }
-                    case AString s when op1.op == STRLEN -> {
-                        final var r = new AInteger(IntegerTy.U64.ofLong(s.data.length()));
-                        op1.b.forward(r.a);
-                    }
-                    case AString s when op1.op == PANIC -> {
-                        panic("User panic: %s", s.data.toString());
-                    }
-                    case ATrue _ when op1.op == HASH -> {
-                        final var r = new AInteger(U64.one());
-                        op1.b.forward(r.a);
-                    }
-                    case AFalse _ when op1.op == HASH -> {
-                        final var r = new AInteger(U64.zero());
-                        op1.b.forward(r.a);
-                    }
-                    case AInteger i when op1.op == HASH -> {
-                        final var r = new AInteger(new Value(U64, i.data.hash64()));
-                        op1.b.forward(r.a);
-                    }
-                    case ABigInteger i when op1.op == HASH -> {
-                        final var r = new AInteger(new Value(U64, i.data.hash64()));
-                        op1.b.forward(r.a);
-                    }
-                    case AString s when op1.op == HASH -> {
-                        final var r = new AInteger(new Value(U64, s.data.hash64()));
-                        op1.b.forward(r.a);
-                    }
-                    case ASuperposition sup -> {
-                        final var op1x = new AStrictOp1(op1.op);
-                        final var op1xx = new AStrictOp1(op1.op);
-                        final var supx = sup; // reuse
-                        op1.b.forward(supx.a);
-                        op1x.a.setProducer(sup.b.producer());
-                        op1xx.a.setProducer(sup.c.producer());
-                        supx.b.setProducer(op1x.b);
-                        supx.c.setProducer(op1xx.b);
-                    }
-                    default -> {
-                        if (isMachineData(data)) {
-                            crash("Operand not welcome: %s", describe(data));
-                        } else if (data instanceof ANull) {
-                            panic("Null operand: %s", op1.op.describe());
-                        } else if (isUserData(data)) {
-                            typeError(op1.op.describe(), data);
-                        } else if (isOperator(data)) {
-                            crash("Operand unresolved: %s", describe(data));
-                        } else {
-                            throw new IllegalStateException();
-                        }
-                    }
-                }
+                interactAux();
             } catch (final CheckedInteger.OutOfRange e) {
                 panic("Out of range: %s", Primitives.describe(e.ty));
+            } catch (final MyBigInteger.OutOfRange e) {
+                panic("Out of big integer range");
+            }
+        }
+
+        private void interactAux() {
+            final AStrictOp1 op1 = this;
+            final Agent data = op1.a.chase();
+            switch (data) {
+                case ATrue _ -> {
+                    switch (op1.op) {
+                        case STRING_OF -> op1.b.forward(new AString("true").a);
+                        case HASH -> op1.b.forward(AInteger.one(U64).a);
+                        default -> reject(data);
+                    }
+                }
+                case AFalse _ -> {
+                    switch (op1.op) {
+                        case STRING_OF -> op1.b.forward(new AString("false").a);
+                        case HASH -> op1.b.forward(AInteger.zero(U64).a);
+                        default -> reject(data);
+                    }
+                }
+                case AInteger i -> {
+                    switch (op1.op) {
+                        case STRING_OF ->
+                            op1.b.forward(new AString(i.data.show()).a);
+                        case STRING_OF_CHARACTER -> {
+                            if (i.ty() == U8) {
+                                op1.b.forward(new AString(MyString.ofByte(i.data.toInt())).a);
+                            } else {
+                                reject(data);
+                            }
+                        }
+                        case NEGATE ->
+                            op1.b.forward(new AInteger(i.data.negate()).a);
+                        case FFS ->
+                            op1.b.forward(new AInteger(i.data.ffs()).a);
+                        case CLZ ->
+                            op1.b.forward(new AInteger(i.data.clz()).a);
+                        case CTZ ->
+                            op1.b.forward(new AInteger(i.data.ctz()).a);
+                        case CLRSB ->
+                            op1.b.forward(new AInteger(i.data.clrsb()).a);
+                        case POPCOUNT ->
+                            op1.b.forward(new AInteger(i.data.popcount()).a);
+                        case PARITY ->
+                            op1.b.forward(new AInteger(i.data.parity()).a);
+                        case HASH ->
+                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        default ->
+                            reject(data);
+                    }
+                }
+                case ABigInteger i -> {
+                    switch (op1.op) {
+                        case STRING_OF ->
+                            op1.b.forward(new AString(i.data.show()).a);
+                        case NEGATE ->
+                            op1.b.forward(new ABigInteger(i.data.negate()).a);
+                        case POPCOUNT ->
+                            op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
+                        case PARITY ->
+                            op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
+                        case HASH ->
+                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        default ->
+                            reject(data);
+                    }
+                }
+                case AString s -> {
+                    switch (op1.op) {
+                        case STRING_OF ->
+                            op1.b.forward(s.a);
+                        case STRLEN ->
+                            op1.b.forward(new AInteger(IntegerTy.U64.of(s.data.length())).a);
+                        case PANIC ->
+                            panic("User panic: %s", s.data.toString());
+                        case HASH ->
+                            op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
+                        default ->
+                            reject(data);
+                    }
+                }
+                case ASuperposition sup -> {
+                    final var op1x = new AStrictOp1(op1.op);
+                    final var op1xx = new AStrictOp1(op1.op);
+                    final var supx = sup; // reuse
+                    op1.b.forward(supx.a);
+                    op1x.a.setProducer(sup.b.producer());
+                    op1xx.a.setProducer(sup.c.producer());
+                    supx.b.setProducer(op1x.b);
+                    supx.c.setProducer(op1xx.b);
+                }
+                default -> reject(data);
+            }
+        }
+
+        private void reject(final Agent data) {
+            final AStrictOp1 op1 = this;
+            if (isMachineData(data)) {
+                crash("Operand not welcome: %s", describe(data));
+            } else if (data instanceof ANull) {
+                panic("Null operand: %s", op1.op.describe());
+            } else if (isUserData(data)) {
+                typeError(op1.op.describe(), data);
+            } else if (isOperator(data)) {
+                crash("Operand unresolved: %s", describe(data));
+            } else {
+                throw new IllegalStateException();
             }
         }
     }
@@ -460,483 +454,843 @@ public final class Motor {
 
         private void interact() {
             try {
-                final AStrictOp2 op2 = this;
-                final Agent left = op2.a.chase(), right = op2.c.chase();
-                switch (new Operands(left, right)) {
-                    // @formatter:off
-                    case Operands(_, _) when op2.op == HSEARCH && isHsearchData(left) && isHsearchData(right) -> {
-                    // @formatter:on
-                        final var key = hsearchData(left);
-                        final var value = hsearchData(right);
-                        final var data = HSEARCH_TABLE.putIfAbsent(key, value);
-                        if (data == null) {
-                            op2.b.forward(new ANull().a);
-                        } else {
-                            op2.b.forward(hsearchAgent(data));
-                        }
-                    }
-                    // @formatter:off
-                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() && op2.op.isComparison() -> {
-                    // @formatter:on
-                        final IntegerTy ty = i1.ty();
-                        final long x = i1.value(), y = i2.value();
-                        final boolean answer = switch (op2.op) {
-                            case EQUALS -> x == y;
-                            case NOT_EQUALS -> x != y;
-                            case LESS -> ty.compare(x, y) < 0;
-                            case LESS_OR_EQUALS -> ty.compare(x, y) <= 0;
-                            case GREATER -> ty.compare(x, y) > 0;
-                            case GREATER_OR_EQUALS -> ty.compare(x, y) >= 0;
-                            default -> crash("Unknown operation");
-                        };
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(ABigInteger i1, ABigInteger i2) when op2.op.isComparison() -> {
-                        final MyBigInteger x = i1.data, y = i2.data;
-                        final boolean answer = switch (op2.op) {
-                            case EQUALS -> x.equals(y);
-                            case NOT_EQUALS -> !x.equals(y);
-                            case LESS -> x.compareTo(y) < 0;
-                            case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
-                            case GREATER -> x.compareTo(y) > 0;
-                            case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
-                            default -> crash("Unknown operation");
-                        };
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(AString s1, AString s2) when op2.op.isComparison() -> {
-                        final MyString x = s1.data, y = s2.data;
-                        final boolean answer = switch (op2.op) {
-                            case EQUALS -> x.equals(y);
-                            case NOT_EQUALS -> !x.equals(y);
-                            case LESS -> x.compareTo(y) < 0;
-                            case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
-                            case GREATER -> x.compareTo(y) > 0;
-                            case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
-                            default -> crash("Unknown operation");
-                        };
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(ANull _, ANull _) when op2.op == EQUALS ->
-                        op2.b.forward(new ATrue().a);
-                    case Operands(ANull _, ANull _) when op2.op == NOT_EQUALS ->
-                        op2.b.forward(new AFalse().a);
-                    // @formatter:off
-                    case Operands(_, _) when isBoolean(left) && isBoolean(right) && op2.op.isComparison() -> {
-                    // @formatter:on
-                        final int x = left instanceof ATrue ? 1 : 0;
-                        final int y = right instanceof ATrue ? 1 : 0;
-                        final boolean answer = switch (op2.op) {
-                            case EQUALS -> x == y;
-                            case NOT_EQUALS -> x != y;
-                            case LESS -> x < y;
-                            case LESS_OR_EQUALS -> x <= y;
-                            case GREATER -> x > y;
-                            case GREATER_OR_EQUALS -> x >= y;
-                            default -> crash("Unknown operation");
-                        };
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(ATrue b1, ATrue _) when op2.op == STRICT_OR ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue b1, AFalse _) when op2.op == STRICT_OR ->
-                        op2.b.forward(b1.a);
-                    case Operands(AFalse _, ATrue b2) when op2.op == STRICT_OR ->
-                        op2.b.forward(b2.a);
-                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_OR ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue b1, ATrue _) when op2.op == STRICT_AND ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue _, AFalse b2) when op2.op == STRICT_AND ->
-                        op2.b.forward(b2.a);
-                    case Operands(AFalse b1, ATrue _) when op2.op == STRICT_AND ->
-                        op2.b.forward(b1.a);
-                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_AND ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue _, ATrue _) when op2.op == STRICT_XOR ->
-                        op2.b.forward(new AFalse().a);
-                    case Operands(ATrue b1, AFalse _) when op2.op == STRICT_XOR ->
-                        op2.b.forward(b1.a);
-                    case Operands(AFalse _, ATrue b2) when op2.op == STRICT_XOR ->
-                        op2.b.forward(b2.a);
-                    case Operands(AFalse b1, AFalse _) when op2.op == STRICT_XOR ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue b1, ATrue _) when op2.op == MIN ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue _, AFalse b2) when op2.op == MIN ->
-                        op2.b.forward(b2.a);
-                    case Operands(AFalse b1, ATrue _) when op2.op == MIN ->
-                        op2.b.forward(b1.a);
-                    case Operands(AFalse b1, AFalse _) when op2.op == MIN ->
-                        op2.b.forward(b1.a);
-                    // @formatter:off
-                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() && op2.op == MIN -> {
-                    // @formatter:on
-                        if (i1.ty().compare(i1.value(), i2.value()) <= 0) {
-                            op2.b.forward(i1.a);
-                        } else {
-                            op2.b.forward(i2.a);
-                        }
-                    }
-                    case Operands(ABigInteger i1, ABigInteger i2) when op2.op == MIN -> {
-                        if (i1.data.compareTo(i2.data) <= 0) {
-                            op2.b.forward(i1.a);
-                        } else {
-                            op2.b.forward(i2.a);
-                        }
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == MIN -> {
-                        if (s1.data.compareTo(s2.data) <= 0) {
-                            op2.b.forward(s1.a);
-                        } else {
-                            op2.b.forward(s2.a);
-                        }
-                    }
-                    case Operands(ATrue b1, ATrue _) when op2.op == MAX ->
-                        op2.b.forward(b1.a);
-                    case Operands(ATrue b1, AFalse _) when op2.op == MAX ->
-                        op2.b.forward(b1.a);
-                    case Operands(AFalse _, ATrue b2) when op2.op == MAX ->
-                        op2.b.forward(b2.a);
-                    case Operands(AFalse b1, AFalse _) when op2.op == MAX ->
-                        op2.b.forward(b1.a);
-                    // @formatter:off
-                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() && op2.op == MAX -> {
-                    // @formatter:on
-                        if (i1.ty().compare(i1.value(), i2.value()) >= 0) {
-                            op2.b.forward(i1.a);
-                        } else {
-                            op2.b.forward(i2.a);
-                        }
-                    }
-                    case Operands(ABigInteger i1, ABigInteger i2) when op2.op == MAX -> {
-                        if (i1.data.compareTo(i2.data) >= 0) {
-                            op2.b.forward(i1.a);
-                        } else {
-                            op2.b.forward(i2.a);
-                        }
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == MAX -> {
-                        if (s1.data.compareTo(s2.data) >= 0) {
-                            op2.b.forward(s1.a);
-                        } else {
-                            op2.b.forward(s2.a);
-                        }
-                    }
-                    // @formatter:off
-                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() && op2.op == OFTYPE -> {
-                    // @formatter:on
-                        op2.b.forward(i2.a);
-                    }
-                    case Operands(AInteger i1, AInteger i2) when op2.op == OFTYPE -> {
-                        final var r = new AInteger(i2.data.convertTo(i1.ty()));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AInteger i1, ABigInteger i2) when op2.op == OFTYPE -> {
-                        final var r = new AInteger(i2.data.toCheckedInteger(i1.ty()));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(ABigInteger _, AInteger i2) when op2.op == OFTYPE -> {
-                        final var r = new ABigInteger(MyBigInteger.ofCheckedInteger(i2.data));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(ABigInteger _, ABigInteger i2) when op2.op == OFTYPE -> {
-                        op2.b.forward(i2.a);
-                    }
-                    case Operands(AInteger i1, ATrue _) when op2.op == OFTYPE -> {
-                        final var r = new AInteger(i1.ty().one());
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AInteger i1, AFalse _) when op2.op == OFTYPE -> {
-                        final var r = new AInteger(i1.ty().zero());
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(ABigInteger _, ATrue _) when op2.op == OFTYPE -> {
-                        final var r = new ABigInteger(MyBigInteger.one());
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(ABigInteger _, AFalse _) when op2.op == OFTYPE -> {
-                        final var r = new ABigInteger(MyBigInteger.zero());
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AInteger i1, AInteger i2) when i1.ty() == i2.ty() -> {
-                        final IntegerTy ty = i1.ty();
-                        final long x = i1.value(), y = i2.value();
-                        final var r = new AInteger(switch (op2.op) {
-                            case ADD -> ty.add(x, y);
-                            case SUBTRACT -> ty.subtract(x, y);
-                            case MULTIPLY -> ty.multiply(x, y);
-                            case DIVIDE -> ty.divide(x, y);
-                            case REMAINDER -> ty.remainder(x, y);
-                            case STRICT_OR -> ty.or(x, y);
-                            case STRICT_AND -> ty.and(x, y);
-                            case STRICT_XOR -> ty.xor(x, y);
-                            case SHIFT_LEFT -> ty.shiftLeft(x, y);
-                            case SHIFT_RIGHT -> ty.shiftRight(x, y);
-                            default -> crash("Unknown operation");
-                        });
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(ABigInteger i1, ABigInteger i2) -> {
-                        final MyBigInteger x = i1.data, y = i2.data;
-                        final var r = new ABigInteger(switch (op2.op) {
-                            case ADD -> x.add(y);
-                            case SUBTRACT -> x.subtract(y);
-                            case MULTIPLY -> x.multiply(y);
-                            case DIVIDE -> x.divide(y);
-                            case REMAINDER -> x.remainder(y);
-                            case STRICT_OR -> x.or(y);
-                            case STRICT_AND -> x.and(y);
-                            case STRICT_XOR -> x.xor(y);
-                            case SHIFT_LEFT -> x.shiftLeft(y);
-                            case SHIFT_RIGHT -> x.shiftRight(y);
-                            default -> crash("Unknown operation");
-                        });
-                        op2.b.forward(r.a);
-                    }
-                    // @formatter:off
-                    case Operands(AString s, AInteger i) when op2.op == CHARACTER_AT && i.ty() == U64 -> {
-                    // @formatter:on
-                        int index;
-                        try {
-                            index = i.data.toInt();
-                        } catch (final CheckedInteger.OutOfRange e) {
-                            index = panic("Out of range: %s", Primitives.describe(e.ty));
-                        }
-                        CheckedInteger.Value c;
-                        try {
-                            c = IntegerTy.U8.ofLong(s.data.at(index));
-                        } catch (final IndexOutOfBoundsException _) {
-                            c = panic("Out of bounds: %s", op2.op.describe());
-                        }
-                        final var r = new AInteger(c);
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString body, ARange rng) when op2.op == SLICE -> {
-                        final var r = body.slice(rng.start, rng.end, rng.inclusive);
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString body, ARangeFrom rng) when op2.op == SLICE -> {
-                        final boolean inclusive = false;
-                        final var r = body.slice(rng.start, body.data.length(), inclusive);
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString body, ARangeTo rng) when op2.op == SLICE -> {
-                        final var r = body.slice(0, rng.end, rng.inclusive);
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString body, ARangeFull _) when op2.op == SLICE -> {
-                        op2.b.forward(body.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == PLUS_PLUS -> {
-                        final var r = new AString(s1.data.concat(s2.data));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRCMP -> {
-                        final long difference = s1.data.compareTo(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(difference));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s, AInteger i) when op2.op == STRCHR && i.ty() == U8 -> {
-                        final long index = s.data.strchr(i.data.toInt());
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s, AInteger i) when op2.op == STRRCHR && i.ty() == U8 -> {
-                        final long index = s.data.strrchr(i.data.toInt());
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRSTR -> {
-                        final long index = s1.data.strstr(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRRSTR -> {
-                        final long index = s1.data.strrstr(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRSPN -> {
-                        final long index = s1.data.strspn(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRCSPN -> {
-                        final long index = s1.data.strcspn(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRPBRK -> {
-                        final long index = s1.data.strpbrk(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRRSPN -> {
-                        final long index = s1.data.strrspn(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRRCSPN -> {
-                        final long index = s1.data.strrcspn(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STRRPBRK -> {
-                        final long index = s1.data.strrpbrk(s2.data);
-                        final var r = new AInteger(IntegerTy.I64.ofLong(index));
-                        op2.b.forward(r.a);
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == STARTSWITH -> {
-                        final boolean answer = s1.data.startswith(s2.data);
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(AString s1, AString s2) when op2.op == ENDSWITH -> {
-                        final boolean answer = s1.data.endswith(s2.data);
-                        if (answer) {
-                            op2.b.forward(new ATrue().a);
-                        } else {
-                            op2.b.forward(new AFalse().a);
-                        }
-                    }
-                    case Operands(ASuperposition sup, _) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        final var dup = new ADuplicator(sup.label);
-                        op2.b.forward(supx.a);
-                        dup.a.setProducer(op2.c.producer());
-                        op2x.a.setProducer(sup.b.producer());
-                        op2xx.a.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.c.setProducer(dup.b);
-                        op2xx.c.setProducer(dup.c);
-                    }
-                    case Operands(ANull n, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(n.a);
-                        op2xx.a.setProducer(new ANull().a);
-                    }
-                    case Operands(ATrue b, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(b.a);
-                        op2xx.a.setProducer(new ATrue().a);
-                    }
-                    case Operands(AFalse b, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(b.a);
-                        op2xx.a.setProducer(new AFalse().a);
-                    }
-                    case Operands(AInteger i, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(i.a);
-                        op2xx.a.setProducer(new AInteger(i.data).a);
-                    }
-                    case Operands(ABigInteger i, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(i.a);
-                        op2xx.a.setProducer(new ABigInteger(i.data).a);
-                    }
-                    case Operands(AString s, ASuperposition sup) -> {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(s.a);
-                        op2xx.a.setProducer(new AString(s.data).a);
-                    }
-                    case Operands(ANull _, _) when op2.op == EQUALS && isUserData(right) ->
-                        op2.b.forward(new AFalse().a);
-                    case Operands(ANull _, _) when op2.op == NOT_EQUALS && isUserData(right) ->
-                        op2.b.forward(new ATrue().a);
-                    case Operands(_, ANull _) when op2.op == EQUALS && isUserData(left) ->
-                        op2.b.forward(new AFalse().a);
-                    case Operands(_, ANull _) when op2.op == NOT_EQUALS && isUserData(left) ->
-                        op2.b.forward(new ATrue().a);
-                    default -> {
-                        if (isMachineData(left)) {
-                            crash("First operand not welcome: %s", describe(left));
-                        } else if (isMachineData(right)) {
-                            crash("Second operand not welcome: %s", describe(right));
-                        } else if (left instanceof ANull) {
-                            panic("Null first operand: %s", op2.op.describe());
-                        } else if (right instanceof ANull) {
-                            panic("Null second operand: %s", op2.op.describe());
-                        } else if (isUserData(left) || isUserData(right)) {
-                            typeError(op2.op.describe(), left, right);
-                        } else if (isOperator(left)) {
-                            crash("First operand unresolved: %s", describe(left));
-                        } else if (isOperator(right)) {
-                            crash("Second operand unresolved: %s", describe(right));
-                        } else {
-                            throw new IllegalStateException();
-                        }
-                    }
-                }
+                interactAux();
             } catch (final CheckedInteger.OutOfRange e) {
                 panic("Out of range: %s", Primitives.describe(e.ty));
             } catch (final MyBigInteger.OutOfRange e) {
                 panic("Out of big integer range");
+            }
+        }
+
+        private void interactAux() {
+            final AStrictOp2 op2 = this;
+            final Agent left = op2.a.chase(), right = op2.c.chase();
+            switch (left) {
+                case ANull mynull -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new ATrue().a);
+                                case NOT_EQUALS -> op2.b.forward(new AFalse().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case Agent _ when isPrimitiveData(right) -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(mynull.a);
+                            op2xx.a.setProducer(new ANull().a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ATrue b1 -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ATrue _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(b1.a);
+                                case NOT_EQUALS -> op2.b.forward(new AFalse().a);
+                                case LESS -> op2.b.forward(new AFalse().a);
+                                case LESS_OR_EQUALS -> op2.b.forward(b1.a);
+                                case GREATER -> op2.b.forward(new AFalse().a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
+                                case STRICT_OR -> op2.b.forward(b1.a);
+                                case STRICT_AND -> op2.b.forward(b1.a);
+                                case STRICT_XOR -> op2.b.forward(new AFalse().a);
+                                case MIN -> op2.b.forward(b1.a);
+                                case MAX -> op2.b.forward(b1.a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AFalse b2 -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(b2.a);
+                                case NOT_EQUALS -> op2.b.forward(b1.a);
+                                case LESS -> op2.b.forward(b2.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(b2.a);
+                                case GREATER -> op2.b.forward(b1.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
+                                case STRICT_OR -> op2.b.forward(b1.a);
+                                case STRICT_AND -> op2.b.forward(b2.a);
+                                case STRICT_XOR -> op2.b.forward(b1.a);
+                                case MIN -> op2.b.forward(b2.a);
+                                case MAX -> op2.b.forward(b1.a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case Agent _ when isHsearchData(right) -> {
+                            switch (op2.op) {
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(b1.a);
+                            op2xx.a.setProducer(new ATrue().a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case AFalse b1 -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ATrue b2 -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(b1.a);
+                                case NOT_EQUALS -> op2.b.forward(b2.a);
+                                case LESS -> op2.b.forward(b2.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(b2.a);
+                                case GREATER -> op2.b.forward(b1.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
+                                case STRICT_OR -> op2.b.forward(b2.a);
+                                case STRICT_AND -> op2.b.forward(b1.a);
+                                case STRICT_XOR -> op2.b.forward(b2.a);
+                                case MIN -> op2.b.forward(b1.a);
+                                case MAX -> op2.b.forward(b2.a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AFalse _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new ATrue().a);
+                                case NOT_EQUALS -> op2.b.forward(b1.a);
+                                case LESS -> op2.b.forward(b1.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(new ATrue().a);
+                                case GREATER -> op2.b.forward(b1.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(new ATrue().a);
+                                case STRICT_OR -> op2.b.forward(b1.a);
+                                case STRICT_AND -> op2.b.forward(b1.a);
+                                case STRICT_XOR -> op2.b.forward(b1.a);
+                                case MIN -> op2.b.forward(b1.a);
+                                case MAX -> op2.b.forward(b1.a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case Agent _ when isHsearchData(right) -> {
+                            switch (op2.op) {
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(b1.a);
+                            op2xx.a.setProducer(new AFalse().a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case AInteger i1 -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ATrue _ -> {
+                            switch (op2.op) {
+                                case OFTYPE -> op2.b.forward(AInteger.one(i1.ty()).a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AFalse _ -> {
+                            switch (op2.op) {
+                                case OFTYPE -> op2.b.forward(AInteger.zero(i1.ty()).a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AInteger i2 -> interact(i1, i2);
+                        case ABigInteger i2 -> interact(i1, i2);
+                        case Agent _ when isHsearchData(right) -> {
+                            switch (op2.op) {
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(i1.a);
+                            op2xx.a.setProducer(new AInteger(i1.data).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ABigInteger i1 -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ATrue _ -> {
+                            switch (op2.op) {
+                                case OFTYPE -> op2.b.forward(ABigInteger.one().a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AFalse _ -> {
+                            switch (op2.op) {
+                                case OFTYPE -> op2.b.forward(ABigInteger.zero().a);
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AInteger i2 -> interact(i1, i2);
+                        case ABigInteger i2 -> interact(i1, i2);
+                        case Agent _ when isHsearchData(right) -> {
+                            switch (op2.op) {
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(i1.a);
+                            op2xx.a.setProducer(new ABigInteger(i1.data).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case AString s1 -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case AInteger i -> interact(s1, i);
+                        case AString s2 -> interact(s1, s2);
+                        case ARange rng -> interact(s1, rng);
+                        case ARangeFrom rng -> interact(s1, rng);
+                        case ARangeTo rng -> interact(s1, rng);
+                        case ARangeFull rng -> interact(s1, rng);
+                        case Agent _ when isHsearchData(right) -> {
+                            switch (op2.op) {
+                                case HSEARCH -> hsearch(left, right);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(s1.a);
+                            op2xx.a.setProducer(new AString(s1.data).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ARange rng -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(rng.a);
+                            op2xx.a.setProducer(new ARange(rng.start, rng.end, rng.inclusive).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ARangeFrom rng -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(rng.a);
+                            op2xx.a.setProducer(new ARangeFrom(rng.start).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ARangeTo rng -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(rng.a);
+                            op2xx.a.setProducer(new ARangeTo(rng.end, rng.inclusive).a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case ARangeFull rng -> {
+                    switch (right) {
+                        case ANull _ -> {
+                            switch (op2.op) {
+                                case EQUALS -> op2.b.forward(new AFalse().a);
+                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
+                                default -> reject(left, right);
+                            }
+                        }
+                        case ASuperposition sup -> {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(rng.a);
+                            op2xx.a.setProducer(new ARangeFull().a);
+                        }
+                        default -> reject(left, right);
+                    }
+                }
+                case AConstructor ctr -> {
+                    if (ctr.isNullary()) {
+                        if (op2.op == EQUALS && right instanceof ANull) {
+                            op2.b.forward(new AFalse().a);
+                        } else if (op2.op == NOT_EQUALS && right instanceof ANull) {
+                            op2.b.forward(new ATrue().a);
+                        } else if (op2.op == HSEARCH && isHsearchData(right)) {
+                            hsearch(left, right);
+                        } else if (right instanceof ASuperposition sup) {
+                            final var op2x = new AStrictOp2(op2.op);
+                            final var op2xx = new AStrictOp2(op2.op);
+                            final var supx = sup; // reuse
+                            op2.b.forward(supx.a);
+                            op2x.c.setProducer(sup.b.producer());
+                            op2xx.c.setProducer(sup.c.producer());
+                            supx.b.setProducer(op2x.b);
+                            supx.c.setProducer(op2xx.b);
+                            op2x.a.setProducer(ctr.a);
+                            op2xx.a.setProducer(new AConstructor(ctr.name, 0).a);
+                        } else {
+                            reject(left, right);
+                        }
+                    } else {
+                        reject(left, right);
+                    }
+                }
+                case ASuperposition sup -> {
+                    final var op2x = new AStrictOp2(op2.op);
+                    final var op2xx = new AStrictOp2(op2.op);
+                    final var supx = sup; // reuse
+                    final var dup = new ADuplicator(sup.label);
+                    op2.b.forward(supx.a);
+                    dup.a.setProducer(op2.c.producer());
+                    op2x.a.setProducer(sup.b.producer());
+                    op2xx.a.setProducer(sup.c.producer());
+                    supx.b.setProducer(op2x.b);
+                    supx.c.setProducer(op2xx.b);
+                    op2x.c.setProducer(dup.b);
+                    op2xx.c.setProducer(dup.c);
+                }
+                default -> reject(left, right);
+            }
+        }
+
+        private void interact(final AInteger i1, final AInteger i2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                // @formatter:off
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT -> {
+                // @formatter:on
+                    if (i1.ty() != i2.ty()) {
+                        reject(i1, i2);
+                        return;
+                    }
+                    final IntegerTy ty = i1.ty();
+                    final long x = i1.value(), y = i2.value();
+                    final var r = new AInteger(switch (op2.op) {
+                        case ADD -> ty.add(x, y);
+                        case SUBTRACT -> ty.subtract(x, y);
+                        case MULTIPLY -> ty.multiply(x, y);
+                        case DIVIDE -> ty.divide(x, y);
+                        case REMAINDER -> ty.remainder(x, y);
+                        case STRICT_OR -> ty.or(x, y);
+                        case STRICT_AND -> ty.and(x, y);
+                        case STRICT_XOR -> ty.xor(x, y);
+                        case SHIFT_LEFT -> ty.shiftLeft(x, y);
+                        case SHIFT_RIGHT -> ty.shiftRight(x, y);
+                        default -> crash("Unknown operation");
+                    });
+                    op2.b.forward(r.a);
+                }
+                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
+                    if (i1.ty() != i2.ty()) {
+                        reject(i1, i2);
+                        return;
+                    }
+                    final IntegerTy ty = i1.ty();
+                    final long x = i1.value(), y = i2.value();
+                    final boolean answer = switch (op2.op) {
+                        case EQUALS -> x == y;
+                        case NOT_EQUALS -> x != y;
+                        case LESS -> ty.compare(x, y) < 0;
+                        case LESS_OR_EQUALS -> ty.compare(x, y) <= 0;
+                        case GREATER -> ty.compare(x, y) > 0;
+                        case GREATER_OR_EQUALS -> ty.compare(x, y) >= 0;
+                        default -> crash("Unknown operation");
+                    };
+                    if (answer) {
+                        op2.b.forward(new ATrue().a);
+                    } else {
+                        op2.b.forward(new AFalse().a);
+                    }
+                }
+                case MIN -> {
+                    if (i1.ty() != i2.ty()) {
+                        reject(i1, i2);
+                    } else if (i1.ty().compare(i1.value(), i2.value()) <= 0) {
+                        op2.b.forward(i1.a);
+                    } else {
+                        op2.b.forward(i2.a);
+                    }
+                }
+                case MAX -> {
+                    if (i1.ty() != i2.ty()) {
+                        reject(i1, i2);
+                    } else if (i1.ty().compare(i1.value(), i2.value()) >= 0) {
+                        op2.b.forward(i1.a);
+                    } else {
+                        op2.b.forward(i2.a);
+                    }
+                }
+                case OFTYPE -> {
+                    if (i1.ty() == i2.ty()) {
+                        op2.b.forward(i2.a);
+                    } else {
+                        op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
+                    }
+                }
+                case HSEARCH -> {
+                    hsearch(i1, i2);
+                }
+                default -> {
+                    reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ABigInteger i2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case OFTYPE -> {
+                    op2.b.forward(new AInteger(i2.data.toCheckedInteger(i1.ty())).a);
+                }
+                case HSEARCH -> {
+                    hsearch(i1, i2);
+                }
+                default -> {
+                    reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final ABigInteger i1, final AInteger i2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case OFTYPE -> {
+                    op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
+                }
+                case HSEARCH -> {
+                    hsearch(i1, i2);
+                }
+                default -> {
+                    reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final ABigInteger i1, final ABigInteger i2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                // @formatter:off
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT -> {
+                // @formatter:on
+                    final MyBigInteger x = i1.data, y = i2.data;
+                    final var r = new ABigInteger(switch (op2.op) {
+                        case ADD -> x.add(y);
+                        case SUBTRACT -> x.subtract(y);
+                        case MULTIPLY -> x.multiply(y);
+                        case DIVIDE -> x.divide(y);
+                        case REMAINDER -> x.remainder(y);
+                        case STRICT_OR -> x.or(y);
+                        case STRICT_AND -> x.and(y);
+                        case STRICT_XOR -> x.xor(y);
+                        case SHIFT_LEFT -> x.shiftLeft(y);
+                        case SHIFT_RIGHT -> x.shiftRight(y);
+                        default -> crash("Unknown operation");
+                    });
+                    op2.b.forward(r.a);
+                }
+                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
+                    final MyBigInteger x = i1.data, y = i2.data;
+                    final boolean answer = switch (op2.op) {
+                        case EQUALS -> x.equals(y);
+                        case NOT_EQUALS -> !x.equals(y);
+                        case LESS -> x.compareTo(y) < 0;
+                        case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
+                        case GREATER -> x.compareTo(y) > 0;
+                        case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
+                        default -> crash("Unknown operation");
+                    };
+                    if (answer) {
+                        op2.b.forward(new ATrue().a);
+                    } else {
+                        op2.b.forward(new AFalse().a);
+                    }
+                }
+                case MIN -> {
+                    if (i1.data.compareTo(i2.data) <= 0) {
+                        op2.b.forward(i1.a);
+                    } else {
+                        op2.b.forward(i2.a);
+                    }
+                }
+                case MAX -> {
+                    if (i1.data.compareTo(i2.data) >= 0) {
+                        op2.b.forward(i1.a);
+                    } else {
+                        op2.b.forward(i2.a);
+                    }
+                }
+                case OFTYPE -> {
+                    op2.b.forward(i2.a);
+                }
+                case HSEARCH -> {
+                    hsearch(i1, i2);
+                }
+                default -> {
+                    reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final AString s1, final AInteger i) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case CHARACTER_AT -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                        return;
+                    }
+                    int index;
+                    try {
+                        index = i.data.toInt();
+                    } catch (final CheckedInteger.OutOfRange e) {
+                        index = panic("Out of range: %s", Primitives.describe(e.ty));
+                    }
+                    CheckedInteger.Value c;
+                    try {
+                        c = IntegerTy.U8.of(s1.data.at(index));
+                    } catch (final IndexOutOfBoundsException _) {
+                        c = panic("Out of bounds: %s", op2.op.describe());
+                    }
+                    op2.b.forward(new AInteger(c).a);
+                }
+                case STRCHR -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                        return;
+                    }
+                    final int c = i.data.toInt();
+                    final var index = IntegerTy.I64.of(s1.data.strchr(c));
+                    op2.b.forward(new AInteger(index).a);
+                }
+                case STRRCHR -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                        return;
+                    }
+                    final int c = i.data.toInt();
+                    final var index = IntegerTy.I64.of(s1.data.strrchr(c));
+                    op2.b.forward(new AInteger(index).a);
+                }
+                case HSEARCH -> {
+                    hsearch(s1, i);
+                }
+                default -> {
+                    reject(s1, i);
+                }
+            }
+        }
+
+        private void interact(final AString s1, final AString s2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
+                    final MyString x = s1.data, y = s2.data;
+                    final boolean answer = switch (op2.op) {
+                        case EQUALS -> x.equals(y);
+                        case NOT_EQUALS -> !x.equals(y);
+                        case LESS -> x.compareTo(y) < 0;
+                        case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
+                        case GREATER -> x.compareTo(y) > 0;
+                        case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
+                        default -> crash("Unknown operation");
+                    };
+                    if (answer) {
+                        op2.b.forward(new ATrue().a);
+                    } else {
+                        op2.b.forward(new AFalse().a);
+                    }
+                }
+                case MIN -> {
+                    if (s1.data.compareTo(s2.data) <= 0) {
+                        op2.b.forward(s1.a);
+                    } else {
+                        op2.b.forward(s2.a);
+                    }
+                }
+                case MAX -> {
+                    if (s1.data.compareTo(s2.data) >= 0) {
+                        op2.b.forward(s1.a);
+                    } else {
+                        op2.b.forward(s2.a);
+                    }
+                }
+                case PLUS_PLUS -> {
+                    op2.b.forward(new AString(s1.data.concat(s2.data)).a);
+                }
+                case STRCMP -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.compareTo(s2.data))).a);
+                }
+                case STRSTR -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strstr(s2.data))).a);
+                }
+                case STRRSTR -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrstr(s2.data))).a);
+                }
+                case STRSPN -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strspn(s2.data))).a);
+                }
+                case STRCSPN -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strcspn(s2.data))).a);
+                }
+                case STRPBRK -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strpbrk(s2.data))).a);
+                }
+                case STRRSPN -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrspn(s2.data))).a);
+                }
+                case STRRCSPN -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrcspn(s2.data))).a);
+                }
+                case STRRPBRK -> {
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrpbrk(s2.data))).a);
+                }
+                case STARTSWITH -> {
+                    final boolean answer = s1.data.startswith(s2.data);
+                    if (answer) {
+                        op2.b.forward(new ATrue().a);
+                    } else {
+                        op2.b.forward(new AFalse().a);
+                    }
+                }
+                case ENDSWITH -> {
+                    final boolean answer = s1.data.endswith(s2.data);
+                    if (answer) {
+                        op2.b.forward(new ATrue().a);
+                    } else {
+                        op2.b.forward(new AFalse().a);
+                    }
+                }
+                case HSEARCH -> {
+                    hsearch(s1, s2);
+                }
+                default -> {
+                    reject(s1, s2);
+                }
+            }
+        }
+
+        private void interact(final AString s1, final ARange rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(s1.slice(rng.start, rng.end, rng.inclusive).a);
+                }
+                default -> {
+                    reject(s1, rng);
+                }
+            }
+        }
+
+        private void interact(final AString s1, final ARangeFrom rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    final boolean inclusive = false;
+                    op2.b.forward(s1.slice(rng.start, s1.data.length(), inclusive).a);
+                }
+                default -> {
+                    reject(s1, rng);
+                }
+
+            }
+        }
+
+        private void interact(final AString s1, final ARangeTo rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(s1.slice(0, rng.end, rng.inclusive).a);
+                }
+                default -> {
+                    reject(s1, rng);
+                }
+            }
+        }
+
+        private void interact(final AString s1, final ARangeFull rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(s1.a);
+                }
+                default -> {
+                    reject(s1, rng);
+                }
+            }
+        }
+
+        private void hsearch(final Agent left, final Agent right) {
+            final AStrictOp2 op2 = this;
+            assert isHsearchData(left);
+            assert isHsearchData(right);
+            final var key = hsearchData(left);
+            final var value = hsearchData(right);
+            final var data = HSEARCH_TABLE.putIfAbsent(key, value);
+            if (data == null) {
+                op2.b.forward(new ANull().a);
+            } else {
+                op2.b.forward(hsearchAgent(data));
+            }
+        }
+
+        private void reject(final Agent left, final Agent right) {
+            final AStrictOp2 op2 = this;
+            if (isMachineData(left)) {
+                crash("First operand not welcome: %s", describe(left));
+            } else if (isMachineData(right) && !(right instanceof ASuperposition)) {
+                crash("Second operand not welcome: %s", describe(right));
+            } else if (left instanceof ANull) {
+                panic("Null first operand: %s", op2.op.describe());
+            } else if (right instanceof ANull) {
+                panic("Null second operand: %s", op2.op.describe());
+            } else if (isUserData(left) || isUserData(right)) {
+                typeError(op2.op.describe(), left, right);
+            } else if (isOperator(left)) {
+                crash("First operand unresolved: %s", describe(left));
+            } else if (isOperator(right)) {
+                crash("Second operand unresolved: %s", describe(right));
+            } else {
+                throw new IllegalStateException();
             }
         }
     }
@@ -1474,8 +1828,8 @@ public final class Motor {
                     cap.c.forward(lam.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case ANull n -> {
-                    cap.c.forward(n.a);
+                case ANull mynull -> {
+                    cap.c.forward(mynull.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case ATrue b -> {
@@ -1726,7 +2080,7 @@ public final class Motor {
                     yield new Commute(lamx.a, lamxx.a);
                 }
                 case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
-                case ANull n -> new Commute(n.a, new ANull().a);
+                case ANull mynull -> new Commute(mynull.a, new ANull().a);
                 case ATrue b -> new Commute(b.a, new ATrue().a);
                 case AFalse b -> new Commute(b.a, new AFalse().a);
                 case AInteger i -> new Commute(i.a, new AInteger(i.data).a);
@@ -1814,6 +2168,14 @@ public final class Motor {
         public long value() {
             return data.a();
         }
+
+        public static AInteger zero(final IntegerTy ty) {
+            return new AInteger(ty.zero());
+        }
+
+        public static AInteger one(final IntegerTy ty) {
+            return new AInteger(ty.one());
+        }
     }
 
     public static final class ABigInteger implements Agent {
@@ -1824,6 +2186,14 @@ public final class Motor {
             this.data = data;
             this.a = new Producer(this);
         }
+
+        public static ABigInteger zero() {
+            return new ABigInteger(MyBigInteger.zero());
+        }
+
+        public static ABigInteger one() {
+            return new ABigInteger(MyBigInteger.one());
+        }
     }
 
     public static final class AString implements Agent {
@@ -1833,6 +2203,10 @@ public final class Motor {
         public AString(final MyString data) {
             this.data = data;
             this.a = new Producer(this);
+        }
+
+        public AString(final String s) {
+            this(MyString.ofAscii(s));
         }
 
         public AString slice(final long start, final long end, final boolean inclusive) {
@@ -2011,9 +2385,11 @@ public final class Motor {
         return !isOperator(agent) && !isUserData(agent);
     }
 
-    private static boolean isBoolean(final Agent agent) {
+    private static boolean isPrimitiveData(final Agent agent) {
         return switch (agent) {
-            case ATrue _,AFalse _ -> true;
+            case ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _ ->
+                true;
+            case AConstructor ctr -> ctr.isNullary();
             default -> false;
         };
     }

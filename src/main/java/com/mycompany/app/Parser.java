@@ -548,7 +548,7 @@ public final class Parser {
                 if (text.endsWith(suffix)) {
                     final var i = text.substring(0, text.length() - suffix.length());
                     try {
-                        return new Term.IntegerLiteral(entry.getValue().ofString(i));
+                        return new Term.IntegerLiteral(entry.getValue().parse(i));
                     } catch (final CheckedInteger.OutOfRange e) {
                         throw error(filename, ctx, "`%s` is out of range", text);
                     }
@@ -572,7 +572,7 @@ public final class Parser {
             }
             final var i = text.substring(0, text.length() - suffix.length());
             try {
-                return new Term.BigIntegerLiteral(MyBigInteger.ofString(i));
+                return new Term.BigIntegerLiteral(MyBigInteger.parse(i));
             } catch (final MyBigInteger.OutOfRange e) {
                 throw error(filename, ctx, "`%s` is out of range", text);
             }
@@ -582,7 +582,7 @@ public final class Parser {
         public Term visitCharacterTerm(final MotorParser.CharacterTermContext ctx) {
             final String text = ctx.CHARACTER().getText();
             final int code = MyString.unescapeCharacter(text.substring(1, text.length() - 1));
-            return new Term.IntegerLiteral(IntegerTy.U8.ofLong(code));
+            return new Term.IntegerLiteral(IntegerTy.U8.of(code));
         }
 
         @Override
