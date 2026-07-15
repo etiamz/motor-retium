@@ -1079,17 +1079,11 @@ public final class Motor {
                         reject(s1, i);
                         return;
                     }
-                    int index;
-                    try {
-                        index = i.data.toInt();
-                    } catch (final CheckedInteger.OutOfRange e) {
-                        index = panic("Out of range: %s", Primitives.describe(e.ty));
-                    }
                     CheckedInteger.Value c;
                     try {
-                        c = IntegerTy.U8.of(s1.data.at(index));
+                        c = IntegerTy.U8.of(s1.data.at(i.data.toInt()));
                     } catch (final IndexOutOfBoundsException _) {
-                        c = panic("Out of bounds: %s", op2.op.describe());
+                        c = panic("Index out of bounds: %s", op2.op.describe());
                     }
                     op2.b.forward(new AInteger(c).a);
                 }
@@ -1098,18 +1092,15 @@ public final class Motor {
                         reject(s1, i);
                         return;
                     }
-                    final int c = i.data.toInt();
-                    final var index = IntegerTy.I64.of(s1.data.strchr(c));
-                    op2.b.forward(new AInteger(index).a);
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strchr(i.data.toInt()))).a);
                 }
                 case STRRCHR -> {
                     if (i.ty() != U8) {
                         reject(s1, i);
                         return;
                     }
-                    final int c = i.data.toInt();
-                    final var index = IntegerTy.I64.of(s1.data.strrchr(c));
-                    op2.b.forward(new AInteger(index).a);
+                    op2.b.forward(
+                            new AInteger(IntegerTy.I64.of(s1.data.strrchr(i.data.toInt()))).a);
                 }
                 case HSEARCH -> {
                     hsearch(s1, i);
@@ -2211,7 +2202,7 @@ public final class Motor {
 
         public AString slice(final long start, final long end, final boolean inclusive) {
             if (inclusive && end == -1L) {
-                return panic("Out of bounds: %s", SLICE.describe());
+                return panic("Range out of bounds: %s", SLICE.describe());
             }
             final int i, j;
             try {
@@ -2223,7 +2214,7 @@ public final class Motor {
             try {
                 return new AString(this.data.slice(i, j));
             } catch (final IndexOutOfBoundsException _) {
-                return panic("Out of bounds: %s", SLICE.describe());
+                return panic("Range out of bounds: %s", SLICE.describe());
             }
         }
     }
