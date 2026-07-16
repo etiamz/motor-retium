@@ -110,13 +110,9 @@ public final class Primitives {
         STRCHR("character search"),
         STRRCHR("reverse character search"),
         STRSTR("substring search"),
-        STRRSTR("reverse substring search"),
         STRSPN("byte-set span"),
         STRCSPN("byte-set complement span"),
         STRPBRK("byte-set search"),
-        STRRSPN("reverse byte-set span"),
-        STRRCSPN("reverse byte-set complement span"),
-        STRRPBRK("reverse byte-set search"),
         STARTSWITH("prefix check"),
         ENDSWITH("suffix check"),
         HSEARCH("hash table search");
@@ -142,7 +138,7 @@ public final class Primitives {
                 // @formatter:off
                 case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS ->
                     true;
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS, STRCMP, STRCHR, STRRCHR, STRSTR, STRRSTR, STRSPN, STRCSPN, STRPBRK, STRRSPN, STRRCSPN, STRRPBRK, STARTSWITH, ENDSWITH, HSEARCH ->
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS, STRCMP, STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH, HSEARCH ->
                     false;
                 // @formatter:on
             };

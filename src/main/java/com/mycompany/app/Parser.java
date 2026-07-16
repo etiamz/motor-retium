@@ -73,13 +73,9 @@ public final class Parser {
             Map.entry("$strchr", Primitives.StrictOp2.STRCHR),
             Map.entry("$strrchr", Primitives.StrictOp2.STRRCHR),
             Map.entry("$strstr", Primitives.StrictOp2.STRSTR),
-            Map.entry("$strrstr", Primitives.StrictOp2.STRRSTR),
             Map.entry("$strspn", Primitives.StrictOp2.STRSPN),
             Map.entry("$strcspn", Primitives.StrictOp2.STRCSPN),
             Map.entry("$strpbrk", Primitives.StrictOp2.STRPBRK),
-            Map.entry("$strrspn", Primitives.StrictOp2.STRRSPN),
-            Map.entry("$strrcspn", Primitives.StrictOp2.STRRCSPN),
-            Map.entry("$strrpbrk", Primitives.StrictOp2.STRRPBRK),
             Map.entry("$startswith", Primitives.StrictOp2.STARTSWITH),
             Map.entry("$endswith", Primitives.StrictOp2.ENDSWITH),
             Map.entry("$hsearch", Primitives.StrictOp2.HSEARCH));

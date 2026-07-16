@@ -1154,9 +1154,6 @@ public final class Motor {
                 case STRSTR -> {
                     op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strstr(s2.data))).a);
                 }
-                case STRRSTR -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrstr(s2.data))).a);
-                }
                 case STRSPN -> {
                     op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strspn(s2.data))).a);
                 }
@@ -1165,15 +1162,6 @@ public final class Motor {
                 }
                 case STRPBRK -> {
                     op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strpbrk(s2.data))).a);
-                }
-                case STRRSPN -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrspn(s2.data))).a);
-                }
-                case STRRCSPN -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrcspn(s2.data))).a);
-                }
-                case STRRPBRK -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrpbrk(s2.data))).a);
                 }
                 case STARTSWITH -> {
                     final boolean answer = s1.data.startswith(s2.data);

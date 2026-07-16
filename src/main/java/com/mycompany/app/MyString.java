@@ -94,21 +94,6 @@ public final class MyString {
         return -1;
     }
 
-    public int strrstr(final MyString needle) {
-        for (int i = this.length - needle.length; i >= 0; i--) {
-            if (Arrays.equals(
-                    this.data,
-                    this.offset + i,
-                    this.offset + i + needle.length,
-                    needle.data,
-                    needle.offset,
-                    needle.offset + needle.length)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     public int strspn(final MyString set) {
         final boolean[] table = Helpers.membership(set);
         for (int i = 0; i < this.length; i++) {
@@ -132,31 +117,6 @@ public final class MyString {
     public int strpbrk(final MyString set) {
         final int i = this.strcspn(set);
         return i == this.length ? -1 : i;
-    }
-
-    public int strrspn(final MyString set) {
-        final boolean[] table = Helpers.membership(set);
-        for (int i = this.length - 1; i >= 0; i--) {
-            if (!table[this.data[this.offset + i] & 0xFF]) {
-                return this.length - 1 - i;
-            }
-        }
-        return this.length;
-    }
-
-    public int strrcspn(final MyString set) {
-        final boolean[] table = Helpers.membership(set);
-        for (int i = this.length - 1; i >= 0; i--) {
-            if (table[this.data[this.offset + i] & 0xFF]) {
-                return this.length - 1 - i;
-            }
-        }
-        return this.length;
-    }
-
-    public int strrpbrk(final MyString set) {
-        final int i = this.strrcspn(set);
-        return i == this.length ? -1 : this.length - 1 - i;
     }
 
     public boolean startswith(final MyString prefix) {

@@ -83,7 +83,7 @@ intrinsic1
     ;
 
 intrinsic2
-    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strrstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$strrspn' | '$strrcspn' | '$strrpbrk' | '$startswith' | '$endswith' | '$hsearch'
+    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$startswith' | '$endswith' | '$hsearch'
     ;
 
 // Literals.
