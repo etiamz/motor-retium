@@ -2,7 +2,7 @@
 
 **🚧 WORK IN PROGRESS**
 
-`motor-retium` is a parallel, demand-driven interaction-net engine built for computationally hard problems. The reduction strategy is _Weak Reduction to Interface Normal Form (WRINF)_ [^wrinf], so that onely needed interactions are executed. Automatic lock-free parallelisme is realized by reducing strict operands in parallel, treating duplicators as a single shared resource. _Heartbeat scheduling_ [^heartbeat-scheduling] is used to control the rate of task promotion. The operational semantics is based on a polarized variant of Mackie's _closed reduction_ [^closed-reduction]: closures become strict in captures and thus provide more opportunity for parallelization.
+`motor-retium` is a parallel, demand-driven interaction-net engine built for computationally hard problems. The engine onely forces operands transitively demanded by the root, so that uselesse interactions are never executed [^wrinf]. Automatic lock-free parallelisme is realized by reducing strict operands in parallel, treating duplicators as a single shared resource. _Heartbeat scheduling_ [^heartbeat-scheduling] is used to control the rate of task promotion. The operational semantics is based on a polarized variant of Mackie's _closed reduction_ [^closed-reduction]: closures become strict in captures and thus provide more opportunity for parallelization.
 
 TODO: finish the README.
 
