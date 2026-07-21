@@ -137,17 +137,17 @@ public sealed interface Term {
         final var renamingx = new LinkedHashMap<>(renaming);
         final var banlistx = new LinkedHashSet<>(banlist);
         final var ys = new ArrayList<String>();
-        for (final var x : myCase.xs()) {
+        for (final var x : myCase.xs) {
             final var y = freshen(x, banlistx);
             renamingx.put(x, y);
             banlistx.add(y);
             ys.add(y);
         }
         return new Case(
-                myCase.name(),
+                myCase.name,
                 ys,
-                myCase.guards().stream().map(guard -> guard.rename(renamingx, banlistx)).toList(),
-                myCase.t().rename(renamingx, banlistx));
+                myCase.guards.stream().map(guard -> guard.rename(renamingx, banlistx)).toList(),
+                myCase.t.rename(renamingx, banlistx));
     }
 
     // @formatter:off
@@ -200,9 +200,9 @@ public sealed interface Term {
             case Match(var s, var cases) -> {
                 final var fvSet = s.freeVariables();
                 for (final var myCase : cases) {
-                    final var caseFvSet = myCase.t().freeVariables();
-                    myCase.guards().forEach(guard -> caseFvSet.addAll(guard.freeVariables()));
-                    myCase.xs().forEach(caseFvSet::remove);
+                    final var caseFvSet = myCase.t.freeVariables();
+                    myCase.guards.forEach(guard -> caseFvSet.addAll(guard.freeVariables()));
+                    myCase.xs.forEach(caseFvSet::remove);
                     fvSet.addAll(caseFvSet);
                 }
                 yield fvSet;
@@ -251,8 +251,8 @@ public sealed interface Term {
             case Match(var s, var cases) -> {
                 final var refs = s.references();
                 for (final var myCase : cases) {
-                    myCase.guards().forEach(guard -> refs.addAll(guard.references()));
-                    refs.addAll(myCase.t().references());
+                    myCase.guards.forEach(guard -> refs.addAll(guard.references()));
+                    refs.addAll(myCase.t.references());
                 }
                 yield refs;
             }

@@ -48,11 +48,11 @@ public final class MyBigInteger {
 
     public static MyBigInteger parse(final String s) {
         final var n = Helpers.numeral(s);
-        final BigInteger base = BigInteger.valueOf(n.radix());
+        final BigInteger base = BigInteger.valueOf(n.radix);
         BigInteger value = BigInteger.ZERO;
-        for (final char c : n.digits().toCharArray()) {
-            final BigInteger digit = BigInteger.valueOf(Helpers.decode(c, n.radix()));
-            if (n.isNegative()) {
+        for (final char c : n.digits.toCharArray()) {
+            final BigInteger digit = BigInteger.valueOf(Helpers.decode(c, n.radix));
+            if (n.isNegative) {
                 value = value.multiply(base).subtract(digit);
             } else {
                 value = value.multiply(base).add(digit);

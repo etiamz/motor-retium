@@ -249,7 +249,7 @@ public final class Template {
             consumers[i++] = agent.c;
         }
         for (final KDoRange kind : doRngKinds) {
-            final var agent = new Motor.ADoRange(kind.inclusive());
+            final var agent = new Motor.ADoRange(kind.inclusive);
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
             consumers[i++] = agent.c;
@@ -260,7 +260,7 @@ public final class Template {
             producers[j++] = agent.b;
         }
         for (final KDoRangeTo kind : doRngToKinds) {
-            final var agent = new Motor.ADoRangeTo(kind.inclusive());
+            final var agent = new Motor.ADoRangeTo(kind.inclusive);
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
         }
