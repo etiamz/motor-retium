@@ -1210,7 +1210,6 @@ public final class Motor {
                 default -> {
                     reject(s1, rng);
                 }
-
             }
         }
 
@@ -2092,7 +2091,6 @@ public final class Motor {
             this.b = new Producer(this);
             this.c = new Consumer(null);
         }
-
     }
 
     public static final class AEndOfList implements Agent {
@@ -2101,7 +2099,6 @@ public final class Motor {
         public AEndOfList() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class ANull implements Agent {
@@ -2110,7 +2107,6 @@ public final class Motor {
         public ANull() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class ATrue implements Agent {
@@ -2119,7 +2115,6 @@ public final class Motor {
         public ATrue() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class AFalse implements Agent {
@@ -2128,7 +2123,6 @@ public final class Motor {
         public AFalse() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class AInteger implements Agent {
@@ -2218,7 +2212,6 @@ public final class Motor {
             this.inclusive = inclusive;
             this.a = new Producer(this);
         }
-
     }
 
     public static final class ARangeFrom implements Agent {
@@ -2229,7 +2222,6 @@ public final class Motor {
             this.start = start;
             this.a = new Producer(this);
         }
-
     }
 
     public static final class ARangeTo implements Agent {
@@ -2242,7 +2234,6 @@ public final class Motor {
             this.inclusive = inclusive;
             this.a = new Producer(this);
         }
-
     }
 
     public static final class ARangeFull implements Agent {
@@ -2251,7 +2242,6 @@ public final class Motor {
         public ARangeFull() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class AIdentity implements Agent {
@@ -2260,7 +2250,6 @@ public final class Motor {
         public AIdentity() {
             this.a = new Producer(this);
         }
-
     }
 
     public static final class AReference implements Agent {
@@ -2271,7 +2260,6 @@ public final class Motor {
             this.name = name;
             this.a = new Producer(this);
         }
-
     }
 
     private static final class ASuperposition implements Agent {
@@ -2286,7 +2274,6 @@ public final class Motor {
             this.b = new Consumer(null);
             this.c = new Consumer(null);
         }
-
     }
 
     public static final class AConstructor implements Agent {
