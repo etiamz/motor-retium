@@ -1927,7 +1927,7 @@ public final class Motor {
     }
 
     public static final class AMatch implements Agent {
-        public final String[] names;
+        public final String[] names; // interned
         public final Consumer a;
         public final Producer b;
         public final Consumer[] handlers;
@@ -1938,6 +1938,7 @@ public final class Motor {
             this.b = new Producer(this);
             this.handlers = new Consumer[names.length];
             for (int i = 0; i < names.length; i++) {
+                assert names[i] == names[i].intern();
                 handlers[i] = new Consumer(null);
             }
         }
@@ -1949,7 +1950,7 @@ public final class Motor {
                 case AConstructor ctr -> {
                     int index = -1;
                     for (int i = 0; i < match.names.length; i++) {
-                        if (match.names[i].equals(ctr.name)) {
+                        if (match.names[i] == ctr.name) { // both strings are interned
                             index = i;
                             break;
                         }
@@ -2277,11 +2278,12 @@ public final class Motor {
     }
 
     public static final class AConstructor implements Agent {
-        public final String name;
+        public final String name; // interned
         public final Producer a;
         public final Consumer[] arguments;
 
         public AConstructor(final String name, final int arity) {
+            assert name == name.intern();
             this.name = name;
             this.a = new Producer(this);
             this.arguments = new Consumer[arity];

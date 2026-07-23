@@ -4,6 +4,7 @@ import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -70,7 +71,7 @@ public final class Template {
     private record KFix() implements Kind {
     }
 
-    private record KMatch(String[] names) implements Kind {
+    private record KMatch(String[] names /* interned */) implements Kind {
     }
 
     private record KDuplicator() implements Kind {
@@ -106,7 +107,7 @@ public final class Template {
     private record KLambda() implements Kind {
     }
 
-    private record KConstructor(String name, int arity) implements Kind {
+    private record KConstructor(String name /* interned */, int arity) implements Kind {
     }
 
     private record Link(int consumer, int producer) {
@@ -1148,11 +1149,13 @@ public final class Template {
             for (int i = 0; i < arity; i++) {
                 ports[1 + i] = arguments[i];
             }
-            agents.add(new Agent(new KConstructor(name, arity), ports));
+            agents.add(new Agent(new KConstructor(name.intern(), arity), ports));
             return new AConstructor(a, arguments);
         }
 
         public AMatch mkMatch(final String[] names) {
+            final String[] myNames = Arrays.stream(names).map(String::intern)
+                    .toArray(String[]::new);
             final Consumer a = new Consumer();
             final Producer b = new Producer();
             final Consumer[] handlers = new Consumer[names.length];
@@ -1165,7 +1168,7 @@ public final class Template {
             for (int i = 0; i < names.length; i++) {
                 ports[2 + i] = handlers[i];
             }
-            agents.add(new Agent(new KMatch(names), ports));
+            agents.add(new Agent(new KMatch(myNames), ports));
             return new AMatch(a, b, handlers);
         }
 
