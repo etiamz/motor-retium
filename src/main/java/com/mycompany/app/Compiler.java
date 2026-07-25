@@ -123,8 +123,8 @@ public final class Compiler {
                                 String.format("Uneliminated `|`-guard for `%s`", name));
                     }
                     Term handler = myCase.t();
-                    for (int j = xs.size() - 1; j >= 0; j--) {
-                        handler = new Term.Lambda(xs.get(j), handler);
+                    for (final var x : xs.reversed()) {
+                        handler = new Term.Lambda(x, handler);
                     }
                     merge(fvSet, compile(builder, handler, agent.handler(i)));
                 }

@@ -220,8 +220,8 @@ public final class Parser {
                 parameterNames.forEach(this::push);
                 Term body = visit(d.term());
                 parameterNames.forEach(this::pop);
-                for (int i = parameterNames.size() - 1; i >= 0; i--) {
-                    body = new Term.Lambda(parameterNames.get(i), body);
+                for (final var x : parameterNames.reversed()) {
+                    body = new Term.Lambda(x, body);
                 }
                 definitions.put(name, body);
             }
@@ -362,8 +362,8 @@ public final class Parser {
             parameterNames.forEach(this::push);
             Term result = visit(ctx.term());
             parameterNames.forEach(this::pop);
-            for (int i = parameterNames.size() - 1; i >= 0; i--) {
-                result = new Term.Lambda(parameterNames.get(i), result);
+            for (final var x : parameterNames.reversed()) {
+                result = new Term.Lambda(x, result);
             }
             return result;
         }

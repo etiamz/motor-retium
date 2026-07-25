@@ -156,10 +156,10 @@ public final class GuardEliminator {
         return new Term.Case(name, parameters, List.of(), body);
     }
 
-    // Using Haskell's `infixr 3` association.
     private static Term foldGuards(final List<Term> guards) {
         assert !guards.isEmpty(); // checked in `groupCases`
         Term condition = guards.getLast();
+        // Using Haskell's `infixr 3` association.
         for (final var guard : guards.subList(0, guards.size() - 1).reversed()) {
             condition = new Term.And(guard, condition);
         }
