@@ -156,8 +156,7 @@ public final class GuardEliminator {
         return new Term.Case(name, parameters, List.of(), body);
     }
 
-    // Folds a non-empty guard sequence `b1, ..., bN` into `(b1 && (... && bN))`, mirroring
-    // Haskell's `infixr 3` association.
+    // Using Haskell's `infixr 3` association.
     private static Term foldGuards(final List<Term> guards) {
         assert !guards.isEmpty(); // checked in `groupCases`
         Term condition = guards.getLast();
