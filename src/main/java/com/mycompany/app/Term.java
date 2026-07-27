@@ -1,5 +1,7 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.Strictness.*;
+
 import com.mycompany.app.CheckedInteger.Value;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,10 +22,10 @@ public sealed interface Term {
     public record Lambda(String x, Term t) implements Term {
     }
 
-    public record Application(Term t1, Term t2) implements Term {
-    }
-
-    public record StrictApplication(Term t1, Term t2) implements Term {
+    public record Application(Term t1, Term t2, Strictness strictness) implements Term {
+        public Application(final Term t1, final Term t2) {
+            this(t1, t2, NON_STRICT);
+        }
     }
 
     public record Constructor(String name, List<Term> ts, int missing) implements Term {
@@ -79,7 +81,7 @@ public sealed interface Term {
 
     public record Argument(Term t, Strictness strictness) {
         public Argument(final Term t) {
-            this(t, Strictness.NON_STRICT);
+            this(t, NON_STRICT);
         }
 
         public Argument(final String x, final Strictness strictness) {
@@ -114,10 +116,11 @@ public sealed interface Term {
                 banlistx.add(y);
                 yield new Lambda(y, t.rename(renamingx, banlistx));
             }
-            case Application(var t1, var t2) ->
-                new Application(t1.rename(renaming, banlist), t2.rename(renaming, banlist));
-            case StrictApplication(var t1, var t2) ->
-                new StrictApplication(t1.rename(renaming, banlist), t2.rename(renaming, banlist));
+            case Application(var t1, var t2, var strictness) ->
+                new Application(
+                        t1.rename(renaming, banlist),
+                        t2.rename(renaming, banlist),
+                        strictness);
             case Constructor(var name, var ts, var missing) ->
                 new Constructor(
                         name,
@@ -214,9 +217,7 @@ public sealed interface Term {
                 fvSet.remove(x);
                 yield fvSet;
             }
-            case Application(var t1, var t2) ->
-                union(t1, t2);
-            case StrictApplication(var t1, var t2) ->
+            case Application(var t1, var t2, var _) ->
                 union(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 union(ts.toArray(Term[]::new));
@@ -269,9 +270,7 @@ public sealed interface Term {
             }
             case Lambda(var _, var t) ->
                 t.references();
-            case Application(var t1, var t2) ->
-                unionReferences(t1, t2);
-            case StrictApplication(var t1, var t2) ->
+            case Application(var t1, var t2, var _) ->
                 unionReferences(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 unionReferences(ts.toArray(Term[]::new));

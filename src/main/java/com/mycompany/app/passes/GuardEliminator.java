@@ -47,10 +47,8 @@ public final class GuardEliminator {
                 banlistx.add(x);
                 yield new Term.Lambda(x, eliminate(t, banlistx));
             }
-            case Term.Application(var t1, var t2) ->
-                new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist));
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(eliminate(t1, banlist), eliminate(t2, banlist));
+            case Term.Application(var t1, var t2, var strictness) ->
+                new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist), strictness);
             case Term.Constructor(var name, var ts, var missing) ->
                 new Term.Constructor(
                         name,

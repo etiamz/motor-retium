@@ -45,10 +45,8 @@ public final class SharedVariableHoister {
                         missing);
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, hoist(t));
-            case Term.Application(var t1, var t2) ->
-                new Term.Application(hoist(t1), hoist(t2));
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(hoist(t1), hoist(t2));
+            case Term.Application(var t1, var t2, var strictness) ->
+                new Term.Application(hoist(t1), hoist(t2), strictness);
             case Term.Constructor(var name, var ts, var missing) -> {
                 if (missing != 0) {
                     throw new IllegalStateException("Constructors must be already saturated");

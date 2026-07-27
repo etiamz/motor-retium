@@ -1,5 +1,7 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.Strictness.*;
+
 import com.mycompany.app.Template.Builder.Consumer;
 import com.mycompany.app.Template.Builder.Producer;
 import java.util.ArrayList;
@@ -99,15 +101,15 @@ public final class Compiler {
                 agent.d().setProducer(result.producer());
                 yield capturesx;
             }
-            case Term.Application(var t1, var t2) -> {
+            case Term.Application(var t1, var t2, var strictness) -> {
+                if (strictness == STRICT) {
+                    final var agent = builder.mkStrictApplicator();
+                    output.setProducer(agent.b());
+                    final var fvSet = compile(builder, t1, agent.a());
+                    merge(fvSet, compile(builder, t2, agent.c()));
+                    yield fvSet;
+                }
                 final var agent = builder.mkApplicator();
-                output.setProducer(agent.b());
-                final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, compile(builder, t2, agent.c()));
-                yield fvSet;
-            }
-            case Term.StrictApplication(var t1, var t2) -> {
-                final var agent = builder.mkStrictApplicator();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
                 merge(fvSet, compile(builder, t2, agent.c()));

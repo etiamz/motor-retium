@@ -1,5 +1,7 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.Strictness.*;
+
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.grammar.MotorBaseVisitor;
 import com.mycompany.app.grammar.MotorLexer;
@@ -393,7 +395,7 @@ public final class Parser {
             push(x);
             final var t2 = visit(ctx.term(1));
             pop(x);
-            return new Term.StrictApplication(new Term.Lambda(x, t2), t1);
+            return new Term.Application(new Term.Lambda(x, t2), t1, STRICT);
         }
 
         @Override

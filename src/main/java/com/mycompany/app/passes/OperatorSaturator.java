@@ -1,5 +1,7 @@
 package com.mycompany.app.passes;
 
+import static com.mycompany.app.Strictness.*;
+
 import com.mycompany.app.Definition;
 import com.mycompany.app.Primitives;
 import com.mycompany.app.Program;
@@ -44,10 +46,19 @@ public final class OperatorSaturator {
                         missing,
                         banlist);
             }
-            case Term.Application _ -> {
+            case Term.Application(var t1, var t2, var strictness) -> {
+                if (strictness == STRICT) {
+                    yield new Term.Application(
+                            saturate(t1, banlist),
+                            saturate(t2, banlist),
+                            STRICT);
+                }
                 final var arguments = new ArrayList<Term>();
                 Term head = term;
-                while (head instanceof Term.Application(var rator, var rand)) {
+                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
+                    if (myStrictness == STRICT) {
+                        break;
+                    }
                     arguments.add(0, saturate(rand, banlist));
                     head = rator;
                 }
@@ -93,8 +104,6 @@ public final class OperatorSaturator {
                 }
                 yield result;
             }
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(saturate(t1, banlist), saturate(t2, banlist));
             case Term.Constructor(var name, var provided, var missing) -> {
                 if (!provided.isEmpty()) {
                     throw new IllegalStateException("Constructor arguments must be empty");
@@ -172,7 +181,7 @@ public final class OperatorSaturator {
     private static Term apply(final Primitives.Operator op, final List<Term> ts) {
         return switch (op) {
             case Primitives.Apply _ -> new Term.Application(ts.get(0), ts.get(1));
-            case Primitives.StrictApply _ -> new Term.StrictApplication(ts.get(0), ts.get(1));
+            case Primitives.StrictApply _ -> new Term.Application(ts.get(0), ts.get(1), STRICT);
             case Primitives.Fix _ -> new Term.Fix(ts.get(0));
             case Primitives.Not _ -> new Term.Not(ts.get(0));
             case Primitives.And _ -> new Term.And(ts.get(0), ts.get(1));

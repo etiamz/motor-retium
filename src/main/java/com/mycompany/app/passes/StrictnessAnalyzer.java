@@ -1,8 +1,9 @@
 package com.mycompany.app.passes;
 
+import static com.mycompany.app.Strictness.*;
+
 import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
-import com.mycompany.app.Strictness;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -97,10 +98,18 @@ public final class StrictnessAnalyzer {
             case Term.Lambda _ ->
                 // Unlike normal-order reduction, our closures are strict in captures.
                 term.freeVariables();
-            case Term.Application _ -> {
+            case Term.Application(var t1, var t2, var strictness) -> {
+                if (strictness == STRICT) {
+                    final var strictResult = demand(phi, t1);
+                    strictResult.addAll(demand(phi, t2));
+                    yield strictResult;
+                }
                 final var arguments = new ArrayList<Term>();
                 Term head = term;
-                while (head instanceof Term.Application(var rator, var rand)) {
+                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
+                    if (myStrictness == STRICT) {
+                        break;
+                    }
                     arguments.add(0, rand);
                     head = rator;
                 }
@@ -111,11 +120,6 @@ public final class StrictnessAnalyzer {
                         result.addAll(demand(phi, arguments.get(i)));
                     }
                 }
-                yield result;
-            }
-            case Term.StrictApplication(var t1, var t2) -> {
-                final var result = demand(phi, t1);
-                result.addAll(demand(phi, t2));
                 yield result;
             }
             case Term.Fix(var t) ->
@@ -180,9 +184,7 @@ public final class StrictnessAnalyzer {
                 final var positions = phi.get(name);
                 final var myArguments = new ArrayList<Term.Argument>();
                 for (int i = 0; i < arguments.size(); i++) {
-                    final var strictness = positions.contains(i)
-                            ? Strictness.STRICT
-                            : Strictness.NON_STRICT;
+                    final var strictness = positions.contains(i) ? STRICT : NON_STRICT;
                     myArguments.add(
                             new Term.Argument(annotate(phi, arguments.get(i).t()), strictness));
                 }
@@ -190,10 +192,16 @@ public final class StrictnessAnalyzer {
             }
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, annotate(phi, t));
-            case Term.Application _ -> {
+            case Term.Application(var t1, var t2, var strictness) -> {
+                if (strictness == STRICT) {
+                    yield new Term.Application(annotate(phi, t1), annotate(phi, t2), STRICT);
+                }
                 final var arguments = new ArrayList<Term>();
                 Term head = term;
-                while (head instanceof Term.Application(var rator, var rand)) {
+                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
+                    if (myStrictness == STRICT) {
+                        break;
+                    }
                     arguments.add(0, rand);
                     head = rator;
                 }
@@ -201,16 +209,13 @@ public final class StrictnessAnalyzer {
                 Term result = annotate(phi, head);
                 for (int i = 0; i < arguments.size(); i++) {
                     final var argument = annotate(phi, arguments.get(i));
-                    if (positions.contains(i)) {
-                        result = new Term.StrictApplication(result, argument);
-                    } else {
-                        result = new Term.Application(result, argument);
-                    }
+                    result = new Term.Application(
+                            result,
+                            argument,
+                            positions.contains(i) ? STRICT : NON_STRICT);
                 }
                 yield result;
             }
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(annotate(phi, t1), annotate(phi, t2));
             case Term.Constructor(var name, var ts, var missing) -> {
                 if (missing != 0) {
                     throw new IllegalStateException("Constructors must be already saturated");
