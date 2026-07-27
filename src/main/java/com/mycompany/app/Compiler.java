@@ -129,7 +129,8 @@ public final class Compiler {
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
-                final var agent = builder.mkMatch(names);
+                final var arities = cases.stream().mapToInt(c -> c.xs().size()).toArray();
+                final var agent = builder.mkMatch(names, arities);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, s, agent.a());
                 for (int i = 0; i < cases.size(); i++) {
@@ -141,11 +142,13 @@ public final class Compiler {
                         throw new IllegalStateException(
                                 String.format("Uneliminated `|`-guard for `%s`", name));
                     }
-                    Term handler = myCase.t();
-                    for (final var x : xs.reversed()) {
-                        handler = new Term.Lambda(x, handler);
+                    final var body = compile(builder, myCase.t(), agent.handler(i));
+                    for (int j = 0; j < xs.size(); j++) {
+                        final var usages = body.getOrDefault(xs.get(j), List.of());
+                        bind(builder, agent.parameter(i, j), usages);
                     }
-                    merge(fvSet, compile(builder, handler, agent.handler(i)));
+                    body.keySet().removeAll(xs);
+                    merge(fvSet, body);
                 }
                 yield fvSet;
             }
