@@ -26,16 +26,16 @@ public final class App {
     public static void main(final String[] args) throws IOException {
         final var source = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
         try {
-            final var program = SharedVariableHoister.hoist(
-                    StrictnessAnalyzer.analyze(
+            final var program = StrictnessAnalyzer.analyze(
+                    SharedVariableHoister.hoist(
                             OperatorSaturator.saturate(
                                     GuardEliminator.eliminate(
                                             Parser.parse("<stdin>", source)))));
             final var compilation = Compiler.compile(program);
-            final var motor = new Motor(compilation.book());
+            Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
-            compilation.main().materialize(root);
-            System.out.println(show(motor, motor.whnf(root)));
+            compilation.main().materialize(root, new Port.Producer[0]);
+            System.out.println(show(Motor.whnf(root)));
         } catch (final SyntaxError e) {
             System.err.println(e.getMessage());
             System.exit(1);
@@ -45,7 +45,7 @@ public final class App {
         }
     }
 
-    private static String show(final Motor motor, final Agent value) {
+    private static String show(final Agent value) {
         return switch (value) {
             case ANull _ -> "null";
             case ATrue _ -> "true";
@@ -61,7 +61,7 @@ public final class App {
             case AConstructor ctr when ctr.isNullary() -> ctr.name;
             case AConstructor ctr -> {
                 final var arguments = IntStream.range(0, ctr.arity())
-                        .mapToObj(i -> show(motor, motor.whnf(ctr.arguments[i])))
+                        .mapToObj(i -> show(Motor.whnf(ctr.arguments[i])))
                         .collect(Collectors.joining(" "));
                 yield String.format("(%s %s)", ctr.name, arguments);
             }

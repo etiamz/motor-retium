@@ -20,7 +20,7 @@ public final class Compiler {
     }
 
     public static Compilation compile(final Program program) {
-        final var main = compile(program.main());
+        final var main = compile(new Definition(List.of(), program.main()));
         final var book = new HashMap<String, Template>();
         for (final var entry : program.definitions().entrySet()) {
             book.put(entry.getKey(), compile(entry.getValue()));
@@ -28,10 +28,15 @@ public final class Compiler {
         return new Compilation(main, book);
     }
 
-    private static Template compile(final Term term) {
+    private static Template compile(final Definition d) {
         final var builder = new Template.Builder();
         final var root = builder.mkRoot().a();
-        final var fvSet = compile(builder, term, root);
+        final var fvSet = compile(builder, d.body(), root);
+        for (final var x : d.parameters()) {
+            final var usages = fvSet.getOrDefault(x, List.of());
+            bind(builder, builder.mkParameter(), usages);
+        }
+        fvSet.keySet().removeAll(d.parameters());
         if (!fvSet.isEmpty()) {
             throw new IllegalStateException("Cannot resolve these variable(s): " + fvSet.keySet());
         }
@@ -46,6 +51,20 @@ public final class Compiler {
             case Term.Variable(var x) -> {
                 final var fvSet = new TermInterface();
                 fvSet.put(x, new ArrayList<>(List.of(output)));
+                yield fvSet;
+            }
+            case Term.Call(var name, var arguments, var missing) -> {
+                if (missing != 0) {
+                    throw new IllegalStateException("Unsaturated function call: `" + name + "`");
+                }
+                final var strictnesses = arguments.stream().map(Term.Argument::strictness)
+                        .toArray(Strictness[]::new);
+                final var agent = builder.mkCall(name, strictnesses);
+                output.setProducer(agent.a());
+                final var fvSet = new TermInterface();
+                for (int i = 0; i < arguments.size(); i++) {
+                    merge(fvSet, compile(builder, arguments.get(i).t(), agent.argument(i)));
+                }
                 yield fvSet;
             }
             case Term.Lambda(var x, var t) -> {
@@ -134,10 +153,6 @@ public final class Compiler {
                 final var agent = builder.mkFix();
                 output.setProducer(agent.b());
                 yield compile(builder, t, agent.a());
-            }
-            case Term.Reference(var name) -> {
-                output.setProducer(builder.mkReference(name).a());
-                yield new TermInterface();
             }
             case Term.IfThenElse(var t1, var t2, var t3) -> {
                 final var agent = builder.mkIfThenElse();

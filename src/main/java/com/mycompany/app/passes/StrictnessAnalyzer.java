@@ -1,6 +1,8 @@
 package com.mycompany.app.passes;
 
+import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
+import com.mycompany.app.Strictness;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,12 +30,16 @@ public final class StrictnessAnalyzer {
     public static Program analyze(final Program program) {
         final var phi = fix(program.definitions());
         final var main = annotate(phi, program.main());
-        final var definitions = new LinkedHashMap<String, Term>();
-        program.definitions().forEach((name, t) -> definitions.put(name, annotate(phi, t)));
+        final var definitions = new LinkedHashMap<String, Definition>();
+        program.definitions().forEach(
+                (name, d) -> {
+                    final var result = annotate(phi, d.body());
+                    definitions.put(name, new Definition(d.parameters(), result));
+                });
         return new Program(main, definitions);
     }
 
-    private static Environment fix(final Map<String, Term> definitions) {
+    private static Environment fix(final Map<String, Definition> definitions) {
         final var phi = new Environment();
         definitions.forEach((name, _) -> phi.put(name, Set.of()));
         boolean fix = false;
@@ -51,13 +57,15 @@ public final class StrictnessAnalyzer {
         return phi;
     }
 
-    private static Set<Integer> strictPositions(final Environment phi, final Term head) {
-        return switch (head) {
-            case Term.Reference(var name) when phi.get(name) instanceof Set<Integer> summary ->
-                summary;
-            default ->
-                strictParameters(phi, head);
-        };
+    private static Set<Integer> strictParameters(final Environment phi, final Definition d) {
+        final var summary = new LinkedHashSet<Integer>();
+        final var myDemand = demand(phi, d.body());
+        for (int i = 0; i < d.parameters().size(); i++) {
+            if (myDemand.contains(d.parameters().get(i))) {
+                summary.add(i);
+            }
+        }
+        return summary;
     }
 
     private static Set<Integer> strictParameters(final Environment phi, final Term term) {
@@ -76,6 +84,16 @@ public final class StrictnessAnalyzer {
         return switch (term) {
             case Term.Variable(var x) ->
                 new LinkedHashSet<>(List.of(x));
+            case Term.Call(var name, var arguments, var _) -> {
+                final var result = new LinkedHashSet<String>();
+                final var positions = phi.get(name);
+                for (int i = 0; i < arguments.size(); i++) {
+                    if (positions.contains(i)) {
+                        result.addAll(demand(phi, arguments.get(i).t()));
+                    }
+                }
+                yield result;
+            }
             case Term.Lambda _ ->
                 // Unlike normal-order reduction, our closures are strict in captures.
                 term.freeVariables();
@@ -87,7 +105,7 @@ public final class StrictnessAnalyzer {
                     head = rator;
                 }
                 final var result = demand(phi, head);
-                final var positions = strictPositions(phi, head);
+                final var positions = strictParameters(phi, head);
                 for (int i = 0; i < arguments.size(); i++) {
                     if (positions.contains(i)) {
                         result.addAll(demand(phi, arguments.get(i)));
@@ -145,7 +163,7 @@ public final class StrictnessAnalyzer {
             }
             case Term.Operator _ ->
                 throw new IllegalStateException("Operators must be already saturated");
-            case Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }
@@ -158,6 +176,18 @@ public final class StrictnessAnalyzer {
 
     private static Term annotate(final Environment phi, final Term term) {
         return switch (term) {
+            case Term.Call(var name, var arguments, var missing) -> {
+                final var positions = phi.get(name);
+                final var myArguments = new ArrayList<Term.Argument>();
+                for (int i = 0; i < arguments.size(); i++) {
+                    final var strictness = positions.contains(i)
+                            ? Strictness.STRICT
+                            : Strictness.NON_STRICT;
+                    myArguments.add(
+                            new Term.Argument(annotate(phi, arguments.get(i).t()), strictness));
+                }
+                yield new Term.Call(name, myArguments, missing);
+            }
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, annotate(phi, t));
             case Term.Application _ -> {
@@ -167,7 +197,7 @@ public final class StrictnessAnalyzer {
                     arguments.add(0, rand);
                     head = rator;
                 }
-                final var positions = strictPositions(phi, head);
+                final var positions = strictParameters(phi, head);
                 Term result = annotate(phi, head);
                 for (int i = 0; i < arguments.size(); i++) {
                     final var argument = annotate(phi, arguments.get(i));
@@ -218,7 +248,7 @@ public final class StrictnessAnalyzer {
                 new Term.StrictOp2(annotate(phi, t1), op, annotate(phi, t2));
             case Term.Operator _ ->
                 throw new IllegalStateException("Operators must be already saturated");
-            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

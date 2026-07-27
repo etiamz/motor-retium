@@ -9,7 +9,9 @@ import com.mycompany.app.Port.Consumer;
 import com.mycompany.app.Port.Producer;
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,14 +37,20 @@ public final class Motor {
 
     private static final int HEARTBEAT = 64; // empirically established
 
-    private static final ConcurrentHashMap<Object, Object> HSEARCH_TABLE = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<Object, Object> HSEARCH_TABLE;
+    private static ForkJoinPool POOL;
+    private static Map<String, Template> BOOK;
 
-    private static final ForkJoinPool POOL = new ForkJoinPool();
+    private Motor() {
+    }
 
-    private final Map<String, Template> book;
-
-    public Motor(final Map<String, Template> book) {
-        this.book = book;
+    public static void initialize(final Map<String, Template> book) {
+        if (BOOK != null) {
+            throw new IllegalStateException("The machine is already initialized");
+        }
+        HSEARCH_TABLE = new ConcurrentHashMap<>();
+        POOL = new ForkJoinPool();
+        BOOK = book;
     }
 
     // Whether to fork a right operand or reduce it inline depends on whether the work performed by
@@ -116,11 +124,14 @@ public final class Motor {
         }
     }
 
-    public Agent whnf(final Consumer root) {
+    public static Agent whnf(final Consumer root) {
+        if (BOOK == null) {
+            throw new IllegalStateException("The machine is not initialized");
+        }
         return whnfAsync(root).join();
     }
 
-    private CompletableFuture<Agent> whnfAsync(final Consumer root) {
+    private static CompletableFuture<Agent> whnfAsync(final Consumer root) {
         final var result = new CompletableFuture<Agent>();
         final var heart = new Heart(HEARTBEAT);
         schedule(heart, () -> reduce(root, () -> {
@@ -130,7 +141,7 @@ public final class Motor {
         return result;
     }
 
-    private void drive(Bounce bounce, final Heart heart) {
+    private static void drive(Bounce bounce, final Heart heart) {
         try {
             for (;;) {
                 switch (bounce) {
@@ -156,13 +167,13 @@ public final class Motor {
         }
     }
 
-    private void schedule(final Heart heart, final Thunk thunk) {
+    private static void schedule(final Heart heart, final Thunk thunk) {
         POOL.execute(() -> drive(thunk, heart));
     }
 
     // Beat the heart; when the remaining fuel is zero, promote the oldest frame, if it exists. This
     // is where logical threads are spawned.
-    private void beat(final Heart heart) {
+    private static void beat(final Heart heart) {
         if (--heart.fuel == 0) {
             heart.fuel = HEARTBEAT;
             final Promotable frame = heart.pollOldest();
@@ -172,7 +183,7 @@ public final class Motor {
         }
     }
 
-    private Bounce reduce(final Consumer p, final Thunk k, final Heart heart) {
+    private static Bounce reduce(final Consumer p, final Thunk k, final Heart heart) {
         return switch (p.chase()) {
             case AStrictOp1 rator -> simplex(rator.a, rator::interact, p, k, heart);
             case AIfThenElse rator -> simplex(rator.a, rator::interact, p, k, heart);
@@ -189,17 +200,14 @@ public final class Motor {
             case ADoRangeFrom rator -> simplex(rator.a, rator::interact, p, k, heart);
             case ADoRangeTo rator -> simplex(rator.a, rator::interact, p, k, heart);
             case AMatch rator -> simplex(rator.a, rator::interact, p, k, heart);
+            case ACall call -> call(call, p, k, heart);
             case ADuplicator dup -> sync(dup, p, k, heart);
-            case AReference ref -> (Thunk) () -> {
-                dereference(p, ref);
-                return reduce(p, k, heart);
-            };
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 k;
         };
     }
 
-    private Thunk simplex(
+    private static Thunk simplex(
             final Consumer target,
             final Runnable interactor,
             final Consumer p,
@@ -217,7 +225,7 @@ public final class Motor {
         }, heart);
     }
 
-    private Thunk duplex(
+    private static Thunk duplex(
             final Consumer left,
             final Consumer right,
             final Runnable interactor,
@@ -266,7 +274,58 @@ public final class Motor {
         };
     }
 
-    private Bounce sync(
+    private static Bounce call(
+            final ACall call,
+            final Consumer p,
+            final Thunk k,
+            final Heart heart) {
+        return (Thunk) () -> {
+            final var frames = new ArrayList<Promotable>();
+            Consumer inline = null;
+            for (int i = 0; i < call.arguments.length; i++) {
+                final Consumer argument = call.arguments[i];
+                if (call.strictnesses[i] != Strictness.STRICT || isWhnf(argument)) {
+                    continue;
+                } else if (inline == null) {
+                    inline = argument;
+                } else {
+                    frames.add(heart.push(argument));
+                }
+            }
+            if (inline == null) {
+                call.interact();
+                return reduce(p, k, heart);
+            }
+            return reduce(inline, join(frames, 0, call, p, k, heart), heart);
+        };
+    }
+
+    private static Thunk join(
+            final List<Promotable> frames,
+            final int index,
+            final ACall call,
+            final Consumer p,
+            final Thunk k,
+            final Heart heart) {
+        if (index == frames.size()) {
+            return () -> {
+                call.interact();
+                return reduce(p, k, heart);
+            };
+        }
+        return () -> {
+            final Promotable frame = frames.get(index);
+            final Thunk next = join(frames, index + 1, call, p, k, heart);
+            final CompletableFuture<Agent> future = frame.future;
+            if (future != null) {
+                return new Await(future, next);
+            }
+            heart.unlink(frame);
+            return reduce(frame.right, next, heart);
+        };
+    }
+
+    private static Bounce sync(
             final ADuplicator dup,
             final Consumer p,
             final Thunk k,
@@ -288,20 +347,12 @@ public final class Motor {
         });
     }
 
-    private void dereference(final Consumer port, final AReference ref) {
-        final Template body = book.get(ref.name);
-        if (body == null) {
-            crash("Cannot resolve a reference to `%s`", ref.name);
-        }
-        body.materialize(port);
-    }
-
     // @formatter:off
     public sealed interface Agent permits
         // Operators.
-        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch, ADuplicator,
+        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch, ACall, ADuplicator,
         // Data.
-        ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AReference, AConstructor, ASuperposition
+        ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     {
     }
     // @formatter:on
@@ -2000,6 +2051,37 @@ public final class Motor {
         }
     }
 
+    public static final class ACall implements Agent {
+        public final String name;
+        public final Strictness[] strictnesses;
+        public final Producer a;
+        public final Consumer[] arguments;
+
+        public ACall(final String name, final Strictness[] strictnesses) {
+            this.name = name;
+            this.strictnesses = strictnesses;
+            this.a = new Producer(this);
+            this.arguments = new Consumer[strictnesses.length];
+            for (int i = 0; i < strictnesses.length; i++) {
+                arguments[i] = new Consumer(null);
+            }
+        }
+
+        private void interact() {
+            final Template body = BOOK.get(name);
+            if (body == null) {
+                crash("Cannot resolve a call to `%s`", name);
+            }
+            final var producers = new Producer[arguments.length];
+            for (int i = 0; i < producers.length; i++) {
+                producers[i] = arguments[i].producer();
+            }
+            final var root = new Consumer(null);
+            body.materialize(root, producers);
+            a.forward(root.producer());
+        }
+    }
+
     public static final class ADuplicator implements Agent {
         private final AtomicReference<CompletableFuture<Duplicand>> sync = new AtomicReference<>();
         public final Label label;
@@ -2253,16 +2335,6 @@ public final class Motor {
         }
     }
 
-    public static final class AReference implements Agent {
-        public final String name;
-        public final Producer a;
-
-        public AReference(final String name) {
-            this.name = name;
-            this.a = new Producer(this);
-        }
-    }
-
     private static final class ASuperposition implements Agent {
         public final Label label;
         public final Producer a;
@@ -2333,9 +2405,9 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ADuplicator _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _ ->
                 true;
-            case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AReference _,AConstructor _,ASuperposition _ ->
+            case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
         };
     }
@@ -2344,7 +2416,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ADuplicator _,AEndOfList _,AReference _,ASuperposition _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2374,7 +2446,7 @@ public final class Motor {
         return switch (p.chase()) {
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ADuplicator _,AReference _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _ ->
                 false;
         };
     }
@@ -2438,7 +2510,7 @@ public final class Motor {
             case ARangeTo _ -> "a to-range";
             case ARangeFull _ -> "a full range";
             case AIdentity _ -> "an identity function";
-            case AReference ref -> "a reference to `" + ref.name + "`";
+            case ACall call -> "a call to `" + call.name + "`";
             case AConstructor ctr -> "the constructor `" + ctr.name + "`";
             case ASuperposition _ -> "a superposition";
         };

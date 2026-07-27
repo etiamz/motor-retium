@@ -1,5 +1,6 @@
 package com.mycompany.app.passes;
 
+import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
@@ -13,19 +14,35 @@ public final class SharedVariableHoister {
 
     // Transformes:
     // (1) `if C then M else N` into `(if C then \S -> M else \S -> N) S`, and
-    // (2) `match s { Ci x1 ... xN -> E1, ..., Cn z1 ... zN -> En }` into `(match s { Ci x1 ... xN
-    // -> \S -> E1, ..., Cn z1 ... zN -> \S -> En }) S`,
+    // (2) `case s of { Ci x1 ... xN -> E1; ...; Cn z1 ... zN -> En }` into `(case s of { Ci x1 ...
+    // xN -> \S -> E1; ...; Cn z1 ... zN -> \S -> En }) S`,
     // where `S` is a non-empty spine of variables shared among the branches.
     // The rationale of this transformation is to trade duplicators, the most expensive agents in
     // our machine, for closures, before the reduction starts.
     public static Program hoist(final Program program) {
-        final var definitions = new LinkedHashMap<String, Term>();
-        program.definitions().forEach((name, t) -> definitions.put(name, hoist(t)));
-        return new Program(hoist(program.main()), definitions);
+        final var main = hoist(program.main());
+        final var definitions = new LinkedHashMap<String, Definition>();
+        program.definitions().forEach(
+                (name, d) -> {
+                    final var result = hoist(d.body());
+                    definitions.put(name, new Definition(d.parameters(), result));
+                });
+        return new Program(main, definitions);
     }
 
     private static Term hoist(final Term term) {
         return switch (term) {
+            case Term.Call(var name, var arguments, var missing) ->
+                new Term.Call(
+                        name,
+                        arguments.stream()
+                                .map(argument -> {
+                                    final var t = argument.t();
+                                    final var strictness = argument.strictness();
+                                    return new Term.Argument(hoist(t), strictness);
+                                })
+                                .toList(),
+                        missing);
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, hoist(t));
             case Term.Application(var t1, var t2) ->
@@ -89,7 +106,7 @@ public final class SharedVariableHoister {
                 }
                 yield result;
             }
-            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

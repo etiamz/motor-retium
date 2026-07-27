@@ -164,7 +164,7 @@ public final class Parser {
 
     private static final class Builder extends MotorBaseVisitor<Term> {
         private final String filename;
-        private final Map<String, Term> definitions = new LinkedHashMap<>();
+        private final Map<String, Definition> definitions = new LinkedHashMap<>();
         private final Map<String, Integer> arities = new LinkedHashMap<>();
         private final Set<String> globals = new LinkedHashSet<>();
         private final List<String> bound = new ArrayList<>();
@@ -212,23 +212,31 @@ public final class Parser {
                 if (!globals.add(name)) {
                     throw error(filename, d, "Found a duplicate top-level definition: `%s`", name);
                 }
+                arities.put(name, d.SYMBOL().size() - 1);
             }
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();
                 final var parameters = d.SYMBOL().subList(1, d.SYMBOL().size());
                 final var parameterNames = bindingNames(d, parameters);
-                parameterNames.forEach(this::push);
-                Term body = visit(d.term());
-                parameterNames.forEach(this::pop);
-                for (final var x : parameterNames.reversed()) {
-                    body = new Term.Lambda(x, body);
+                final var seen = new LinkedHashSet<String>();
+                for (final var x : parameterNames) {
+                    if (!seen.add(x)) {
+                        throw error(
+                                filename,
+                                d,
+                                "Found a duplicate parameter in the definition: `%s`",
+                                x);
+                    }
                 }
-                definitions.put(name, body);
+                parameterNames.forEach(this::push);
+                final Term body = visit(d.term());
+                parameterNames.forEach(this::pop);
+                definitions.put(name, new Definition(parameterNames, body));
             }
             if (!globals.contains("main")) {
                 throw new SyntaxError("No `main` top-level definition");
             }
-            return new Term.Reference("main");
+            return new Term.Call("main", List.of(), 0);
         }
 
         @Override
@@ -399,7 +407,7 @@ public final class Parser {
                     throw error(
                             filename,
                             ctx,
-                            "Found a duplicate variable in a `let` pattern: `%s`",
+                            "Found a duplicate variable in the `let`-pattern: `%s`",
                             x);
                 }
             }
@@ -595,7 +603,7 @@ public final class Parser {
                 return new Term.Variable(x);
             }
             if (globals.contains(x)) {
-                return new Term.Reference(x);
+                return new Term.Call(x, List.of(), arities.get(x));
             }
             throw error(filename, ctx, "Variable not in scope: `%s`", x);
         }
