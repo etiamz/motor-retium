@@ -184,6 +184,7 @@ public final class StrictnessAnalyzer {
                 final var positions = phi.get(name);
                 final var myArguments = new ArrayList<Term.Argument>();
                 for (int i = 0; i < arguments.size(); i++) {
+                    assert arguments.get(i).strictness() == NON_STRICT;
                     final var strictness = positions.contains(i) ? STRICT : NON_STRICT;
                     myArguments.add(
                             new Term.Argument(annotate(phi, arguments.get(i).t()), strictness));
