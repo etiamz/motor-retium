@@ -60,11 +60,13 @@ public final class StrictnessAnalyzer {
         return phi;
     }
 
-    private static Set<Integer> strictParameters(final Environment phi, final Definition d) {
+    private static Set<Integer> strictParameters(
+            final Environment phi,
+            final Definition definition) {
         final var summary = new LinkedHashSet<Integer>();
-        final var myDemand = demand(phi, d.body());
-        for (int i = 0; i < d.parameters().size(); i++) {
-            if (myDemand.contains(d.parameters().get(i))) {
+        final var myDemand = demand(phi, definition.body());
+        for (int i = 0; i < definition.parameters().size(); i++) {
+            if (myDemand.contains(definition.parameters().get(i))) {
                 summary.add(i);
             }
         }
