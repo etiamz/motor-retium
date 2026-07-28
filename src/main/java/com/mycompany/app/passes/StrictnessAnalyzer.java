@@ -4,6 +4,7 @@ import static com.mycompany.app.Strictness.*;
 
 import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
+import com.mycompany.app.Strictness;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -11,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 public final class StrictnessAnalyzer {
     private StrictnessAnalyzer() {
@@ -181,14 +183,22 @@ public final class StrictnessAnalyzer {
     private static Term annotate(final Environment phi, final Term term) {
         return switch (term) {
             case Term.Call(var name, var arguments, var missing) -> {
+                final var ts = arguments.stream()
+                        .map(argument -> {
+                            final var t = argument.t();
+                            final var strictness = argument.strictness();
+                            assert strictness == NON_STRICT
+                                    : "Incoming function call arguments must not be annotated";
+                            return t;
+                        })
+                        .toList();
                 final var positions = phi.get(name);
-                final var myArguments = new ArrayList<Term.Argument>();
-                for (int i = 0; i < arguments.size(); i++) {
-                    assert arguments.get(i).strictness() == NON_STRICT;
-                    final var strictness = positions.contains(i) ? STRICT : NON_STRICT;
-                    myArguments.add(
-                            new Term.Argument(annotate(phi, arguments.get(i).t()), strictness));
-                }
+                final var myArguments = IntStream.range(0, ts.size())
+                        .mapToObj(
+                                i -> new Term.Argument(
+                                        annotate(phi, ts.get(i)),
+                                        strictnessAt(positions, i)))
+                        .toList();
                 yield new Term.Call(name, myArguments, missing);
             }
             case Term.Lambda(var x, var t) ->
@@ -209,11 +219,10 @@ public final class StrictnessAnalyzer {
                 final var positions = strictParameters(phi, head);
                 Term result = annotate(phi, head);
                 for (int i = 0; i < arguments.size(); i++) {
-                    final var argument = annotate(phi, arguments.get(i));
                     result = new Term.Application(
                             result,
-                            argument,
-                            positions.contains(i) ? STRICT : NON_STRICT);
+                            annotate(phi, arguments.get(i)),
+                            strictnessAt(positions, i));
                 }
                 yield result;
             }
@@ -268,5 +277,9 @@ public final class StrictnessAnalyzer {
                 myCase.xs(),
                 List.of(),
                 annotate(phi, myCase.t()));
+    }
+
+    private static Strictness strictnessAt(final Set<Integer> positions, final int i) {
+        return positions.contains(i) ? STRICT : NON_STRICT;
     }
 }
