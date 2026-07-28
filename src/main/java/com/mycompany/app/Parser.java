@@ -616,9 +616,9 @@ public final class Parser {
                     visit(right));
         }
 
-        private void checkNotRange(final MotorParser.TermContext t) {
-            if (RANGE_CONTEXTS.contains(t.getClass())) {
-                throw error(filename, t, "Chained ranges require parentheses");
+        private void checkNotRange(final MotorParser.TermContext ctx) {
+            if (RANGE_CONTEXTS.contains(ctx.getClass())) {
+                throw error(filename, ctx, "Chained ranges require parentheses");
             }
         }
 

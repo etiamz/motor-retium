@@ -110,11 +110,11 @@ public sealed interface Term {
                         missing);
             case Lambda(var x, var t) -> {
                 final var y = freshen(x, banlist);
-                final var renamingx = new LinkedHashMap<>(renaming);
-                renamingx.put(x, y);
-                final var banlistx = new LinkedHashSet<>(banlist);
-                banlistx.add(y);
-                yield new Lambda(y, t.rename(renamingx, banlistx));
+                final var myRenaming = new LinkedHashMap<>(renaming);
+                myRenaming.put(x, y);
+                final var myBanlist = new LinkedHashSet<>(banlist);
+                myBanlist.add(y);
+                yield new Lambda(y, t.rename(myRenaming, myBanlist));
             }
             case Application(var t1, var t2, var strictness) ->
                 new Application(
@@ -162,20 +162,20 @@ public sealed interface Term {
             final Case myCase,
             final Map<String, String> renaming,
             final Set<String> banlist) {
-        final var renamingx = new LinkedHashMap<>(renaming);
-        final var banlistx = new LinkedHashSet<>(banlist);
+        final var myRenaming = new LinkedHashMap<>(renaming);
+        final var myBanlist = new LinkedHashSet<>(banlist);
         final var ys = new ArrayList<String>();
         for (final var x : myCase.xs) {
-            final var y = freshen(x, banlistx);
-            renamingx.put(x, y);
-            banlistx.add(y);
+            final var y = freshen(x, myBanlist);
+            myRenaming.put(x, y);
+            myBanlist.add(y);
             ys.add(y);
         }
         return new Case(
                 myCase.name,
                 ys,
-                myCase.guards.stream().map(guard -> guard.rename(renamingx, banlistx)).toList(),
-                myCase.t.rename(renamingx, banlistx));
+                myCase.guards.stream().map(guard -> guard.rename(myRenaming, myBanlist)).toList(),
+                myCase.t.rename(myRenaming, myBanlist));
     }
 
     public default Term rename(

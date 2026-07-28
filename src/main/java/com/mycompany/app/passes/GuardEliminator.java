@@ -43,9 +43,9 @@ public final class GuardEliminator {
                                 .toList(),
                         missing);
             case Term.Lambda(var x, var t) -> {
-                final var banlistx = new LinkedHashSet<>(banlist);
-                banlistx.add(x);
-                yield new Term.Lambda(x, eliminate(t, banlistx));
+                final var myBanlist = new LinkedHashSet<>(banlist);
+                myBanlist.add(x);
+                yield new Term.Lambda(x, eliminate(t, myBanlist));
             }
             case Term.Application(var t1, var t2, var strictness) ->
                 new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist), strictness);
@@ -55,15 +55,15 @@ public final class GuardEliminator {
                         ts.stream().map(t -> eliminate(t, banlist)).toList(),
                         missing);
             case Term.Match(var s, var cases) -> {
-                final var sx = eliminate(s, banlist);
-                final var casesx = cases.stream().map(myCase -> eliminateCase(myCase, banlist))
+                final var myS = eliminate(s, banlist);
+                final var myCases = cases.stream().map(myCase -> eliminateCase(myCase, banlist))
                         .toList();
-                final var casesxx = groupCases(casesx)
+                final var myMyCases = groupCases(myCases)
                         .stream()
                         .map(group -> renameCasesInGroup(group, banlist))
                         .map(group -> foldGroup(group))
                         .toList();
-                yield new Term.Match(sx, casesxx);
+                yield new Term.Match(myS, myMyCases);
             }
             case Term.Fix(var t) ->
                 new Term.Fix(eliminate(t, banlist));
@@ -93,13 +93,13 @@ public final class GuardEliminator {
     }
 
     private static Term.Case eliminateCase(final Term.Case myCase, final Set<String> banlist) {
-        final var banlistx = new LinkedHashSet<>(banlist);
-        banlistx.addAll(myCase.xs());
+        final var myBanlist = new LinkedHashSet<>(banlist);
+        myBanlist.addAll(myCase.xs());
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
-                myCase.guards().stream().map(guard -> eliminate(guard, banlistx)).toList(),
-                eliminate(myCase.t(), banlistx));
+                myCase.guards().stream().map(guard -> eliminate(guard, myBanlist)).toList(),
+                eliminate(myCase.t(), myBanlist));
     }
 
     // Groups the cases by constructor name, preserving the relative order of both the groups & the
@@ -139,8 +139,8 @@ public final class GuardEliminator {
         }
         final var representative = group.getFirst();
         final var ys = Term.freshNames(representative.xs().size(), banlist);
-        final var banlistx = new LinkedHashSet<>(banlist);
-        banlistx.addAll(ys);
+        final var myBanlist = new LinkedHashSet<>(banlist);
+        myBanlist.addAll(ys);
         return group
                 .stream()
                 .map(
@@ -149,9 +149,9 @@ public final class GuardEliminator {
                                 ys,
                                 myCase.guards()
                                         .stream()
-                                        .map(guard -> guard.rename(myCase.xs(), ys, banlistx))
+                                        .map(guard -> guard.rename(myCase.xs(), ys, myBanlist))
                                         .toList(),
-                                myCase.t().rename(myCase.xs(), ys, banlistx)))
+                                myCase.t().rename(myCase.xs(), ys, myBanlist)))
                 .toList();
     }
 

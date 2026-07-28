@@ -113,9 +113,9 @@ public final class OperatorSaturator {
             case Term.Operator(var op) ->
                 wrap(ts -> apply(op, ts), List.of(), op.arity(), banlist);
             case Term.Lambda(var x, var t) -> {
-                final var banlistx = new LinkedHashSet<>(banlist);
-                banlistx.add(x);
-                yield new Term.Lambda(x, saturate(t, banlistx));
+                final var myBanlist = new LinkedHashSet<>(banlist);
+                myBanlist.add(x);
+                yield new Term.Lambda(x, saturate(t, myBanlist));
             }
             case Term.Match(var s, var cases) ->
                 new Term.Match(
@@ -152,13 +152,13 @@ public final class OperatorSaturator {
         if (!myCase.guards().isEmpty()) {
             throw new IllegalStateException("`|`-guards must be already eliminated");
         }
-        final var banlistx = new LinkedHashSet<>(banlist);
-        banlistx.addAll(myCase.xs());
+        final var myBanlist = new LinkedHashSet<>(banlist);
+        myBanlist.addAll(myCase.xs());
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
                 List.of(),
-                saturate(myCase.t(), banlistx));
+                saturate(myCase.t(), myBanlist));
     }
 
     private static Term wrap(

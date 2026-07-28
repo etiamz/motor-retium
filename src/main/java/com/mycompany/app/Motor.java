@@ -183,27 +183,28 @@ public final class Motor {
         }
     }
 
-    private static Bounce reduce(final Consumer p, final Thunk k, final Heart heart) {
+    private static Bounce reduce(final Consumer p, final Thunk thunk, final Heart heart) {
         return switch (p.chase()) {
-            case AStrictOp1 rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AIfThenElse rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case ANot rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AAnd rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AOr rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AApplicator rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AStrictApplicator rator -> duplex(rator.a, rator.c, rator::interact, p, k, heart);
-            case AResolver rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case ACapture rator -> duplex(rator.a, rator.d, rator::interact, p, k, heart);
-            case AFix rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AStrictOp2 rator -> duplex(rator.a, rator.c, rator::interact, p, k, heart);
-            case ADoRange rator -> duplex(rator.a, rator.c, rator::interact, p, k, heart);
-            case ADoRangeFrom rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case ADoRangeTo rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case AMatch rator -> simplex(rator.a, rator::interact, p, k, heart);
-            case ACall call -> call(call, p, k, heart);
-            case ADuplicator dup -> sync(dup, p, k, heart);
+            case AStrictOp1 rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AIfThenElse rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case ANot rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AAnd rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AOr rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AApplicator rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AStrictApplicator rator ->
+                duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            case AResolver rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case ACapture rator -> duplex(rator.a, rator.d, rator::interact, p, thunk, heart);
+            case AFix rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AStrictOp2 rator -> duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            case ADoRange rator -> duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            case ADoRangeFrom rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case ADoRangeTo rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case AMatch rator -> simplex(rator.a, rator::interact, p, thunk, heart);
+            case ACall call -> call(call, p, thunk, heart);
+            case ADuplicator dup -> sync(dup, p, thunk, heart);
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
-                k;
+                thunk;
         };
     }
 
@@ -211,17 +212,17 @@ public final class Motor {
             final Consumer target,
             final Runnable interactor,
             final Consumer p,
-            final Thunk k,
+            final Thunk thunk,
             final Heart heart) {
         if (isWhnf(target)) {
             return () -> {
                 interactor.run();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             };
         }
         return () -> reduce(target, () -> {
             interactor.run();
-            return reduce(p, k, heart);
+            return reduce(p, thunk, heart);
         }, heart);
     }
 
@@ -230,25 +231,25 @@ public final class Motor {
             final Consumer right,
             final Runnable interactor,
             final Consumer p,
-            final Thunk k,
+            final Thunk thunk,
             final Heart heart) {
         final boolean isLeftWhnf = isWhnf(left), isRightWhnf = isWhnf(right);
         if (isLeftWhnf && isRightWhnf) {
             return () -> {
                 interactor.run();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             };
         }
         if (isRightWhnf) {
             return () -> reduce(left, () -> {
                 interactor.run();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             }, heart);
         }
         if (isLeftWhnf) {
             return () -> reduce(right, () -> {
                 interactor.run();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             }, heart);
         }
         return () -> {
@@ -260,7 +261,7 @@ public final class Motor {
                 if (future != null) {
                     return new Await(future, () -> {
                         interactor.run();
-                        return reduce(p, k, heart);
+                        return reduce(p, thunk, heart);
                     });
                 }
                 // The frame has not been promoted; unlink the frame from the list & reduce the
@@ -268,7 +269,7 @@ public final class Motor {
                 heart.unlink(frame);
                 return reduce(right, () -> {
                     interactor.run();
-                    return reduce(p, k, heart);
+                    return reduce(p, thunk, heart);
                 }, heart);
             }, heart);
         };
@@ -277,7 +278,7 @@ public final class Motor {
     private static Bounce call(
             final ACall call,
             final Consumer p,
-            final Thunk k,
+            final Thunk thunk,
             final Heart heart) {
         return (Thunk) () -> {
             final var frames = new ArrayList<Promotable>();
@@ -294,9 +295,9 @@ public final class Motor {
             }
             if (inline == null) {
                 call.interact();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             }
-            return reduce(inline, join(frames, 0, call, p, k, heart), heart);
+            return reduce(inline, join(frames, 0, call, p, thunk, heart), heart);
         };
     }
 
@@ -305,17 +306,17 @@ public final class Motor {
             final int index,
             final ACall call,
             final Consumer p,
-            final Thunk k,
+            final Thunk thunk,
             final Heart heart) {
         if (index == frames.size()) {
             return () -> {
                 call.interact();
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             };
         }
         return () -> {
             final Promotable frame = frames.get(index);
-            final Thunk next = join(frames, index + 1, call, p, k, heart);
+            final Thunk next = join(frames, index + 1, call, p, thunk, heart);
             final CompletableFuture<Agent> future = frame.future;
             if (future != null) {
                 return new Await(future, next);
@@ -328,7 +329,7 @@ public final class Motor {
     private static Bounce sync(
             final ADuplicator dup,
             final Consumer p,
-            final Thunk k,
+            final Thunk thunk,
             final Heart heart) {
         final var origin = p.producer() == dup.b ? Origin.LEFT : Origin.RIGHT;
         final var mine = new CompletableFuture<Duplicand>();
@@ -338,12 +339,12 @@ public final class Motor {
                 final Duplicand duplicand = dup.interact();
                 mine.complete(duplicand);
                 duplicand.connect(p, origin);
-                return reduce(p, k, heart);
+                return reduce(p, thunk, heart);
             }, heart);
         }
         return new Await(owner, () -> {
             owner.resultNow().connect(p, origin);
-            return reduce(p, k, heart);
+            return reduce(p, thunk, heart);
         });
     }
 

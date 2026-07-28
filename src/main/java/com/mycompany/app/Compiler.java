@@ -30,15 +30,15 @@ public final class Compiler {
         return new Compilation(main, book);
     }
 
-    private static Template compile(final Definition d) {
+    private static Template compile(final Definition definition) {
         final var builder = new Template.Builder();
         final var root = builder.mkRoot().a();
-        final var fvSet = compile(builder, d.body(), root);
-        for (final var x : d.parameters()) {
+        final var fvSet = compile(builder, definition.body(), root);
+        for (final var x : definition.parameters()) {
             final var usages = fvSet.getOrDefault(x, List.of());
             bind(builder, builder.mkParameter(), usages);
         }
-        fvSet.keySet().removeAll(d.parameters());
+        fvSet.keySet().removeAll(definition.parameters());
         if (!fvSet.isEmpty()) {
             throw new IllegalStateException("Cannot resolve these variable(s): " + fvSet.keySet());
         }
@@ -87,10 +87,10 @@ public final class Compiler {
                 }
                 final var agent = builder.mkResolver();
                 Consumer tail = agent.a();
-                final var capturesx = new TermInterface();
+                final var myCaptures = new TermInterface();
                 for (final var entry : captures.entrySet()) {
                     final var cap = builder.mkCapture();
-                    capturesx.put(entry.getKey(), new ArrayList<>(List.of(cap.a())));
+                    myCaptures.put(entry.getKey(), new ArrayList<>(List.of(cap.a())));
                     tail.setProducer(cap.b());
                     bind(builder, cap.c(), entry.getValue());
                     tail = cap.d();
@@ -99,7 +99,7 @@ public final class Compiler {
                 output.setProducer(agent.b());
                 bind(builder, agent.c(), usages == null ? List.of() : usages);
                 agent.d().setProducer(result.producer());
-                yield capturesx;
+                yield myCaptures;
             }
             case Term.Application(var t1, var t2, var strictness) -> {
                 if (strictness == STRICT) {
@@ -131,7 +131,7 @@ public final class Compiler {
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
-                final var arities = cases.stream().mapToInt(c -> c.xs().size()).toArray();
+                final var arities = cases.stream().mapToInt(myCase -> myCase.xs().size()).toArray();
                 final var agent = builder.mkMatch(names, arities);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, s, agent.a());

@@ -86,19 +86,20 @@ public final class SharedVariableHoister {
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(hoist(t1), op, hoist(t2));
             case Term.IfThenElse(var t1, var t2, var t3) -> {
-                final Term tx = hoist(t1);
-                final Term ux = hoist(t2);
-                final Term vx = hoist(t3);
-                final var vars = sharedVariables(ux, vx);
+                final Term condition = hoist(t1);
+                final Term consequent = hoist(t2);
+                final Term alternative = hoist(t3);
+                final var vars = sharedVariables(consequent, alternative);
                 if (vars.isEmpty()) {
-                    yield new Term.IfThenElse(tx, ux, vx);
+                    yield new Term.IfThenElse(condition, consequent, alternative);
                 }
-                Term uxx = ux, vxx = vx;
+                Term myConsequent = consequent;
+                Term myAlternative = alternative;
                 for (final var x : vars.reversed()) {
-                    uxx = new Term.Lambda(x, uxx);
-                    vxx = new Term.Lambda(x, vxx);
+                    myConsequent = new Term.Lambda(x, myConsequent);
+                    myAlternative = new Term.Lambda(x, myAlternative);
                 }
-                Term result = new Term.IfThenElse(tx, uxx, vxx);
+                Term result = new Term.IfThenElse(condition, myConsequent, myAlternative);
                 for (final var x : vars) {
                     result = new Term.Application(result, new Term.Variable(x));
                 }
