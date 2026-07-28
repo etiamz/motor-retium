@@ -178,17 +178,19 @@ public sealed interface Term {
                 myCase.t.rename(renamingx, banlistx));
     }
 
-    // @formatter:off
     public default Term rename(
-            final List<String> from, final List<String> to, final Set<String> banlist) {
-        assert from.size() == to.size();
+            final List<String> from,
+            final List<String> to,
+            final Set<String> banlist) {
+        if (from.size() != to.size()) {
+            throw new IllegalStateException("Renaming source and target must be equally sized");
+        }
         final var renaming = new LinkedHashMap<String, String>();
         for (int i = 0; i < from.size(); i++) {
             renaming.put(from.get(i), to.get(i));
         }
         return rename(renaming, banlist);
     }
-    // @formatter:on
 
     public static List<String> freshNames(final int n, final Set<String> banlist) {
         final var names = new ArrayList<String>();

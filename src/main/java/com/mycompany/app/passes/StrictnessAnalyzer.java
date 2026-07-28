@@ -187,8 +187,10 @@ public final class StrictnessAnalyzer {
                         .map(argument -> {
                             final var t = argument.t();
                             final var strictness = argument.strictness();
-                            assert strictness == NON_STRICT
-                                    : "Incoming function call arguments must not be annotated";
+                            if (strictness != NON_STRICT) {
+                                throw new IllegalStateException(
+                                        "Incoming function call arguments must not be annotated");
+                            }
                             return t;
                         })
                         .toList();

@@ -114,12 +114,14 @@ public final class GuardEliminator {
             final var branches = group.subList(0, group.size() - 1);
             final var fallback = group.getLast();
             final var name = representative.name();
-            assert branches
-                    .stream()
-                    .allMatch(myCase -> !myCase.guards().isEmpty())
-                    : String.format("Unreachable case(s) in the group `%s`", name);
-            assert fallback.guards().isEmpty()
-                    : String.format("No fallback case in the group `%s`", name);
+            if (branches.stream().anyMatch(myCase -> myCase.guards().isEmpty())) {
+                throw new IllegalStateException(
+                        String.format("Unreachable case(s) in the group `%s`", name));
+            }
+            if (!fallback.guards().isEmpty()) {
+                throw new IllegalStateException(
+                        String.format("No fallback case in the group `%s`", name));
+            }
         }
         return List.copyOf(groups.values());
     }
@@ -129,7 +131,9 @@ public final class GuardEliminator {
     private static List<Term.Case> renameCasesInGroup(
             final List<Term.Case> group,
             final Set<String> banlist) {
-        assert !group.isEmpty();
+        if (group.isEmpty()) {
+            throw new IllegalStateException("Case group must be non-empty");
+        }
         if (group.size() == 1) {
             return group;
         }
@@ -154,12 +158,16 @@ public final class GuardEliminator {
     // Once the pattern variables in the group are renamed, fold the group into a single case with
     // an if-then-else body.
     private static Term.Case foldGroup(final List<Term.Case> group) {
-        assert !group.isEmpty();
+        if (group.isEmpty()) {
+            throw new IllegalStateException("Case group must be non-empty");
+        }
         final var branches = group.subList(0, group.size() - 1);
         final var fallback = group.getLast();
         final var name = fallback.name();
         final var parameters = fallback.xs();
-        assert fallback.guards().isEmpty(); // checked in `groupCases`
+        if (!fallback.guards().isEmpty()) { // checked in `groupCases`
+            throw new IllegalStateException("Fallback case must have no guards");
+        }
         Term body = fallback.t();
         for (final var myCase : branches.reversed()) {
             final var condition = foldGuards(myCase.guards());
@@ -170,7 +178,9 @@ public final class GuardEliminator {
     }
 
     private static Term foldGuards(final List<Term> guards) {
-        assert !guards.isEmpty(); // checked in `groupCases`
+        if (guards.isEmpty()) { // checked in `groupCases`
+            throw new IllegalStateException("Guard list must be non-empty");
+        }
         Term condition = guards.getLast();
         // Using Haskell's `infixr 3` association.
         for (final var guard : guards.subList(0, guards.size() - 1).reversed()) {
