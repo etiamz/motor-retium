@@ -1291,12 +1291,10 @@ public final class Motor {
 
         private void hsearch(final Agent left, final Agent right) {
             final AStrictOp2 op2 = this;
-            if (!isHsearchData(left)) {
-                crash("First operand not welcome: %s", describe(left));
-            }
-            if (!isHsearchData(right)) {
-                crash("Second operand not welcome: %s", describe(right));
-            }
+            assert isHsearchData(left)
+                    : String.format("First operand not welcome: %s", describe(left));
+            assert isHsearchData(right)
+                    : String.format("Second operand not welcome: %s", describe(right));
             final var key = hsearchData(left);
             final var value = hsearchData(right);
             final var data = HSEARCH_TABLE.putIfAbsent(key, value);
@@ -1996,9 +1994,8 @@ public final class Motor {
             this.handlers = new Consumer[names.length];
             this.parameters = new Producer[names.length][];
             for (int i = 0; i < names.length; i++) {
-                if (names[i] != names[i].intern()) {
-                    crash("Match case name not interned: `%s`", names[i]);
-                }
+                assert names[i] == names[i].intern()
+                        : String.format("Match case name not interned: `%s`", names[i]);
                 handlers[i] = new Consumer(null);
                 parameters[i] = new Producer[arities[i]];
                 for (int j = 0; j < arities[i]; j++) {
@@ -2383,9 +2380,8 @@ public final class Motor {
         public final Consumer[] arguments;
 
         public AConstructor(final String name, final int arity) {
-            if (name != name.intern()) {
-                crash("Constructor name not interned: `%s`", name);
-            }
+            assert name == name.intern()
+                    : String.format("Constructor name not interned: `%s`", name);
             this.name = name;
             this.a = new Producer(this);
             this.arguments = new Consumer[arity];
