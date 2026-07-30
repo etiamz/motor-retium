@@ -336,6 +336,7 @@ public final class Motor {
             final Heart heart) {
         final var origin = p.producer() == dup.b ? Origin.LEFT : Origin.RIGHT;
         final var mine = new CompletableFuture<Duplicand>();
+        // A compare-and-exchange fast path does not deliver a measurable change in wall time.
         final var owner = dup.sync.compareAndExchange(null, mine);
         if (owner == null) {
             return (Thunk) () -> reduce(dup.a, () -> {
