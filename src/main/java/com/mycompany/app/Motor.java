@@ -149,6 +149,9 @@ public final class Motor {
                         bounce = thunk.run();
                         beat(heart);
                     }
+                    case Await(var future, var resume) when future.isDone() -> {
+                        bounce = resume;
+                    }
                     case Await(var future, var resume) -> {
                         future.thenRun(() -> schedule(heart, resume));
                         return;
