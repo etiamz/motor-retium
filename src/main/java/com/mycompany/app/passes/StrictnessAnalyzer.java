@@ -51,8 +51,7 @@ public final class StrictnessAnalyzer {
             for (final var entry : definitions.entrySet()) {
                 final var name = entry.getKey();
                 final var summary = strictParameters(phi, entry.getValue());
-                if (!summary.equals(phi.get(name))) {
-                    phi.put(name, summary);
+                if (!summary.equals(phi.put(name, summary))) {
                     fix = false;
                 }
             }
@@ -108,20 +107,12 @@ public final class StrictnessAnalyzer {
                     strictResult.addAll(demand(phi, t2));
                     yield strictResult;
                 }
-                final var arguments = new ArrayList<Term>();
-                Term head = term;
-                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
-                    if (myStrictness == STRICT) {
-                        break;
-                    }
-                    arguments.add(0, rand);
-                    head = rator;
-                }
-                final var result = demand(phi, head);
-                final var positions = strictParameters(phi, head);
-                for (int i = 0; i < arguments.size(); i++) {
+                final var spine = spine(term);
+                final var result = demand(phi, spine.head());
+                final var positions = strictParameters(phi, spine.head());
+                for (int i = 0; i < spine.arguments().size(); i++) {
                     if (positions.contains(i)) {
-                        result.addAll(demand(phi, arguments.get(i)));
+                        result.addAll(demand(phi, spine.arguments().get(i)));
                     }
                 }
                 yield result;
@@ -185,23 +176,18 @@ public final class StrictnessAnalyzer {
     private static Term annotate(final Environment phi, final Term term) {
         return switch (term) {
             case Term.Call(var name, var arguments, var missing) -> {
-                final var ts = arguments.stream()
-                        .map(argument -> {
-                            final var t = argument.t();
-                            final var strictness = argument.strictness();
-                            if (strictness != NON_STRICT) {
+                final var positions = phi.get(name);
+                final var myArguments = IntStream.range(0, arguments.size())
+                        .mapToObj(i -> {
+                            final var argument = arguments.get(i);
+                            if (argument.strictness() != NON_STRICT) {
                                 throw new IllegalStateException(
                                         "Incoming function call arguments must not be annotated");
                             }
-                            return t;
+                            return new Term.Argument(
+                                    annotate(phi, argument.t()),
+                                    strictnessAt(positions, i));
                         })
-                        .toList();
-                final var positions = phi.get(name);
-                final var myArguments = IntStream.range(0, ts.size())
-                        .mapToObj(
-                                i -> new Term.Argument(
-                                        annotate(phi, ts.get(i)),
-                                        strictnessAt(positions, i)))
                         .toList();
                 yield new Term.Call(name, myArguments, missing);
             }
@@ -211,21 +197,13 @@ public final class StrictnessAnalyzer {
                 if (strictness == STRICT) {
                     yield new Term.Application(annotate(phi, t1), annotate(phi, t2), STRICT);
                 }
-                final var arguments = new ArrayList<Term>();
-                Term head = term;
-                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
-                    if (myStrictness == STRICT) {
-                        break;
-                    }
-                    arguments.add(0, rand);
-                    head = rator;
-                }
-                final var positions = strictParameters(phi, head);
-                Term result = annotate(phi, head);
-                for (int i = 0; i < arguments.size(); i++) {
+                final var spine = spine(term);
+                final var positions = strictParameters(phi, spine.head());
+                Term result = annotate(phi, spine.head());
+                for (int i = 0; i < spine.arguments().size(); i++) {
                     result = new Term.Application(
                             result,
-                            annotate(phi, arguments.get(i)),
+                            annotate(phi, spine.arguments().get(i)),
                             strictnessAt(positions, i));
                 }
                 yield result;
@@ -285,5 +263,19 @@ public final class StrictnessAnalyzer {
 
     private static Strictness strictnessAt(final Set<Integer> positions, final int i) {
         return positions.contains(i) ? STRICT : NON_STRICT;
+    }
+
+    private record Spine(Term head, List<Term> arguments) {
+    }
+
+    private static Spine spine(final Term term) {
+        final var arguments = new ArrayList<Term>();
+        Term head = term;
+        while (head instanceof Term.Application(var rator, var rand, var strictness)
+                && strictness != STRICT) {
+            arguments.addFirst(rand);
+            head = rator;
+        }
+        return new Spine(head, arguments);
     }
 }
