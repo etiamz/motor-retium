@@ -187,27 +187,80 @@ public final class Motor {
     }
 
     private static Bounce reduce(final Consumer p, final Thunk thunk, final Heart heart) {
-        return switch (p.chase()) {
-            case AStrictOp1 rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AIfThenElse rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case ANot rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AAnd rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AOr rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AApplicator rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AStrictApplicator rator ->
-                duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
-            case AResolver rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case ACapture rator -> duplex(rator.a, rator.d, rator::interact, p, thunk, heart);
-            case AFix rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AStrictOp2 rator -> duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
-            case ADoRange rator -> duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
-            case ADoRangeFrom rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case ADoRangeTo rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case AMatch rator -> simplex(rator.a, rator::interact, p, thunk, heart);
-            case ACall call -> call(call, p, thunk, heart);
-            case ADuplicator dup -> sync(dup, p, thunk, heart);
-            case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
-                thunk;
+        final Agent agent = p.chase();
+        return switch (agent.kind) {
+            case K_STRICT_OP1 -> {
+                final var rator = (AStrictOp1) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_IF_THEN_ELSE -> {
+                final var rator = (AIfThenElse) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_NOT -> {
+                final var rator = (ANot) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_AND -> {
+                final var rator = (AAnd) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_OR -> {
+                final var rator = (AOr) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_APPLICATOR -> {
+                final var rator = (AApplicator) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_STRICT_APPLICATOR -> {
+                final var rator = (AStrictApplicator) agent;
+                yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            }
+            case K_RESOLVER -> {
+                final var rator = (AResolver) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_CAPTURE -> {
+                final var rator = (ACapture) agent;
+                yield duplex(rator.a, rator.d, rator::interact, p, thunk, heart);
+            }
+            case K_FIX -> {
+                final var rator = (AFix) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_STRICT_OP2 -> {
+                final var rator = (AStrictOp2) agent;
+                yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            }
+            case K_DO_RANGE -> {
+                final var rator = (ADoRange) agent;
+                yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            }
+            case K_DO_RANGE_FROM -> {
+                final var rator = (ADoRangeFrom) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_DO_RANGE_TO -> {
+                final var rator = (ADoRangeTo) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_MATCH -> {
+                final var rator = (AMatch) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
+            case K_CALL -> {
+                yield call((ACall) agent, p, thunk, heart);
+            }
+            case K_DUPLICATOR -> {
+                yield sync((ADuplicator) agent, p, thunk, heart);
+            }
+            default -> {
+                if (agent.kind >= K_LAMBDA) {
+                    yield thunk;
+                }
+                yield crash("No such agent kind: %d", (int) agent.kind);
+            }
         };
     }
 
@@ -353,24 +406,39 @@ public final class Motor {
     }
 
     // @formatter:off
-    public sealed interface Agent permits
+    private static final byte
+        // Operators.
+        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_FIX = 13, K_MATCH = 14, K_CALL = 15, K_DUPLICATOR = 16,
+        // Data.
+        K_LAMBDA = 17, K_END_OF_LIST = 18, K_NULL = 19, K_TRUE = 20, K_FALSE = 21, K_INTEGER = 22, K_BIG_INTEGER = 23, K_STRING = 24, K_RANGE = 25, K_RANGE_FROM = 26, K_RANGE_TO = 27, K_RANGE_FULL = 28, K_IDENTITY = 29, K_CONSTRUCTOR = 30, K_SUPERPOSITION = 31;
+    // @formatter:on
+
+    // @formatter:off
+    public abstract static sealed class Agent permits
         // Operators.
         AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch, ACall, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     {
+        // The agent kind for faster dispatch.
+        public final byte kind;
+
+        private Agent(final byte kind) {
+            this.kind = kind;
+        }
     }
     // @formatter:on
 
     private record Operands(Agent first, Agent second) {
     }
 
-    public static final class AStrictOp1 implements Agent {
+    public static final class AStrictOp1 extends Agent {
         public final StrictOp1 op;
         public final Consumer a;
         public final Producer b;
 
         public AStrictOp1(final StrictOp1 op) {
+            super(K_STRICT_OP1);
             this.op = op;
             this.a = new Consumer(null);
             this.b = new Producer(this);
@@ -495,13 +563,14 @@ public final class Motor {
         }
     }
 
-    public static final class AStrictOp2 implements Agent {
+    public static final class AStrictOp2 extends Agent {
         public final StrictOp2 op;
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
 
         public AStrictOp2(final StrictOp2 op) {
+            super(K_STRICT_OP2);
             this.op = op;
             this.a = new Consumer(null);
             this.b = new Producer(this);
@@ -1331,13 +1400,14 @@ public final class Motor {
         }
     }
 
-    public static final class AIfThenElse implements Agent {
+    public static final class AIfThenElse extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
         public final Consumer d;
 
         public AIfThenElse() {
+            super(K_IF_THEN_ELSE);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1385,11 +1455,12 @@ public final class Motor {
         }
     }
 
-    public static final class ANot implements Agent {
+    public static final class ANot extends Agent {
         public final Consumer a;
         public final Producer b;
 
         public ANot() {
+            super(K_NOT);
             this.a = new Consumer(null);
             this.b = new Producer(this);
         }
@@ -1429,12 +1500,13 @@ public final class Motor {
         }
     }
 
-    public static final class AAnd implements Agent {
+    public static final class AAnd extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
 
         public AAnd() {
+            super(K_AND);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1477,12 +1549,13 @@ public final class Motor {
         }
     }
 
-    public static final class AOr implements Agent {
+    public static final class AOr extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
 
         public AOr() {
+            super(K_OR);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1525,13 +1598,14 @@ public final class Motor {
         }
     }
 
-    public static final class ADoRange implements Agent {
+    public static final class ADoRange extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
         public final boolean inclusive;
 
         public ADoRange(final boolean inclusive) {
+            super(K_DO_RANGE);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1595,11 +1669,12 @@ public final class Motor {
         }
     }
 
-    public static final class ADoRangeFrom implements Agent {
+    public static final class ADoRangeFrom extends Agent {
         public final Consumer a;
         public final Producer b;
 
         public ADoRangeFrom() {
+            super(K_DO_RANGE_FROM);
             this.a = new Consumer(null);
             this.b = new Producer(this);
         }
@@ -1639,12 +1714,13 @@ public final class Motor {
         }
     }
 
-    public static final class ADoRangeTo implements Agent {
+    public static final class ADoRangeTo extends Agent {
         public final Consumer a;
         public final Producer b;
         public final boolean inclusive;
 
         public ADoRangeTo(final boolean inclusive) {
+            super(K_DO_RANGE_TO);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.inclusive = inclusive;
@@ -1685,12 +1761,13 @@ public final class Motor {
         }
     }
 
-    public static final class AApplicator implements Agent {
+    public static final class AApplicator extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
 
         public AApplicator() {
+            super(K_APPLICATOR);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1738,12 +1815,13 @@ public final class Motor {
         }
     }
 
-    public static final class AStrictApplicator implements Agent {
+    public static final class AStrictApplicator extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Consumer c;
 
         public AStrictApplicator() {
+            super(K_STRICT_APPLICATOR);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
@@ -1791,13 +1869,14 @@ public final class Motor {
         }
     }
 
-    public static final class AResolver implements Agent {
+    public static final class AResolver extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Producer c;
         public final Consumer d;
 
         public AResolver() {
+            super(K_RESOLVER);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Producer(this);
@@ -1843,13 +1922,14 @@ public final class Motor {
         }
     }
 
-    public static final class ACapture implements Agent {
+    public static final class ACapture extends Agent {
         public final Consumer a;
         public final Producer b;
         public final Producer c;
         public final Consumer d;
 
         public ACapture() {
+            super(K_CAPTURE);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Producer(this);
@@ -1925,11 +2005,12 @@ public final class Motor {
         }
     }
 
-    public static final class AFix implements Agent {
+    public static final class AFix extends Agent {
         public final Consumer a;
         public final Producer b;
 
         public AFix() {
+            super(K_FIX);
             this.a = new Consumer(null);
             this.b = new Producer(this);
         }
@@ -1984,7 +2065,7 @@ public final class Motor {
         }
     }
 
-    public static final class AMatch implements Agent {
+    public static final class AMatch extends Agent {
         public final String[] names; // interned
         public final Consumer a;
         public final Producer b;
@@ -1992,6 +2073,7 @@ public final class Motor {
         public final Producer[][] parameters;
 
         public AMatch(final String[] names, final int[] arities) {
+            super(K_MATCH);
             this.names = names;
             this.a = new Consumer(null);
             this.b = new Producer(this);
@@ -2080,13 +2162,14 @@ public final class Motor {
         }
     }
 
-    public static final class ACall implements Agent {
+    public static final class ACall extends Agent {
         public final String name;
         public final Strictness[] strictnesses;
         public final Producer a;
         public final Consumer[] arguments;
 
         public ACall(final String name, final Strictness[] strictnesses) {
+            super(K_CALL);
             this.name = name;
             this.strictnesses = strictnesses;
             this.a = new Producer(this);
@@ -2111,7 +2194,7 @@ public final class Motor {
         }
     }
 
-    public static final class ADuplicator implements Agent {
+    public static final class ADuplicator extends Agent {
         private final AtomicReference<CompletableFuture<Duplicand>> sync = new AtomicReference<>();
         public final Label label;
         public final Consumer a;
@@ -2119,6 +2202,7 @@ public final class Motor {
         public final Producer c;
 
         public ADuplicator(final Label label) {
+            super(K_DUPLICATOR);
             this.label = label;
             this.a = new Consumer(null);
             this.b = new Producer(this);
@@ -2193,55 +2277,61 @@ public final class Motor {
         }
     }
 
-    public static final class ALambda implements Agent {
+    public static final class ALambda extends Agent {
         public final Producer a;
         public final Producer b;
         public final Consumer c;
 
         public ALambda() {
+            super(K_LAMBDA);
             this.a = new Producer(this);
             this.b = new Producer(this);
             this.c = new Consumer(null);
         }
     }
 
-    public static final class AEndOfList implements Agent {
+    public static final class AEndOfList extends Agent {
         public final Producer a;
 
         public AEndOfList() {
+            super(K_END_OF_LIST);
             this.a = new Producer(this);
         }
     }
 
-    public static final class ANull implements Agent {
+    public static final class ANull extends Agent {
         public final Producer a;
 
         public ANull() {
+            super(K_NULL);
             this.a = new Producer(this);
         }
     }
 
-    public static final class ATrue implements Agent {
+    public static final class ATrue extends Agent {
         public final Producer a;
 
         public ATrue() {
+            super(K_TRUE);
             this.a = new Producer(this);
         }
     }
 
-    public static final class AFalse implements Agent {
+    public static final class AFalse extends Agent {
         public final Producer a;
 
         public AFalse() {
+            super(K_FALSE);
             this.a = new Producer(this);
         }
     }
 
-    public static final class AInteger implements Agent {
+    public static final class AInteger extends Agent {
         public final Value data;
         public final Producer a;
 
         public AInteger(final Value data) {
+            super(K_INTEGER);
             this.data = data;
             this.a = new Producer(this);
         }
@@ -2263,11 +2353,12 @@ public final class Motor {
         }
     }
 
-    public static final class ABigInteger implements Agent {
+    public static final class ABigInteger extends Agent {
         public final MyBigInteger data;
         public final Producer a;
 
         public ABigInteger(final MyBigInteger data) {
+            super(K_BIG_INTEGER);
             this.data = data;
             this.a = new Producer(this);
         }
@@ -2281,11 +2372,12 @@ public final class Motor {
         }
     }
 
-    public static final class AString implements Agent {
+    public static final class AString extends Agent {
         public final MyString data;
         public final Producer a;
 
         public AString(final MyString data) {
+            super(K_STRING);
             this.data = data;
             this.a = new Producer(this);
         }
@@ -2313,12 +2405,13 @@ public final class Motor {
         }
     }
 
-    public static final class ARange implements Agent {
+    public static final class ARange extends Agent {
         public final long start, end;
         public final boolean inclusive;
         public final Producer a;
 
         public ARange(final long start, final long end, final boolean inclusive) {
+            super(K_RANGE);
             this.start = start;
             this.end = end;
             this.inclusive = inclusive;
@@ -2326,51 +2419,56 @@ public final class Motor {
         }
     }
 
-    public static final class ARangeFrom implements Agent {
+    public static final class ARangeFrom extends Agent {
         public final long start;
         public final Producer a;
 
         public ARangeFrom(final long start) {
+            super(K_RANGE_FROM);
             this.start = start;
             this.a = new Producer(this);
         }
     }
 
-    public static final class ARangeTo implements Agent {
+    public static final class ARangeTo extends Agent {
         public final long end;
         public final boolean inclusive;
         public final Producer a;
 
         public ARangeTo(final long end, final boolean inclusive) {
+            super(K_RANGE_TO);
             this.end = end;
             this.inclusive = inclusive;
             this.a = new Producer(this);
         }
     }
 
-    public static final class ARangeFull implements Agent {
+    public static final class ARangeFull extends Agent {
         public final Producer a;
 
         public ARangeFull() {
+            super(K_RANGE_FULL);
             this.a = new Producer(this);
         }
     }
 
-    public static final class AIdentity implements Agent {
+    public static final class AIdentity extends Agent {
         public final Producer a;
 
         public AIdentity() {
+            super(K_IDENTITY);
             this.a = new Producer(this);
         }
     }
 
-    private static final class ASuperposition implements Agent {
+    private static final class ASuperposition extends Agent {
         public final Label label;
         public final Producer a;
         public final Consumer b;
         public final Consumer c;
 
         private ASuperposition(final Label label) {
+            super(K_SUPERPOSITION);
             this.label = label;
             this.a = new Producer(this);
             this.b = new Consumer(null);
@@ -2378,12 +2476,13 @@ public final class Motor {
         }
     }
 
-    public static final class AConstructor implements Agent {
+    public static final class AConstructor extends Agent {
         public final String name; // interned
         public final Producer a;
         public final Consumer[] arguments;
 
         public AConstructor(final String name, final int arity) {
+            super(K_CONSTRUCTOR);
             assert name == name.intern()
                     : String.format("Constructor name not interned: `%s`", name);
             this.name = name;
@@ -2473,12 +2572,7 @@ public final class Motor {
     }
 
     private static boolean isWhnf(final Consumer p) {
-        return switch (p.chase()) {
-            case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
-                true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _ ->
-                false;
-        };
+        return p.chase().kind >= K_LAMBDA;
     }
 
     private record HsearchConstructor(String name) {
