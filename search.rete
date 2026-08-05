@@ -1,0 +1,69 @@
+-- Shortest addition chain search with global `$hsearch` memoization.
+
+Nil : 0;
+Cons : 2;
+Exhausted : 0;
+Occupied : 0;
+State : 3;
+
+main =
+    let seed = 1u64 in
+    let Exhausted = search (State (Cons seed Nil) ($hash seed) level) in
+    "No solution";
+
+search st =
+    let State elems _key nremaining = st in
+    let Cons top _rest = elems in
+    if top == target
+    then $panic (render elems)
+    else if top << nremaining < target
+    then Exhausted
+    else pairs st top elems;
+
+pairs st top elems =
+    case elems of {
+        Nil -> Exhausted;
+        Cons x _xs | x + x <= top -> Exhausted;
+        Cons x xs -> join (sums st top x elems) (pairs st top xs)
+    };
+
+sums st top x elems =
+    case elems of {
+        Nil -> Exhausted;
+        Cons y ys ->
+            let candidate = x + y in
+            if candidate <= top
+            then Exhausted
+            else if candidate > target
+            then sums st top x ys
+            else join (proceed st candidate) (sums st top x ys)
+    };
+
+join a b =
+    let Exhausted = a in
+    b;
+
+proceed st candidate =
+    let State elems key nremaining = st in
+    let hash = $hash candidate in
+    let key' = key ^ hash in
+    let nremaining' = nremaining - 1u64 in
+    let fullKey = $oftype 0bigint key' << 64bigint | $oftype 0bigint hash in
+    if nremaining' > 1u64 && $hsearch fullKey Occupied != null
+    then Exhausted
+    else search (State (Cons candidate elems) key' nremaining');
+
+render elems =
+    case elems of {
+        Nil -> $panic "Empty addition chain impossible";
+        Cons x xs -> case xs of {
+            Nil -> $show x;
+            Cons _ _ -> renderAux xs ++ $show x
+        }
+    };
+
+renderAux elems =
+    case elems of {
+        Nil -> "";
+        Cons x xs -> renderAux xs ++ $show x ++ " "
+    };
