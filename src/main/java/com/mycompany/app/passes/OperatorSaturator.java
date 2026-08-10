@@ -121,8 +121,6 @@ public final class OperatorSaturator {
                 new Term.Match(
                         saturate(s, banlist),
                         cases.stream().map(myCase -> saturateCase(myCase, banlist)).toList());
-            case Term.Fix(var t) ->
-                new Term.Fix(saturate(t, banlist));
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(
                         saturate(t1, banlist),
@@ -182,7 +180,6 @@ public final class OperatorSaturator {
         return switch (op) {
             case Primitives.Apply _ -> new Term.Application(ts.get(0), ts.get(1));
             case Primitives.StrictApply _ -> new Term.Application(ts.get(0), ts.get(1), STRICT);
-            case Primitives.Fix _ -> new Term.Fix(ts.get(0));
             case Primitives.Not _ -> new Term.Not(ts.get(0));
             case Primitives.And _ -> new Term.And(ts.get(0), ts.get(1));
             case Primitives.Or _ -> new Term.Or(ts.get(0), ts.get(1));

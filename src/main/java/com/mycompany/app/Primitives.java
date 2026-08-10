@@ -4,7 +4,7 @@ import com.mycompany.app.CheckedInteger.IntegerTy;
 
 public final class Primitives {
     public sealed interface Operator
-            permits Not, And, Or, Fix, Apply, StrictApply, StrictOp1, StrictOp2 {
+            permits Not, And, Or, Apply, StrictApply, StrictOp1, StrictOp2 {
         public int arity();
     }
 
@@ -19,13 +19,6 @@ public final class Primitives {
         @Override
         public int arity() {
             return 2;
-        }
-    }
-
-    public record Fix() implements Operator {
-        @Override
-        public int arity() {
-            return 1;
         }
     }
 

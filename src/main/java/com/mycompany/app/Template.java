@@ -16,7 +16,7 @@ public final class Template {
         // The interface.
         KRoot,
         // Operators.
-        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KFix, KMatch, KDuplicator,
+        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KDuplicator,
         // Data.
         KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KCall, KEndOfList, KLambda, KConstructor
     {
@@ -66,9 +66,6 @@ public final class Template {
     }
 
     private record KCapture() implements Kind {
-    }
-
-    private record KFix() implements Kind {
     }
 
     private record KMatch(String[] names /* interned */, int[] arities) implements Kind {
@@ -126,7 +123,6 @@ public final class Template {
     private final KStrictApplicator[] sappKinds;
     private final KResolver[] resKinds;
     private final KCapture[] capKinds;
-    private final KFix[] fixKinds;
     private final KMatch[] matchKinds;
     private final KDuplicator[] dupKinds;
     private final KNull[] nullKinds;
@@ -163,7 +159,6 @@ public final class Template {
             final KStrictApplicator[] sappKinds,
             final KResolver[] resKinds,
             final KCapture[] capKinds,
-            final KFix[] fixKinds,
             final KMatch[] matchKinds,
             final KDuplicator[] dupKinds,
             final KNull[] nullKinds,
@@ -195,7 +190,6 @@ public final class Template {
         this.sappKinds = sappKinds;
         this.resKinds = resKinds;
         this.capKinds = capKinds;
-        this.fixKinds = fixKinds;
         this.matchKinds = matchKinds;
         this.dupKinds = dupKinds;
         this.nullKinds = nullKinds;
@@ -302,11 +296,6 @@ public final class Template {
             producers[j++] = agent.b;
             producers[j++] = agent.c;
             consumers[i++] = agent.d;
-        }
-        for (final KFix _ : fixKinds) {
-            final var agent = new Motor.AFix();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
         }
         for (final KMatch k : matchKinds) {
             final var agent = new Motor.AMatch(k.names, k.arities);
@@ -745,24 +734,6 @@ public final class Template {
             }
         }
 
-        public static final class AFix {
-            private final Consumer a;
-            private final Producer b;
-
-            private AFix(final Consumer a, final Producer b) {
-                this.a = a;
-                this.b = b;
-            }
-
-            public Consumer a() {
-                return a;
-            }
-
-            public Producer b() {
-                return b;
-            }
-        }
-
         public static final class ADuplicator {
             private final Consumer a;
             private final Producer b;
@@ -1096,13 +1067,6 @@ public final class Template {
             return new ACapture(a, b, c, d);
         }
 
-        public AFix mkFix() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            agents.add(new Agent(new KFix(), new Port[]{a, b}));
-            return new AFix(a, b);
-        }
-
         public ADuplicator mkDuplicator() {
             final Consumer a = new Consumer();
             final Producer b = new Producer();
@@ -1258,7 +1222,6 @@ public final class Template {
             final var sappKinds = collect(KStrictApplicator.class, orderedAgents);
             final var resKinds = collect(KResolver.class, orderedAgents);
             final var capKinds = collect(KCapture.class, orderedAgents);
-            final var fixKinds = collect(KFix.class, orderedAgents);
             final var matchKinds = collect(KMatch.class, orderedAgents);
             final var dupKinds = collect(KDuplicator.class, orderedAgents);
             final var nullKinds = collect(KNull.class, orderedAgents);
@@ -1315,7 +1278,6 @@ public final class Template {
                     sappKinds,
                     resKinds,
                     capKinds,
-                    fixKinds,
                     matchKinds,
                     dupKinds,
                     nullKinds,

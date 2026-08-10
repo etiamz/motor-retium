@@ -117,8 +117,6 @@ public final class StrictnessAnalyzer {
                 }
                 yield result;
             }
-            case Term.Fix(var t) ->
-                demand(phi, t);
             case Term.IfThenElse(var t1, var t2, var t3) -> {
                 final var result = demand(phi, t1);
                 final var branches = demand(phi, t2);
@@ -217,8 +215,6 @@ public final class StrictnessAnalyzer {
                         ts.stream().map(t -> annotate(phi, t)).toList(),
                         0);
             }
-            case Term.Fix(var t) ->
-                new Term.Fix(annotate(phi, t));
             case Term.Match(var s, var cases) ->
                 new Term.Match(
                         annotate(phi, s),

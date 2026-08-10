@@ -66,7 +66,7 @@ atom
     ;
 
 op1
-    : 'fix' | 'not' | 'negate'
+    : 'not' | 'negate'
     ;
 
 op2

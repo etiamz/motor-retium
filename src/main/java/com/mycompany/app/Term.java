@@ -34,9 +34,6 @@ public sealed interface Term {
     public record Operator(Primitives.Operator op) implements Term {
     }
 
-    public record Fix(Term t) implements Term {
-    }
-
     public record NullLiteral() implements Term {
     }
 
@@ -126,8 +123,6 @@ public sealed interface Term {
                         name,
                         ts.stream().map(t -> t.rename(renaming, banlist)).toList(),
                         missing);
-            case Fix(var t) ->
-                new Fix(t.rename(renaming, banlist));
             case IfThenElse(var t1, var t2, var t3) ->
                 new IfThenElse(
                         t1.rename(renaming, banlist),
@@ -223,8 +218,6 @@ public sealed interface Term {
                 union(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 union(ts.toArray(Term[]::new));
-            case Fix(var t) ->
-                t.freeVariables();
             case IfThenElse(var t1, var t2, var t3) ->
                 union(t1, t2, t3);
             case Match(var s, var cases) -> {
@@ -276,8 +269,6 @@ public sealed interface Term {
                 unionReferences(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 unionReferences(ts.toArray(Term[]::new));
-            case Fix(var t) ->
-                t.references();
             case IfThenElse(var t1, var t2, var t3) ->
                 unionReferences(t1, t2, t3);
             case Match(var s, var cases) -> {

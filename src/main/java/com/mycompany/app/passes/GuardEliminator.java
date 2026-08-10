@@ -65,8 +65,6 @@ public final class GuardEliminator {
                         .toList();
                 yield new Term.Match(myS, myMyCases);
             }
-            case Term.Fix(var t) ->
-                new Term.Fix(eliminate(t, banlist));
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(
                         eliminate(t1, banlist),

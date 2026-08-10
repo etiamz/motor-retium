@@ -225,10 +225,6 @@ public final class Motor {
                 final var rator = (ACapture) agent;
                 yield duplex(rator.a, rator.d, rator::interact, p, thunk, heart);
             }
-            case K_FIX -> {
-                final var rator = (AFix) agent;
-                yield simplex(rator.a, rator::interact, p, thunk, heart);
-            }
             case K_STRICT_OP2 -> {
                 final var rator = (AStrictOp2) agent;
                 yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
@@ -408,15 +404,15 @@ public final class Motor {
     // @formatter:off
     private static final byte
         // Operators.
-        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_FIX = 13, K_MATCH = 14, K_CALL = 15, K_DUPLICATOR = 16,
+        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_MATCH = 13, K_CALL = 14, K_DUPLICATOR = 15,
         // Data.
-        K_LAMBDA = 17, K_END_OF_LIST = 18, K_NULL = 19, K_TRUE = 20, K_FALSE = 21, K_INTEGER = 22, K_BIG_INTEGER = 23, K_STRING = 24, K_RANGE = 25, K_RANGE_FROM = 26, K_RANGE_TO = 27, K_RANGE_FULL = 28, K_IDENTITY = 29, K_CONSTRUCTOR = 30, K_SUPERPOSITION = 31;
+        K_LAMBDA = 16, K_END_OF_LIST = 17, K_NULL = 18, K_TRUE = 19, K_FALSE = 20, K_INTEGER = 21, K_BIG_INTEGER = 22, K_STRING = 23, K_RANGE = 24, K_RANGE_FROM = 25, K_RANGE_TO = 26, K_RANGE_FULL = 27, K_IDENTITY = 28, K_CONSTRUCTOR = 29, K_SUPERPOSITION = 30;
     // @formatter:on
 
     // @formatter:off
     public abstract static sealed class Agent permits
         // Operators.
-        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AFix, AMatch, ACall, ADuplicator,
+        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, ACall, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     {
@@ -2005,66 +2001,6 @@ public final class Motor {
         }
     }
 
-    public static final class AFix extends Agent {
-        public final Consumer a;
-        public final Producer b;
-
-        public AFix() {
-            super(K_FIX);
-            this.a = new Consumer(null);
-            this.b = new Producer(this);
-        }
-
-        private void interact() {
-            final AFix fix = this;
-            final Agent data = fix.a.chase();
-            switch (data) {
-                case ALambda lam -> {
-                    final var fixx = new AFix();
-                    final var app = new AApplicator();
-                    final var appx = new AApplicator();
-                    final var res = new AResolver();
-                    final var cap = new ACapture();
-                    final var dup = new ADuplicator(Label.COPY);
-                    fix.b.forward(app.b);
-                    app.a.setProducer(dup.b);
-                    app.c.setProducer(res.b);
-                    cap.a.setProducer(dup.c);
-                    res.a.setProducer(cap.b);
-                    fixx.a.setProducer(cap.c);
-                    cap.d.setProducer(new AEndOfList().a);
-                    appx.a.setProducer(fixx.b);
-                    res.d.setProducer(appx.b);
-                    appx.c.setProducer(res.c);
-                    dup.a.setProducer(lam.a);
-                }
-                case ASuperposition sup -> {
-                    final var fixx = new AFix();
-                    final var fixxx = new AFix();
-                    final var supx = sup; // reuse
-                    fix.b.forward(supx.a);
-                    fixx.a.setProducer(sup.b.producer());
-                    fixxx.a.setProducer(sup.c.producer());
-                    supx.b.setProducer(fixx.b);
-                    supx.c.setProducer(fixxx.b);
-                }
-                default -> {
-                    if (isMachineData(data)) {
-                        crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(fix));
-                    } else if (isUserData(data)) {
-                        typeError(describe(fix), data);
-                    } else if (isOperator(data)) {
-                        crash("Operand unresolved: %s", describe(data));
-                    } else {
-                        throw new IllegalStateException();
-                    }
-                }
-            }
-        }
-    }
-
     public static final class AMatch extends Agent {
         public final String[] names; // interned
         public final Consumer a;
@@ -2534,7 +2470,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2545,7 +2481,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AFix _,AMatch _,ACall _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2618,7 +2554,6 @@ public final class Motor {
             case AStrictApplicator _ -> "a strict applicator";
             case AResolver _ -> "a variable-list resolver";
             case ACapture _ -> "a captured variable";
-            case AFix _ -> "the fix operator";
             case AMatch _ -> "a match expression";
             case ADuplicator _ -> "a duplicator";
             case ALambda _ -> "a lambda function";

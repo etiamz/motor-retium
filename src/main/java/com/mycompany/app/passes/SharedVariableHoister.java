@@ -68,8 +68,6 @@ public final class SharedVariableHoister {
                 }
                 yield result;
             }
-            case Term.Fix(var t) ->
-                new Term.Fix(hoist(t));
             case Term.Not(var t) ->
                 new Term.Not(hoist(t));
             case Term.And(var t1, var t2) ->

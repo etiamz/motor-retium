@@ -29,7 +29,6 @@ import org.apache.commons.text.StringEscapeUtils;
 
 public final class Parser {
     private static final Map<String, Primitives.Operator> UNARY_OPS = Map.ofEntries(
-            Map.entry("fix", new Primitives.Fix()),
             Map.entry("not", new Primitives.Not()),
             Map.entry("$show", Primitives.StrictOp1.STRING_OF),
             Map.entry("$chr", Primitives.StrictOp1.STRING_OF_CHARACTER),

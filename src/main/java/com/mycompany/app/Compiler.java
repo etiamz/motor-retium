@@ -154,11 +154,6 @@ public final class Compiler {
                 }
                 yield fvSet;
             }
-            case Term.Fix(var t) -> {
-                final var agent = builder.mkFix();
-                output.setProducer(agent.b());
-                yield compile(builder, t, agent.a());
-            }
             case Term.IfThenElse(var t1, var t2, var t3) -> {
                 final var agent = builder.mkIfThenElse();
                 output.setProducer(agent.b());
