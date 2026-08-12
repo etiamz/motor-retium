@@ -1935,6 +1935,8 @@ public final class Motor {
         private void interact() {
             final ACapture cap = this;
             final Agent data = cap.a.chase();
+            // NOTE: this `switch` must handle all the data agents, except impossible machine data
+            // like `AEndOfList`.
             switch (data) {
                 case ALambda lam -> {
                     cap.c.forward(lam.a);
@@ -1962,6 +1964,22 @@ public final class Motor {
                 }
                 case AString s -> {
                     cap.c.forward(s.a);
+                    cap.b.forward(cap.d.producer());
+                }
+                case ARange rng -> {
+                    cap.c.forward(rng.a);
+                    cap.b.forward(cap.d.producer());
+                }
+                case ARangeFrom rng -> {
+                    cap.c.forward(rng.a);
+                    cap.b.forward(cap.d.producer());
+                }
+                case ARangeTo rng -> {
+                    cap.c.forward(rng.a);
+                    cap.b.forward(cap.d.producer());
+                }
+                case ARangeFull rng -> {
+                    cap.c.forward(rng.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case AIdentity id -> {
