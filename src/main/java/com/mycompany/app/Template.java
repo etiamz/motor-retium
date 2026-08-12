@@ -16,7 +16,7 @@ public final class Template {
         // The interface.
         KRoot,
         // Operators.
-        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KDuplicator,
+        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KConstructorResolver, KDuplicator,
         // Data.
         KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KCall, KEndOfList, KLambda, KConstructor
     {
@@ -69,6 +69,9 @@ public final class Template {
     }
 
     private record KMatch(String[] names /* interned */, int[] arities) implements Kind {
+    }
+
+    private record KConstructorResolver(String name /* interned */, int arity) implements Kind {
     }
 
     private record KDuplicator() implements Kind {
@@ -124,6 +127,7 @@ public final class Template {
     private final KResolver[] resKinds;
     private final KCapture[] capKinds;
     private final KMatch[] matchKinds;
+    private final KConstructorResolver[] ctrResKinds;
     private final KDuplicator[] dupKinds;
     private final KNull[] nullKinds;
     private final KTrue[] bTrueKinds;
@@ -160,6 +164,7 @@ public final class Template {
             final KResolver[] resKinds,
             final KCapture[] capKinds,
             final KMatch[] matchKinds,
+            final KConstructorResolver[] ctrResKinds,
             final KDuplicator[] dupKinds,
             final KNull[] nullKinds,
             final KTrue[] bTrueKinds,
@@ -191,6 +196,7 @@ public final class Template {
         this.resKinds = resKinds;
         this.capKinds = capKinds;
         this.matchKinds = matchKinds;
+        this.ctrResKinds = ctrResKinds;
         this.dupKinds = dupKinds;
         this.nullKinds = nullKinds;
         this.bTrueKinds = bTrueKinds;
@@ -306,6 +312,14 @@ public final class Template {
                 for (final var port : agent.parameters[caseIndex]) {
                     producers[j++] = port;
                 }
+            }
+        }
+        for (final KConstructorResolver k : ctrResKinds) {
+            final var agent = new Motor.AConstructorResolver(k.name, k.arity);
+            consumers[i++] = agent.a;
+            producers[j++] = agent.b;
+            for (final var port : agent.arguments) {
+                consumers[i++] = port;
             }
         }
         for (final KDuplicator _ : dupKinds) {
@@ -734,6 +748,33 @@ public final class Template {
             }
         }
 
+        public static final class AConstructorResolver {
+            private final Consumer a;
+            private final Producer b;
+            private final Consumer[] arguments;
+
+            private AConstructorResolver(
+                    final Consumer a,
+                    final Producer b,
+                    final Consumer[] arguments) {
+                this.a = a;
+                this.b = b;
+                this.arguments = arguments;
+            }
+
+            public Consumer a() {
+                return a;
+            }
+
+            public Producer b() {
+                return b;
+            }
+
+            public Consumer argument(final int i) {
+                return arguments[i];
+            }
+        }
+
         public static final class ADuplicator {
             private final Consumer a;
             private final Producer b;
@@ -1067,6 +1108,23 @@ public final class Template {
             return new ACapture(a, b, c, d);
         }
 
+        public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
+            final Consumer a = new Consumer();
+            final Producer b = new Producer();
+            final Consumer[] arguments = new Consumer[arity];
+            for (int i = 0; i < arity; i++) {
+                arguments[i] = new Consumer();
+            }
+            final Port[] ports = new Port[2 + arity];
+            ports[0] = a;
+            ports[1] = b;
+            for (int i = 0; i < arity; i++) {
+                ports[2 + i] = arguments[i];
+            }
+            agents.add(new Agent(new KConstructorResolver(name.intern(), arity), ports));
+            return new AConstructorResolver(a, b, arguments);
+        }
+
         public ADuplicator mkDuplicator() {
             final Consumer a = new Consumer();
             final Producer b = new Producer();
@@ -1223,6 +1281,7 @@ public final class Template {
             final var resKinds = collect(KResolver.class, orderedAgents);
             final var capKinds = collect(KCapture.class, orderedAgents);
             final var matchKinds = collect(KMatch.class, orderedAgents);
+            final var ctrResKinds = collect(KConstructorResolver.class, orderedAgents);
             final var dupKinds = collect(KDuplicator.class, orderedAgents);
             final var nullKinds = collect(KNull.class, orderedAgents);
             final var bTrueKinds = collect(KTrue.class, orderedAgents);
@@ -1279,6 +1338,7 @@ public final class Template {
                     resKinds,
                     capKinds,
                     matchKinds,
+                    ctrResKinds,
                     dupKinds,
                     nullKinds,
                     bTrueKinds,

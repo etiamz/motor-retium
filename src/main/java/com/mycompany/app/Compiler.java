@@ -5,6 +5,7 @@ import static com.mycompany.app.Strictness.*;
 import com.mycompany.app.Template.Builder.Consumer;
 import com.mycompany.app.Template.Builder.Producer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,29 +78,21 @@ public final class Compiler {
                 final var result = new Consumer();
                 final var fvSet = compile(builder, t, result);
                 final var usages = fvSet.remove(x);
-                final var captures = fvSet;
-                if (captures.isEmpty()) {
+                if (fvSet.isEmpty()) {
                     final var agent = builder.mkLambda();
                     output.setProducer(agent.a());
                     bind(builder, agent.b(), usages == null ? List.of() : usages);
                     agent.c().setProducer(result.producer());
-                    yield captures;
+                    yield fvSet;
                 }
                 final var agent = builder.mkResolver();
-                Consumer tail = agent.a();
-                final var myCaptures = new TermInterface();
-                for (final var entry : captures.entrySet()) {
-                    final var cap = builder.mkCapture();
-                    myCaptures.put(entry.getKey(), new ArrayList<>(List.of(cap.a())));
-                    tail.setProducer(cap.b());
-                    bind(builder, cap.c(), entry.getValue());
-                    tail = cap.d();
-                }
-                tail.setProducer(builder.mkEndOfList().a());
+                // This line must goe before setting `agent.d()`'s producer, because it guarantees
+                // `result`'s producer to be set.
+                final var captures = capture(builder, agent.a(), fvSet);
                 output.setProducer(agent.b());
                 bind(builder, agent.c(), usages == null ? List.of() : usages);
                 agent.d().setProducer(result.producer());
-                yield myCaptures;
+                yield captures;
             }
             case Term.Application(var t1, var t2, var strictness) -> {
                 if (strictness == STRICT) {
@@ -121,13 +114,29 @@ public final class Compiler {
                 if (missing != 0) {
                     throw new IllegalStateException("Unsaturated constructor: `" + name + "`");
                 }
-                final var agent = builder.mkConstructor(name, ts.size());
-                output.setProducer(agent.a());
+                final int arity = ts.size();
+                final var results = new Consumer[arity];
+                Arrays.setAll(results, _ -> new Consumer());
                 final var fvSet = new TermInterface();
-                for (int i = 0; i < ts.size(); i++) {
-                    merge(fvSet, compile(builder, ts.get(i), agent.argument(i)));
+                for (int i = 0; i < arity; i++) {
+                    merge(fvSet, compile(builder, ts.get(i), results[i]));
                 }
-                yield fvSet;
+                if (fvSet.isEmpty()) {
+                    final var agent = builder.mkConstructor(name, arity);
+                    output.setProducer(agent.a());
+                    for (int i = 0; i < arity; i++) {
+                        agent.argument(i).setProducer(results[i].producer());
+                    }
+                    yield fvSet;
+                }
+                final var agent = builder.mkConstructorResolver(name, arity);
+                // See the same line in the lambda case for the ordering constraint.
+                final var captures = capture(builder, agent.a(), fvSet);
+                output.setProducer(agent.b());
+                for (int i = 0; i < arity; i++) {
+                    agent.argument(i).setProducer(results[i].producer());
+                }
+                yield captures;
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
@@ -236,6 +245,23 @@ public final class Compiler {
                 yield new TermInterface();
             }
         };
+    }
+
+    private static TermInterface capture(
+            final Template.Builder builder,
+            final Consumer head,
+            final TermInterface captures) {
+        Consumer tail = head;
+        final var myCaptures = new TermInterface();
+        for (final var entry : captures.entrySet()) {
+            final var cap = builder.mkCapture();
+            myCaptures.put(entry.getKey(), new ArrayList<>(List.of(cap.a())));
+            tail.setProducer(cap.b());
+            bind(builder, cap.c(), entry.getValue());
+            tail = cap.d();
+        }
+        tail.setProducer(builder.mkEndOfList().a());
+        return myCaptures;
     }
 
     private static void bind(

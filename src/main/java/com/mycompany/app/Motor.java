@@ -248,6 +248,10 @@ public final class Motor {
             case K_CALL -> {
                 yield call((ACall) agent, p, thunk, heart);
             }
+            case K_CONSTRUCTOR_RESOLVER -> {
+                final var rator = (AConstructorResolver) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
             case K_DUPLICATOR -> {
                 yield sync((ADuplicator) agent, p, thunk, heart);
             }
@@ -404,15 +408,15 @@ public final class Motor {
     // @formatter:off
     private static final byte
         // Operators.
-        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_MATCH = 13, K_CALL = 14, K_DUPLICATOR = 15,
+        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_MATCH = 13, K_CALL = 14, K_CONSTRUCTOR_RESOLVER = 15, K_DUPLICATOR = 16,
         // Data.
-        K_LAMBDA = 16, K_END_OF_LIST = 17, K_NULL = 18, K_TRUE = 19, K_FALSE = 20, K_INTEGER = 21, K_BIG_INTEGER = 22, K_STRING = 23, K_RANGE = 24, K_RANGE_FROM = 25, K_RANGE_TO = 26, K_RANGE_FULL = 27, K_IDENTITY = 28, K_CONSTRUCTOR = 29, K_SUPERPOSITION = 30;
+        K_LAMBDA = 17, K_END_OF_LIST = 18, K_NULL = 19, K_TRUE = 20, K_FALSE = 21, K_INTEGER = 22, K_BIG_INTEGER = 23, K_STRING = 24, K_RANGE = 25, K_RANGE_FROM = 26, K_RANGE_TO = 27, K_RANGE_FULL = 28, K_IDENTITY = 29, K_CONSTRUCTOR = 30, K_SUPERPOSITION = 31;
     // @formatter:on
 
     // @formatter:off
     public abstract static sealed class Agent permits
         // Operators.
-        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, ACall, ADuplicator,
+        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, ACall, AConstructorResolver, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     {
@@ -2148,6 +2152,67 @@ public final class Motor {
         }
     }
 
+    public static final class AConstructorResolver extends Agent {
+        public final String name; // interned
+        public final Consumer a;
+        public final Producer b;
+        public final Consumer[] arguments;
+
+        public AConstructorResolver(final String name, final int arity) {
+            super(K_CONSTRUCTOR_RESOLVER);
+            assert name == name.intern()
+                    : String.format("Constructor name not interned: `%s`", name);
+            this.name = name;
+            this.a = new Consumer(null);
+            this.b = new Producer(this);
+            this.arguments = new Consumer[arity];
+            for (int i = 0; i < arity; i++) {
+                arguments[i] = new Consumer(null);
+            }
+        }
+
+        public int arity() {
+            return arguments.length;
+        }
+
+        private void interact() {
+            final AConstructorResolver res = this;
+            final Agent data = res.a.chase();
+            switch (data) {
+                case AEndOfList _ -> {
+                    final var ctr = new AConstructor(res.name, res.arity());
+                    for (int i = 0; i < res.arity(); i++) {
+                        ctr.arguments[i].setProducer(res.arguments[i].producer());
+                    }
+                    res.b.forward(ctr.a);
+                }
+                case ASuperposition sup -> {
+                    final var resx = new AConstructorResolver(res.name, res.arity());
+                    final var resxx = new AConstructorResolver(res.name, res.arity());
+                    final var supx = sup; // reuse
+                    res.b.forward(supx.a);
+                    resx.a.setProducer(sup.b.producer());
+                    resxx.a.setProducer(sup.c.producer());
+                    supx.b.setProducer(resx.b);
+                    supx.c.setProducer(resxx.b);
+                    for (int i = 0; i < res.arity(); i++) {
+                        final var dup = new ADuplicator(sup.label);
+                        dup.a.setProducer(res.arguments[i].producer());
+                        resx.arguments[i].setProducer(dup.b);
+                        resxx.arguments[i].setProducer(dup.c);
+                    }
+                }
+                default -> {
+                    if (isOperator(data)) {
+                        crash("Operand unresolved: %s", describe(data));
+                    } else {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+    }
+
     public static final class ADuplicator extends Agent {
         private final AtomicReference<CompletableFuture<Duplicand>> sync = new AtomicReference<>();
         public final Label label;
@@ -2488,7 +2553,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,ADuplicator _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,AConstructorResolver _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2499,7 +2564,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2573,6 +2638,8 @@ public final class Motor {
             case AResolver _ -> "a variable-list resolver";
             case ACapture _ -> "a captured variable";
             case AMatch _ -> "a match expression";
+            case AConstructorResolver res ->
+                "a variable-list constructor resolver for `" + res.name + "`";
             case ADuplicator _ -> "a duplicator";
             case ALambda _ -> "a lambda function";
             case AEndOfList _ -> "an end-of-variables marker";

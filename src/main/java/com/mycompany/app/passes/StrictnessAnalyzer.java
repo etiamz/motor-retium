@@ -156,7 +156,8 @@ public final class StrictnessAnalyzer {
                 if (missing != 0) {
                     throw new IllegalStateException("Constructors must be already saturated");
                 }
-                yield new LinkedHashSet<>();
+                // Just like closures, our constructors are strict in captures.
+                yield term.freeVariables();
             }
             case Term.Operator _ ->
                 throw new IllegalStateException("Operators must be already saturated");
