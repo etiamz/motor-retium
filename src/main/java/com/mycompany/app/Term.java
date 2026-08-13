@@ -1,7 +1,5 @@
 package com.mycompany.app;
 
-import static com.mycompany.app.Strictness.*;
-
 import com.mycompany.app.CheckedInteger.Value;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,16 +14,16 @@ public sealed interface Term {
     public record Variable(String x) implements Term {
     }
 
-    public record Call(String name, List<Argument> arguments, int missing) implements Term {
+    public record Reference(String name) implements Term {
     }
 
     public record Lambda(String x, Term t) implements Term {
     }
 
-    public record Application(Term t1, Term t2, Strictness strictness) implements Term {
-        public Application(final Term t1, final Term t2) {
-            this(t1, t2, NON_STRICT);
-        }
+    public record Application(Term t1, Term t2) implements Term {
+    }
+
+    public record StrictApplication(Term t1, Term t2) implements Term {
     }
 
     public record Constructor(String name, List<Term> ts, int missing) implements Term {
@@ -76,35 +74,10 @@ public sealed interface Term {
     public record StrictOp2(Term t1, Primitives.StrictOp2 op, Term t2) implements Term {
     }
 
-    public record Argument(Term t, Strictness strictness) {
-        public Argument(final Term t) {
-            this(t, NON_STRICT);
-        }
-
-        public Argument(final String x, final Strictness strictness) {
-            this(new Variable(x), strictness);
-        }
-
-        public Argument(final String x) {
-            this(new Variable(x));
-        }
-    }
-
     public default Term rename(final Map<String, String> renaming, final Set<String> banlist) {
         return switch (this) {
             case Variable(var x) ->
                 new Variable(renaming.getOrDefault(x, x));
-            case Call(var name, var arguments, var missing) ->
-                new Call(
-                        name,
-                        arguments.stream()
-                                .map(argument -> {
-                                    final var t = argument.t;
-                                    final var strictness = argument.strictness;
-                                    return new Argument(t.rename(renaming, banlist), strictness);
-                                })
-                                .toList(),
-                        missing);
             case Lambda(var x, var t) -> {
                 final var y = freshen(x, banlist);
                 final var myRenaming = new LinkedHashMap<>(renaming);
@@ -113,11 +86,12 @@ public sealed interface Term {
                 myBanlist.add(y);
                 yield new Lambda(y, t.rename(myRenaming, myBanlist));
             }
-            case Application(var t1, var t2, var strictness) ->
-                new Application(
+            case Application(var t1, var t2) ->
+                new Application(t1.rename(renaming, banlist), t2.rename(renaming, banlist));
+            case StrictApplication(var t1, var t2) ->
+                new StrictApplication(
                         t1.rename(renaming, banlist),
-                        t2.rename(renaming, banlist),
-                        strictness);
+                        t2.rename(renaming, banlist));
             case Constructor(var name, var ts, var missing) ->
                 new Constructor(
                         name,
@@ -148,7 +122,7 @@ public sealed interface Term {
                 new StrictOp1(op, t.rename(renaming, banlist));
             case StrictOp2(var t1, var op, var t2) ->
                 new StrictOp2(t1.rename(renaming, banlist), op, t2.rename(renaming, banlist));
-            case Operator _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 this;
         };
     }
@@ -207,14 +181,14 @@ public sealed interface Term {
         return switch (this) {
             case Variable(var x) ->
                 new LinkedHashSet<>(List.of(x));
-            case Call(var _, var arguments, var _) ->
-                union(arguments.stream().map(Argument::t).toArray(Term[]::new));
             case Lambda(var x, var t) -> {
                 final var fvSet = t.freeVariables();
                 fvSet.remove(x);
                 yield fvSet;
             }
-            case Application(var t1, var t2, var _) ->
+            case Application(var t1, var t2) ->
+                union(t1, t2);
+            case StrictApplication(var t1, var t2) ->
                 union(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 union(ts.toArray(Term[]::new));
@@ -242,7 +216,7 @@ public sealed interface Term {
                 t.freeVariables();
             case StrictOp2(var t1, var _, var t2) ->
                 union(t1, t2);
-            case Operator _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }
@@ -257,15 +231,13 @@ public sealed interface Term {
 
     public default Set<String> references() {
         return switch (this) {
-            case Call(var name, var arguments, var _) -> {
-                final var refs = unionReferences(
-                        arguments.stream().map(Argument::t).toArray(Term[]::new));
-                refs.add(name);
-                yield refs;
-            }
+            case Reference(var name) ->
+                new LinkedHashSet<>(List.of(name));
             case Lambda(var _, var t) ->
                 t.references();
-            case Application(var t1, var t2, var _) ->
+            case Application(var t1, var t2) ->
+                unionReferences(t1, t2);
+            case StrictApplication(var t1, var t2) ->
                 unionReferences(t1, t2);
             case Constructor(var _, var ts, var _) ->
                 unionReferences(ts.toArray(Term[]::new));

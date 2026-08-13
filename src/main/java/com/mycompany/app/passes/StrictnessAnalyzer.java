@@ -1,10 +1,6 @@
 package com.mycompany.app.passes;
 
-import static com.mycompany.app.Strictness.*;
-
-import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
-import com.mycompany.app.Strictness;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -12,10 +8,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 public final class StrictnessAnalyzer {
     private StrictnessAnalyzer() {
+    }
+
+    private enum Strictness {
+        STRICT, NON_STRICT
     }
 
     @SuppressWarnings("serial")
@@ -33,16 +32,12 @@ public final class StrictnessAnalyzer {
     public static Program analyze(final Program program) {
         final var phi = fix(program.definitions());
         final var main = annotate(phi, program.main());
-        final var definitions = new LinkedHashMap<String, Definition>();
-        program.definitions().forEach(
-                (name, d) -> {
-                    final var result = annotate(phi, d.body());
-                    definitions.put(name, new Definition(d.parameters(), result));
-                });
+        final var definitions = new LinkedHashMap<String, Term>();
+        program.definitions().forEach((name, t) -> definitions.put(name, annotate(phi, t)));
         return new Program(main, definitions);
     }
 
-    private static Environment fix(final Map<String, Definition> definitions) {
+    private static Environment fix(final Map<String, Term> definitions) {
         final var phi = new Environment();
         definitions.forEach((name, _) -> phi.put(name, Set.of()));
         boolean fix = false;
@@ -59,17 +54,13 @@ public final class StrictnessAnalyzer {
         return phi;
     }
 
-    private static Set<Integer> strictParameters(
-            final Environment phi,
-            final Definition definition) {
-        final var summary = new LinkedHashSet<Integer>();
-        final var myDemand = demand(phi, definition.body());
-        for (int i = 0; i < definition.parameters().size(); i++) {
-            if (myDemand.contains(definition.parameters().get(i))) {
-                summary.add(i);
-            }
-        }
-        return summary;
+    private static Set<Integer> strictPositions(final Environment phi, final Term head) {
+        return switch (head) {
+            case Term.Reference(var name) when phi.get(name) instanceof Set<Integer> summary ->
+                summary;
+            default ->
+                strictParameters(phi, head);
+        };
     }
 
     private static Set<Integer> strictParameters(final Environment phi, final Term term) {
@@ -88,31 +79,21 @@ public final class StrictnessAnalyzer {
         return switch (term) {
             case Term.Variable(var x) ->
                 new LinkedHashSet<>(List.of(x));
-            case Term.Call(var name, var arguments, var _) -> {
-                final var result = new LinkedHashSet<String>();
-                final var positions = phi.get(name);
-                for (int i = 0; i < arguments.size(); i++) {
-                    if (positions.contains(i)) {
-                        result.addAll(demand(phi, arguments.get(i).t()));
-                    }
-                }
-                yield result;
-            }
             case Term.Lambda _ ->
                 // Unlike normal-order reduction, our closures are strict in captures.
                 term.freeVariables();
-            case Term.Application(var t1, var t2, var strictness) -> {
-                if (strictness == STRICT) {
-                    final var strictResult = demand(phi, t1);
-                    strictResult.addAll(demand(phi, t2));
-                    yield strictResult;
-                }
+            case Term.StrictApplication(var t1, var t2) -> {
+                final var result = demand(phi, t1);
+                result.addAll(demand(phi, t2));
+                yield result;
+            }
+            case Term.Application _ -> {
                 final var spine = spine(term);
-                final var result = demand(phi, spine.head());
-                final var positions = strictParameters(phi, spine.head());
-                for (int i = 0; i < spine.arguments().size(); i++) {
+                final var result = demand(phi, spine.head);
+                final var positions = strictPositions(phi, spine.head);
+                for (int i = 0; i < spine.arguments.size(); i++) {
                     if (positions.contains(i)) {
-                        result.addAll(demand(phi, spine.arguments().get(i)));
+                        result.addAll(demand(phi, spine.arguments.get(i)));
                     }
                 }
                 yield result;
@@ -161,7 +142,7 @@ public final class StrictnessAnalyzer {
             }
             case Term.Operator _ ->
                 throw new IllegalStateException("Operators must be already saturated");
-            case Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }
@@ -174,36 +155,20 @@ public final class StrictnessAnalyzer {
 
     private static Term annotate(final Environment phi, final Term term) {
         return switch (term) {
-            case Term.Call(var name, var arguments, var missing) -> {
-                final var positions = phi.get(name);
-                final var myArguments = IntStream.range(0, arguments.size())
-                        .mapToObj(i -> {
-                            final var argument = arguments.get(i);
-                            if (argument.strictness() != NON_STRICT) {
-                                throw new IllegalStateException(
-                                        "Incoming function call arguments must not be annotated");
-                            }
-                            return new Term.Argument(
-                                    annotate(phi, argument.t()),
-                                    strictnessAt(positions, i));
-                        })
-                        .toList();
-                yield new Term.Call(name, myArguments, missing);
-            }
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, annotate(phi, t));
-            case Term.Application(var t1, var t2, var strictness) -> {
-                if (strictness == STRICT) {
-                    yield new Term.Application(annotate(phi, t1), annotate(phi, t2), STRICT);
-                }
+            case Term.StrictApplication(var t1, var t2) ->
+                new Term.StrictApplication(annotate(phi, t1), annotate(phi, t2));
+            case Term.Application _ -> {
                 final var spine = spine(term);
-                final var positions = strictParameters(phi, spine.head());
-                Term result = annotate(phi, spine.head());
-                for (int i = 0; i < spine.arguments().size(); i++) {
-                    result = new Term.Application(
-                            result,
-                            annotate(phi, spine.arguments().get(i)),
-                            strictnessAt(positions, i));
+                final var positions = strictPositions(phi, spine.head);
+                Term result = annotate(phi, spine.head);
+                for (int i = 0; i < spine.arguments.size(); i++) {
+                    final var argument = annotate(phi, spine.arguments.get(i));
+                    result = switch (strictnessAt(positions, i)) {
+                        case STRICT -> new Term.StrictApplication(result, argument);
+                        case NON_STRICT -> new Term.Application(result, argument);
+                    };
                 }
                 yield result;
             }
@@ -242,7 +207,7 @@ public final class StrictnessAnalyzer {
                 new Term.StrictOp2(annotate(phi, t1), op, annotate(phi, t2));
             case Term.Operator _ ->
                 throw new IllegalStateException("Operators must be already saturated");
-            case Term.Variable _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }
@@ -259,7 +224,7 @@ public final class StrictnessAnalyzer {
     }
 
     private static Strictness strictnessAt(final Set<Integer> positions, final int i) {
-        return positions.contains(i) ? STRICT : NON_STRICT;
+        return positions.contains(i) ? Strictness.STRICT : Strictness.NON_STRICT;
     }
 
     private record Spine(Term head, List<Term> arguments) {
@@ -268,8 +233,7 @@ public final class StrictnessAnalyzer {
     private static Spine spine(final Term term) {
         final var arguments = new ArrayList<Term>();
         Term head = term;
-        while (head instanceof Term.Application(var rator, var rand, var strictness)
-                && strictness != STRICT) {
+        while (head instanceof Term.Application(var rator, var rand)) {
             arguments.addFirst(rand);
             head = rator;
         }

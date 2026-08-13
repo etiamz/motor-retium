@@ -1,6 +1,5 @@
 package com.mycompany.app.passes;
 
-import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
@@ -21,32 +20,19 @@ public final class SharedVariableHoister {
     // our machine, for closures, before the reduction starts.
     public static Program hoist(final Program program) {
         final var main = hoist(program.main());
-        final var definitions = new LinkedHashMap<String, Definition>();
-        program.definitions().forEach(
-                (name, d) -> {
-                    final var result = hoist(d.body());
-                    definitions.put(name, new Definition(d.parameters(), result));
-                });
+        final var definitions = new LinkedHashMap<String, Term>();
+        program.definitions().forEach((name, t) -> definitions.put(name, hoist(t)));
         return new Program(main, definitions);
     }
 
     private static Term hoist(final Term term) {
         return switch (term) {
-            case Term.Call(var name, var arguments, var missing) ->
-                new Term.Call(
-                        name,
-                        arguments.stream()
-                                .map(argument -> {
-                                    final var t = argument.t();
-                                    final var strictness = argument.strictness();
-                                    return new Term.Argument(hoist(t), strictness);
-                                })
-                                .toList(),
-                        missing);
             case Term.Lambda(var x, var t) ->
                 new Term.Lambda(x, hoist(t));
-            case Term.Application(var t1, var t2, var strictness) ->
-                new Term.Application(hoist(t1), hoist(t2), strictness);
+            case Term.Application(var t1, var t2) ->
+                new Term.Application(hoist(t1), hoist(t2));
+            case Term.StrictApplication(var t1, var t2) ->
+                new Term.StrictApplication(hoist(t1), hoist(t2));
             case Term.Constructor(var name, var ts, var missing) -> {
                 if (missing != 0) {
                     throw new IllegalStateException("Constructors must be already saturated");
@@ -103,7 +89,7 @@ public final class SharedVariableHoister {
                 }
                 yield result;
             }
-            case Term.Variable _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

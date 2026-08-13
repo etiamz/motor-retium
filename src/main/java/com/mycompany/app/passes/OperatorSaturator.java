@@ -1,8 +1,5 @@
 package com.mycompany.app.passes;
 
-import static com.mycompany.app.Strictness.*;
-
-import com.mycompany.app.Definition;
 import com.mycompany.app.Primitives;
 import com.mycompany.app.Program;
 import com.mycompany.app.Term;
@@ -17,67 +14,33 @@ public final class OperatorSaturator {
     private OperatorSaturator() {
     }
 
-    // Saturates all applicators, wrapping lambdas for yet-unavailable operands: `f e1 ... eN`
-    // becomes `\x1 ... xK-N -> f e1 ... eN x1 ... xK-N`, where applicator `f` is either a user
-    // constructor like `Foo`, built-in operator like `+`, or function call like `foo`, `N >= 0` is
-    // the number of the applied arguments, & `K > N` is the arity of `f`. The arity of each
-    // function is the number of declared parameters.
+    // Saturates all constructors & built-in operators, wrapping lambdas for yet-unavailable
+    // operands: `f e1 ... eN` becomes `\x1, ..., xK-N -> f e1 ... eN x1 ... xK-N`, where `f` can be
+    // either a user constructor or a built-in operator, `N >= 0` is the number of the applied
+    // arguments, & `K > N` is the arity of `f`.
     // Does not throw any errors on over-saturation.
     public static Program saturate(final Program program) {
         final var main = saturate(program.main(), new LinkedHashSet<>());
-        final var definitions = new LinkedHashMap<String, Definition>();
+        final var definitions = new LinkedHashMap<String, Term>();
         program.definitions().forEach(
-                (name, d) -> {
-                    final var result = saturate(d.body(), new LinkedHashSet<>(d.parameters()));
-                    definitions.put(name, new Definition(d.parameters(), result));
-                });
+                (name, t) -> definitions.put(name, saturate(t, new LinkedHashSet<>())));
         return new Program(main, definitions);
     }
 
     private static Term saturate(final Term term, final Set<String> banlist) {
         return switch (term) {
-            case Term.Call(var name, var provided, var missing) -> {
-                if (!provided.isEmpty()) {
-                    throw new IllegalStateException("Function call arguments must be empty");
-                }
-                yield wrap(
-                        ts -> new Term.Call(name, ts.stream().map(Term.Argument::new).toList(), 0),
-                        List.of(),
-                        missing,
-                        banlist);
-            }
-            case Term.Application(var t1, var t2, var strictness) -> {
-                if (strictness == STRICT) {
-                    yield new Term.Application(
-                            saturate(t1, banlist),
-                            saturate(t2, banlist),
-                            STRICT);
-                }
+            case Term.StrictApplication(var t1, var t2) ->
+                new Term.StrictApplication(saturate(t1, banlist), saturate(t2, banlist));
+            case Term.Application _ -> {
                 final var arguments = new ArrayList<Term>();
                 Term head = term;
-                while (head instanceof Term.Application(var rator, var rand, var myStrictness)) {
-                    if (myStrictness == STRICT) {
-                        break;
-                    }
+                while (head instanceof Term.Application(var rator, var rand)) {
                     arguments.add(0, saturate(rand, banlist));
                     head = rator;
                 }
                 final int applied;
                 Term result;
-                if (head instanceof Term.Call(var name, var provided, var missing)) {
-                    if (!provided.isEmpty()) {
-                        throw new IllegalStateException("Function call arguments must be empty");
-                    }
-                    applied = Math.min(arguments.size(), missing);
-                    result = wrap(
-                            ts -> new Term.Call(
-                                    name,
-                                    ts.stream().map(Term.Argument::new).toList(),
-                                    0),
-                            arguments.subList(0, applied),
-                            missing - applied,
-                            banlist);
-                } else if (head instanceof Term.Constructor(var name, var provided, var missing)) {
+                if (head instanceof Term.Constructor(var name, var provided, var missing)) {
                     if (!provided.isEmpty()) {
                         throw new IllegalStateException("Constructor arguments must be empty");
                     }
@@ -141,7 +104,7 @@ public final class OperatorSaturator {
                 new Term.StrictOp1(op, saturate(t, banlist));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(saturate(t1, banlist), op, saturate(t2, banlist));
-            case Term.Variable _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }
@@ -159,6 +122,8 @@ public final class OperatorSaturator {
                 saturate(myCase.t(), myBanlist));
     }
 
+    // Submits exactly `provided.size() + remaining` arguments to `build`, wrapping lambdas for
+    // `remaining` arguments.
     private static Term wrap(
             final Function<List<Term>, Term> build,
             final List<Term> provided,
@@ -179,7 +144,7 @@ public final class OperatorSaturator {
     private static Term apply(final Primitives.Operator op, final List<Term> ts) {
         return switch (op) {
             case Primitives.Apply _ -> new Term.Application(ts.get(0), ts.get(1));
-            case Primitives.StrictApply _ -> new Term.Application(ts.get(0), ts.get(1), STRICT);
+            case Primitives.StrictApply _ -> new Term.StrictApplication(ts.get(0), ts.get(1));
             case Primitives.Not _ -> new Term.Not(ts.get(0));
             case Primitives.And _ -> new Term.And(ts.get(0), ts.get(1));
             case Primitives.Or _ -> new Term.Or(ts.get(0), ts.get(1));

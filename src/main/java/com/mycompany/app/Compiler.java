@@ -1,7 +1,5 @@
 package com.mycompany.app;
 
-import static com.mycompany.app.Strictness.*;
-
 import com.mycompany.app.Template.Builder.Consumer;
 import com.mycompany.app.Template.Builder.Producer;
 import java.util.ArrayList;
@@ -23,7 +21,7 @@ public final class Compiler {
     }
 
     public static Compilation compile(final Program program) {
-        final var main = compile(new Definition(List.of(), program.main()));
+        final var main = compile(program.main());
         final var book = new HashMap<String, Template>();
         for (final var entry : program.definitions().entrySet()) {
             book.put(entry.getKey(), compile(entry.getValue()));
@@ -31,15 +29,10 @@ public final class Compiler {
         return new Compilation(main, book);
     }
 
-    private static Template compile(final Definition definition) {
+    private static Template compile(final Term term) {
         final var builder = new Template.Builder();
         final var root = builder.mkRoot().a();
-        final var fvSet = compile(builder, definition.body(), root);
-        for (final var x : definition.parameters()) {
-            final var usages = fvSet.getOrDefault(x, List.of());
-            bind(builder, builder.mkParameter(), usages);
-        }
-        fvSet.keySet().removeAll(definition.parameters());
+        final var fvSet = compile(builder, term, root);
         if (!fvSet.isEmpty()) {
             throw new IllegalStateException("Cannot resolve these variable(s): " + fvSet.keySet());
         }
@@ -56,19 +49,9 @@ public final class Compiler {
                 fvSet.put(x, new ArrayList<>(List.of(output)));
                 yield fvSet;
             }
-            case Term.Call(var name, var arguments, var missing) -> {
-                if (missing != 0) {
-                    throw new IllegalStateException("Unsaturated function call: `" + name + "`");
-                }
-                final var strictnesses = arguments.stream().map(Term.Argument::strictness)
-                        .toArray(Strictness[]::new);
-                final var agent = builder.mkCall(name, strictnesses);
-                output.setProducer(agent.a());
-                final var fvSet = new TermInterface();
-                for (int i = 0; i < arguments.size(); i++) {
-                    merge(fvSet, compile(builder, arguments.get(i).t(), agent.argument(i)));
-                }
-                yield fvSet;
+            case Term.Reference(var name) -> {
+                output.setProducer(builder.mkReference(name).a());
+                yield new TermInterface();
             }
             case Term.Lambda(var x, var t) -> {
                 if (t instanceof Term.Variable(var y) && y.equals(x)) {
@@ -94,14 +77,14 @@ public final class Compiler {
                 agent.d().setProducer(result.producer());
                 yield captures;
             }
-            case Term.Application(var t1, var t2, var strictness) -> {
-                if (strictness == STRICT) {
-                    final var agent = builder.mkStrictApplicator();
-                    output.setProducer(agent.b());
-                    final var fvSet = compile(builder, t1, agent.a());
-                    merge(fvSet, compile(builder, t2, agent.c()));
-                    yield fvSet;
-                }
+            case Term.StrictApplication(var t1, var t2) -> {
+                final var agent = builder.mkStrictApplicator();
+                output.setProducer(agent.b());
+                final var fvSet = compile(builder, t1, agent.a());
+                merge(fvSet, compile(builder, t2, agent.c()));
+                yield fvSet;
+            }
+            case Term.Application(var t1, var t2) -> {
                 final var agent = builder.mkApplicator();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());

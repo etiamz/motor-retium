@@ -18,7 +18,7 @@ public final class Template {
         // Operators.
         KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KConstructorResolver, KDuplicator,
         // Data.
-        KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KCall, KEndOfList, KLambda, KConstructor
+        KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference, KEndOfList, KLambda, KConstructor
     {
     }
     // @formatter:on
@@ -98,7 +98,7 @@ public final class Template {
     private record KIdentity() implements Kind {
     }
 
-    private record KCall(String name, Strictness[] strictnesses) implements Kind {
+    private record KReference(String name) implements Kind {
     }
 
     private record KEndOfList() implements Kind {
@@ -137,7 +137,7 @@ public final class Template {
     private final KString[] sKinds;
     private final KRangeFull[] rngFullKinds;
     private final KIdentity[] idKinds;
-    private final KCall[] callKinds;
+    private final KReference[] refKinds;
     private final KEndOfList[] endKinds;
     private final KLambda[] lamKinds;
     private final KConstructor[] ctrKinds;
@@ -146,8 +146,6 @@ public final class Template {
     private final Link[] links;
     // The total number of consumers, the total number of producers.
     private final int nconsumers, nproducers;
-    // Parameters are always the first producers in the template.
-    private final int arity;
 
     private Template(
             final KStrictOp1[] op1Kinds,
@@ -174,14 +172,13 @@ public final class Template {
             final KString[] sKinds,
             final KRangeFull[] rngFullKinds,
             final KIdentity[] idKinds,
-            final KCall[] callKinds,
+            final KReference[] refKinds,
             final KEndOfList[] endKinds,
             final KLambda[] lamKinds,
             final KConstructor[] ctrKinds,
             final Link[] links,
             final int nconsumers,
-            final int nproducers,
-            final int arity) {
+            final int nproducers) {
         this.op1Kinds = op1Kinds;
         this.op2Kinds = op2Kinds;
         this.iteKinds = iteKinds;
@@ -206,26 +203,20 @@ public final class Template {
         this.sKinds = sKinds;
         this.rngFullKinds = rngFullKinds;
         this.idKinds = idKinds;
-        this.callKinds = callKinds;
+        this.refKinds = refKinds;
         this.endKinds = endKinds;
         this.lamKinds = lamKinds;
         this.ctrKinds = ctrKinds;
         this.links = links;
         this.nconsumers = nconsumers;
         this.nproducers = nproducers;
-        this.arity = arity;
     }
 
-    public int arity() {
-        return arity;
-    }
-
-    public void materialize(final Port.Consumer consumer, final Port.Producer[] arguments) {
+    public void materialize(final Port.Consumer consumer) {
         final Port.Consumer[] consumers = new Port.Consumer[nconsumers];
         final Port.Producer[] producers = new Port.Producer[nproducers];
-        int i = 0, j = this.arity;
+        int i = 0, j = 0;
         consumers[i++] = consumer;
-        System.arraycopy(arguments, 0, producers, 0, arity());
         for (final KStrictOp1 k : op1Kinds) {
             final var agent = new Motor.AStrictOp1(k.op);
             consumers[i++] = agent.a;
@@ -352,12 +343,8 @@ public final class Template {
         for (final KIdentity _ : idKinds) {
             producers[j++] = new Motor.AIdentity().a;
         }
-        for (final KCall k : callKinds) {
-            final var agent = new Motor.ACall(k.name, k.strictnesses);
-            producers[j++] = agent.a;
-            for (final var port : agent.arguments) {
-                consumers[i++] = port;
-            }
+        for (final KReference k : refKinds) {
+            producers[j++] = new Motor.AReference(k.name).a;
         }
         for (final KEndOfList _ : endKinds) {
             producers[j++] = new Motor.AEndOfList().a;
@@ -883,21 +870,15 @@ public final class Template {
             }
         }
 
-        public static final class ACall {
+        public static final class AReference {
             private final Producer a;
-            private final Consumer[] arguments;
 
-            private ACall(final Producer a, final Consumer[] arguments) {
+            private AReference(final Producer a) {
                 this.a = a;
-                this.arguments = arguments;
             }
 
             public Producer a() {
                 return a;
-            }
-
-            public Consumer argument(final int i) {
-                return arguments[i];
             }
         }
 
@@ -1175,19 +1156,10 @@ public final class Template {
             return new AIdentity(a);
         }
 
-        public ACall mkCall(final String name, final Strictness[] strictnesses) {
+        public AReference mkReference(final String name) {
             final Producer a = new Producer();
-            final Consumer[] arguments = new Consumer[strictnesses.length];
-            for (int i = 0; i < strictnesses.length; i++) {
-                arguments[i] = new Consumer();
-            }
-            final Port[] ports = new Port[1 + strictnesses.length];
-            ports[0] = a;
-            for (int i = 0; i < strictnesses.length; i++) {
-                ports[1 + i] = arguments[i];
-            }
-            agents.add(new Agent(new KCall(name, strictnesses), ports));
-            return new ACall(a, arguments);
+            agents.add(new Agent(new KReference(name), new Port[]{a}));
+            return new AReference(a);
         }
 
         public AEndOfList mkEndOfList() {
@@ -1243,14 +1215,7 @@ public final class Template {
         }
 
         private final Set<Agent> agents = new HashSet<>();
-        private final List<Producer> parameters = new ArrayList<>();
         private Agent root;
-
-        public Producer mkParameter() {
-            final Producer a = new Producer();
-            parameters.add(a);
-            return a;
-        }
 
         @SuppressWarnings("unchecked")
         private <K extends Kind> K[] collect(final Class<K> type, final List<Agent> into) {
@@ -1291,7 +1256,7 @@ public final class Template {
             final var sKinds = collect(KString.class, orderedAgents);
             final var rngFullKinds = collect(KRangeFull.class, orderedAgents);
             final var idKinds = collect(KIdentity.class, orderedAgents);
-            final var callKinds = collect(KCall.class, orderedAgents);
+            final var refKinds = collect(KReference.class, orderedAgents);
             final var endKinds = collect(KEndOfList.class, orderedAgents);
             final var lamKinds = collect(KLambda.class, orderedAgents);
             final var ctrKinds = collect(KConstructor.class, orderedAgents);
@@ -1299,18 +1264,13 @@ public final class Template {
             final var consumerIndex = new IdentityHashMap<Consumer, Integer>();
             final var producerIndex = new IdentityHashMap<Producer, Integer>();
             // Record the producers & consumers in the same order we will materialize them.
-            {
-                for (final Producer parameter : parameters) {
-                    producerIndex.put(parameter, producerIndex.size());
-                }
-                for (final Agent agent : orderedAgents) {
-                    for (final Port port : agent.ports) {
-                        switch (port) {
-                            case Consumer consumer ->
-                                consumerIndex.put(consumer, consumerIndex.size());
-                            case Producer producer ->
-                                producerIndex.put(producer, producerIndex.size());
-                        }
+            for (final Agent agent : orderedAgents) {
+                for (final Port port : agent.ports) {
+                    switch (port) {
+                        case Consumer consumer ->
+                            consumerIndex.put(consumer, consumerIndex.size());
+                        case Producer producer ->
+                            producerIndex.put(producer, producerIndex.size());
                     }
                 }
             }
@@ -1348,14 +1308,13 @@ public final class Template {
                     sKinds,
                     rngFullKinds,
                     idKinds,
-                    callKinds,
+                    refKinds,
                     endKinds,
                     lamKinds,
                     ctrKinds,
                     links,
                     consumerIndex.size(),
-                    producerIndex.size(),
-                    parameters.size());
+                    producerIndex.size());
         }
     }
 }

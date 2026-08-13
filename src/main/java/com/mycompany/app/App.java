@@ -34,7 +34,7 @@ public final class App {
             final var compilation = Compiler.compile(program);
             Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
-            compilation.main().materialize(root, new Port.Producer[0]);
+            compilation.main().materialize(root);
             System.out.println(show(Motor.whnf(root)));
         } catch (final SyntaxError e) {
             System.err.println(e.getMessage());

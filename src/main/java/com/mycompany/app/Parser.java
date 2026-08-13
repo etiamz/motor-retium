@@ -1,7 +1,5 @@
 package com.mycompany.app;
 
-import static com.mycompany.app.Strictness.*;
-
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.grammar.MotorBaseVisitor;
 import com.mycompany.app.grammar.MotorLexer;
@@ -165,7 +163,7 @@ public final class Parser {
 
     private static final class Builder extends MotorBaseVisitor<Term> {
         private final String filename;
-        private final Map<String, Definition> definitions = new LinkedHashMap<>();
+        private final Map<String, Term> definitions = new LinkedHashMap<>();
         private final Map<String, Integer> arities = new LinkedHashMap<>();
         private final Set<String> globals = new LinkedHashSet<>();
         private final List<String> bound = new ArrayList<>();
@@ -213,7 +211,6 @@ public final class Parser {
                 if (!globals.add(name)) {
                     throw error(filename, d, "Found a duplicate top-level definition: `%s`", name);
                 }
-                arities.put(name, d.SYMBOL().size() - 1);
             }
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();
@@ -230,14 +227,17 @@ public final class Parser {
                     }
                 }
                 parameterNames.forEach(this::push);
-                final Term body = visit(d.term());
+                Term body = visit(d.term());
                 parameterNames.forEach(this::pop);
-                definitions.put(name, new Definition(parameterNames, body));
+                for (final var x : parameterNames.reversed()) {
+                    body = new Term.Lambda(x, body);
+                }
+                definitions.put(name, body);
             }
             if (!globals.contains("main")) {
                 throw new SyntaxError("No `main` top-level definition");
             }
-            return new Term.Call("main", List.of(), 0);
+            return new Term.Reference("main");
         }
 
         @Override
@@ -394,7 +394,7 @@ public final class Parser {
             push(x);
             final var t2 = visit(ctx.term(1));
             pop(x);
-            return new Term.Application(new Term.Lambda(x, t2), t1, STRICT);
+            return new Term.StrictApplication(new Term.Lambda(x, t2), t1);
         }
 
         @Override
@@ -604,7 +604,7 @@ public final class Parser {
                 return new Term.Variable(x);
             }
             if (globals.contains(x)) {
-                return new Term.Call(x, List.of(), arities.get(x));
+                return new Term.Reference(x);
             }
             throw error(filename, ctx, "Variable not in scope: `%s`", x);
         }

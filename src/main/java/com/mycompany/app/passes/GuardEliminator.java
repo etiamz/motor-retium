@@ -1,6 +1,5 @@
 package com.mycompany.app.passes;
 
-import com.mycompany.app.Definition;
 import com.mycompany.app.Program;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
@@ -20,35 +19,23 @@ public final class GuardEliminator {
     // occurring anywhere else.
     public static Program eliminate(final Program program) {
         final var main = eliminate(program.main(), new LinkedHashSet<>());
-        final var definitions = new LinkedHashMap<String, Definition>();
+        final var definitions = new LinkedHashMap<String, Term>();
         program.definitions().forEach(
-                (name, d) -> {
-                    final var result = eliminate(d.body(), new LinkedHashSet<>(d.parameters()));
-                    definitions.put(name, new Definition(d.parameters(), result));
-                });
+                (name, t) -> definitions.put(name, eliminate(t, new LinkedHashSet<>())));
         return new Program(main, definitions);
     }
 
     private static Term eliminate(final Term term, final Set<String> banlist) {
         return switch (term) {
-            case Term.Call(var name, var arguments, var missing) ->
-                new Term.Call(
-                        name,
-                        arguments.stream().map(
-                                argument -> {
-                                    final var t = argument.t();
-                                    final var strictness = argument.strictness();
-                                    return new Term.Argument(eliminate(t, banlist), strictness);
-                                })
-                                .toList(),
-                        missing);
             case Term.Lambda(var x, var t) -> {
                 final var myBanlist = new LinkedHashSet<>(banlist);
                 myBanlist.add(x);
                 yield new Term.Lambda(x, eliminate(t, myBanlist));
             }
-            case Term.Application(var t1, var t2, var strictness) ->
-                new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist), strictness);
+            case Term.Application(var t1, var t2) ->
+                new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist));
+            case Term.StrictApplication(var t1, var t2) ->
+                new Term.StrictApplication(eliminate(t1, banlist), eliminate(t2, banlist));
             case Term.Constructor(var name, var ts, var missing) ->
                 new Term.Constructor(
                         name,
@@ -85,7 +72,7 @@ public final class GuardEliminator {
                 new Term.StrictOp1(op, eliminate(t, banlist));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(eliminate(t1, banlist), op, eliminate(t2, banlist));
-            case Term.Variable _,Term.Operator _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Operator _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

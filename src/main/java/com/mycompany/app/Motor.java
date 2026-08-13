@@ -9,9 +9,7 @@ import com.mycompany.app.Port.Consumer;
 import com.mycompany.app.Port.Producer;
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -245,15 +243,23 @@ public final class Motor {
                 final var rator = (AMatch) agent;
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
-            case K_CALL -> {
-                yield call((ACall) agent, p, thunk, heart);
-            }
             case K_CONSTRUCTOR_RESOLVER -> {
                 final var rator = (AConstructorResolver) agent;
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
             case K_DUPLICATOR -> {
                 yield sync((ADuplicator) agent, p, thunk, heart);
+            }
+            case K_REFERENCE -> {
+                final var ref = (AReference) agent;
+                yield (Thunk) () -> {
+                    final Template body = BOOK.get(ref.name);
+                    if (body == null) {
+                        crash("Cannot resolve a reference to `%s`", ref.name);
+                    }
+                    body.materialize(p);
+                    return reduce(p, thunk, heart);
+                };
             }
             default -> {
                 if (agent.kind >= K_LAMBDA) {
@@ -331,57 +337,6 @@ public final class Motor {
         };
     }
 
-    private static Bounce call(
-            final ACall call,
-            final Consumer p,
-            final Thunk thunk,
-            final Heart heart) {
-        return (Thunk) () -> {
-            final var frames = new ArrayList<Promotable>();
-            Consumer inline = null;
-            for (int i = 0; i < call.arguments.length; i++) {
-                final Consumer argument = call.arguments[i];
-                if (call.strictnesses[i] != Strictness.STRICT || isWhnf(argument)) {
-                    continue;
-                } else if (inline == null) {
-                    inline = argument;
-                } else {
-                    frames.add(heart.push(argument));
-                }
-            }
-            if (inline == null) {
-                call.interact();
-                return reduce(p, thunk, heart);
-            }
-            return reduce(inline, join(frames, 0, call, p, thunk, heart), heart);
-        };
-    }
-
-    private static Thunk join(
-            final List<Promotable> frames,
-            final int index,
-            final ACall call,
-            final Consumer p,
-            final Thunk thunk,
-            final Heart heart) {
-        if (index == frames.size()) {
-            return () -> {
-                call.interact();
-                return reduce(p, thunk, heart);
-            };
-        }
-        return () -> {
-            final Promotable frame = frames.get(index);
-            final Thunk next = join(frames, index + 1, call, p, thunk, heart);
-            final CompletableFuture<Agent> future = frame.future;
-            if (future != null) {
-                return new Await(future, next);
-            }
-            heart.unlink(frame);
-            return reduce(frame.right, next, heart);
-        };
-    }
-
     private static Bounce sync(
             final ADuplicator dup,
             final Consumer p,
@@ -408,7 +363,7 @@ public final class Motor {
     // @formatter:off
     private static final byte
         // Operators.
-        K_STRICT_OP1 = 0, K_STRICT_OP2 = 1, K_IF_THEN_ELSE = 2, K_NOT = 3, K_AND = 4, K_OR = 5, K_DO_RANGE = 6, K_DO_RANGE_FROM = 7, K_DO_RANGE_TO = 8, K_APPLICATOR = 9, K_STRICT_APPLICATOR = 10, K_RESOLVER = 11, K_CAPTURE = 12, K_MATCH = 13, K_CALL = 14, K_CONSTRUCTOR_RESOLVER = 15, K_DUPLICATOR = 16,
+        K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_NOT = 4, K_AND = 5, K_OR = 6, K_DO_RANGE = 7, K_DO_RANGE_FROM = 8, K_DO_RANGE_TO = 9, K_APPLICATOR = 10, K_STRICT_APPLICATOR = 11, K_RESOLVER = 12, K_CAPTURE = 13, K_MATCH = 14, K_CONSTRUCTOR_RESOLVER = 15, K_DUPLICATOR = 16,
         // Data.
         K_LAMBDA = 17, K_END_OF_LIST = 18, K_NULL = 19, K_TRUE = 20, K_FALSE = 21, K_INTEGER = 22, K_BIG_INTEGER = 23, K_STRING = 24, K_RANGE = 25, K_RANGE_FROM = 26, K_RANGE_TO = 27, K_RANGE_FULL = 28, K_IDENTITY = 29, K_CONSTRUCTOR = 30, K_SUPERPOSITION = 31;
     // @formatter:on
@@ -416,7 +371,7 @@ public final class Motor {
     // @formatter:off
     public abstract static sealed class Agent permits
         // Operators.
-        AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, ACall, AConstructorResolver, ADuplicator,
+        AReference, AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, AConstructorResolver, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     {
@@ -430,6 +385,17 @@ public final class Motor {
     // @formatter:on
 
     private record Operands(Agent first, Agent second) {
+    }
+
+    public static final class AReference extends Agent {
+        public final String name;
+        public final Producer a;
+
+        public AReference(final String name) {
+            super(K_REFERENCE);
+            this.name = name;
+            this.a = new Producer(this);
+        }
     }
 
     public static final class AStrictOp1 extends Agent {
@@ -2120,38 +2086,6 @@ public final class Motor {
         }
     }
 
-    public static final class ACall extends Agent {
-        public final String name;
-        public final Strictness[] strictnesses;
-        public final Producer a;
-        public final Consumer[] arguments;
-
-        public ACall(final String name, final Strictness[] strictnesses) {
-            super(K_CALL);
-            this.name = name;
-            this.strictnesses = strictnesses;
-            this.a = new Producer(this);
-            this.arguments = new Consumer[strictnesses.length];
-            for (int i = 0; i < strictnesses.length; i++) {
-                arguments[i] = new Consumer(null);
-            }
-        }
-
-        private void interact() {
-            final Template body = BOOK.get(name);
-            if (body == null) {
-                crash("Cannot resolve a call to `%s`", name);
-            }
-            final var producers = new Producer[arguments.length];
-            for (int i = 0; i < producers.length; i++) {
-                producers[i] = arguments[i].producer();
-            }
-            final var root = new Consumer(null);
-            body.materialize(root, producers);
-            a.forward(root.producer());
-        }
-    }
-
     public static final class AConstructorResolver extends Agent {
         public final String name; // interned
         public final Consumer a;
@@ -2553,7 +2487,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,AConstructorResolver _,ADuplicator _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2564,7 +2498,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,ACall _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2624,6 +2558,7 @@ public final class Motor {
 
     private static String describe(final Agent agent) {
         return switch (agent) {
+            case AReference ref -> "a reference to `" + ref.name + "`";
             case AStrictOp1 op1 -> op1.op.describe();
             case AStrictOp2 op2 -> op2.op.describe();
             case AIfThenElse _ -> "an if-then-else expression";
@@ -2654,7 +2589,6 @@ public final class Motor {
             case ARangeTo _ -> "a to-range";
             case ARangeFull _ -> "a full range";
             case AIdentity _ -> "an identity function";
-            case ACall call -> "a call to `" + call.name + "`";
             case AConstructor ctr -> "the constructor `" + ctr.name + "`";
             case ASuperposition _ -> "a superposition";
         };
