@@ -136,11 +136,7 @@ public final class Compiler {
                         throw new IllegalStateException(
                                 String.format("Uneliminated `|`-guard for `%s`", name));
                     }
-                    final var banlist = t.freeVariables();
-                    // Make the innermost lambda dummy so that used pattern variables are always
-                    // forced. Without the dummy lambda, the last variable is not forced even when
-                    // used within the handler's body.
-                    Term handler = new Term.Lambda(Term.freshen("v", banlist), t);
+                    Term handler = t;
                     for (final var x : xs.reversed()) {
                         handler = new Term.Lambda(x, handler);
                     }

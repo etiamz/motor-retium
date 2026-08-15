@@ -2030,11 +2030,7 @@ public final class Motor {
                         app.c.setProducer(argument.producer());
                         result = app.b;
                     }
-                    final var app = new AApplicator();
-                    app.a.setProducer(result);
-                    // The innermost lambda is dummy; see the compiler note.
-                    app.c.setProducer(new AIdentity().a);
-                    match.b.forward(app.b);
+                    match.b.forward(result);
                 }
                 case ASuperposition sup -> {
                     final var matchx = new AMatch(match.names);

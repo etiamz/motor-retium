@@ -103,9 +103,9 @@ public final class StrictnessAnalyzer {
             }
             case Term.Match(var s, var cases) -> {
                 final var result = demand(phi, s);
-                final var common = caseDemand(cases.getFirst());
+                final var common = caseDemand(phi, cases.getFirst());
                 for (final var myCase : cases.subList(1, cases.size())) {
-                    common.retainAll(caseDemand(myCase));
+                    common.retainAll(caseDemand(phi, myCase));
                 }
                 result.addAll(common);
                 yield result;
@@ -143,8 +143,12 @@ public final class StrictnessAnalyzer {
         };
     }
 
-    private static Set<String> caseDemand(final Term.Case myCase) {
-        final var result = myCase.t().freeVariables();
+    private static Set<String> caseDemand(final Environment phi, final Term.Case myCase) {
+        // If there are no pattern variables, demand is recursive; otherwise, the branch is wrapped
+        // in one or more lambdas, which demand the free variables.
+        final var result = myCase.xs().isEmpty()
+                ? demand(phi, myCase.t())
+                : myCase.t().freeVariables();
         myCase.xs().forEach(result::remove);
         return result;
     }
