@@ -72,6 +72,19 @@ public sealed interface Term {
     public record StrictOp2(Term t1, Primitives.StrictOp2 op, Term t2) implements Term {
     }
 
+    public record Spine(Term head, List<Term> arguments) {
+    }
+
+    public default Spine nonStrictSpine() {
+        final var arguments = new ArrayList<Term>();
+        Term head = this;
+        while (head instanceof Application(var rator, var rand)) {
+            arguments.addFirst(rand);
+            head = rator;
+        }
+        return new Spine(head, arguments);
+    }
+
     public static List<String> freshNames(final int n, final Set<String> banlist) {
         final var names = new ArrayList<String>();
         for (int i = 0; i < n; i++) {

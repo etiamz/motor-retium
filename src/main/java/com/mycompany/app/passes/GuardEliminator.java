@@ -10,7 +10,14 @@ import java.util.List;
 import java.util.Set;
 
 public final class GuardEliminator {
-    private GuardEliminator() {
+    private final Set<String> banlist;
+
+    public GuardEliminator() {
+        this(new LinkedHashSet<>());
+    }
+
+    private GuardEliminator(final Set<String> banlist) {
+        this.banlist = banlist;
     }
 
     // Transformes all `|`-guards into if-then-else expressions: same-constructor case-groups of the
@@ -18,74 +25,65 @@ public final class GuardEliminator {
     // of the form `C f1 ... fN -> if (b1 && (... && bK))[f1/x1, ..., fN/xN] then t1[f1/x1, ...,
     // fN/xN] else if ... else tN[f1/z1, ..., fN/zN]`, where `f1 ... fN` are fresh variables not
     // occurring anywhere else.
-    public static Program eliminate(final Program program) {
-        final var main = eliminate(program.main(), new LinkedHashSet<>());
+    public Program eliminate(final Program program) {
+        final var main = eliminate(program.main());
         final var definitions = new LinkedHashMap<String, Term>();
-        program.definitions().forEach(
-                (name, t) -> definitions.put(name, eliminate(t, new LinkedHashSet<>())));
+        program.definitions().forEach((name, t) -> definitions.put(name, eliminate(t)));
         return new Program(main, definitions);
     }
 
-    private static Term eliminate(final Term term, final Set<String> banlist) {
+    public Term eliminate(final Term term) {
         return switch (term) {
-            case Term.Lambda(var x, var t) -> {
-                final var myBanlist = new LinkedHashSet<>(banlist);
-                myBanlist.add(x);
-                yield new Term.Lambda(x, eliminate(t, myBanlist));
-            }
+            case Term.Lambda(var x, var t) ->
+                new Term.Lambda(x, bind(List.of(x)).eliminate(t));
             case Term.Application(var t1, var t2) ->
-                new Term.Application(eliminate(t1, banlist), eliminate(t2, banlist));
+                new Term.Application(eliminate(t1), eliminate(t2));
             case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(eliminate(t1, banlist), eliminate(t2, banlist));
+                new Term.StrictApplication(eliminate(t1), eliminate(t2));
             case Term.Constructor(var name, var ts, var missing) ->
-                new Term.Constructor(
-                        name,
-                        ts.stream().map(t -> eliminate(t, banlist)).toList(),
-                        missing);
+                new Term.Constructor(name, ts.stream().map(this::eliminate).toList(), missing);
             case Term.Match(var s, var cases) -> {
-                final var myS = eliminate(s, banlist);
-                final var myCases = cases.stream().map(myCase -> eliminateCase(myCase, banlist))
-                        .toList();
+                final var myS = eliminate(s);
+                final var myCases = cases.stream().map(this::eliminateCase).toList();
                 final var myMyCases = groupCases(myCases)
                         .stream()
-                        .map(group -> renameCasesInGroup(group, banlist))
+                        .map(this::renameCasesInGroup)
                         .map(group -> foldGroup(group))
                         .toList();
                 yield new Term.Match(myS, myMyCases);
             }
             case Term.IfThenElse(var t1, var t2, var t3) ->
-                new Term.IfThenElse(
-                        eliminate(t1, banlist),
-                        eliminate(t2, banlist),
-                        eliminate(t3, banlist));
+                new Term.IfThenElse(eliminate(t1), eliminate(t2), eliminate(t3));
             case Term.Not(var t) ->
-                new Term.Not(eliminate(t, banlist));
+                new Term.Not(eliminate(t));
             case Term.And(var t1, var t2) ->
-                new Term.And(eliminate(t1, banlist), eliminate(t2, banlist));
+                new Term.And(eliminate(t1), eliminate(t2));
             case Term.Or(var t1, var t2) ->
-                new Term.Or(eliminate(t1, banlist), eliminate(t2, banlist));
+                new Term.Or(eliminate(t1), eliminate(t2));
             case Term.Range(var t1, var t2, var inclusive) ->
-                new Term.Range(
-                        t1.map(t -> eliminate(t, banlist)),
-                        t2.map(t -> eliminate(t, banlist)),
-                        inclusive);
+                new Term.Range(t1.map(this::eliminate), t2.map(this::eliminate), inclusive);
             case Term.StrictOp1(var op, var t) ->
-                new Term.StrictOp1(op, eliminate(t, banlist));
+                new Term.StrictOp1(op, eliminate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
-                new Term.StrictOp2(eliminate(t1, banlist), op, eliminate(t2, banlist));
+                new Term.StrictOp2(eliminate(t1), op, eliminate(t2));
             case Term.Variable _,Term.Operator _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }
 
-    private static Term.Case eliminateCase(final Term.Case myCase, final Set<String> banlist) {
-        final var myBanlist = new LinkedHashSet<>(banlist);
-        myBanlist.addAll(myCase.xs());
+    private Term.Case eliminateCase(final Term.Case myCase) {
+        final var inner = bind(myCase.xs());
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
-                myCase.guards().stream().map(guard -> eliminate(guard, myBanlist)).toList(),
-                eliminate(myCase.t(), myBanlist));
+                myCase.guards().stream().map(inner::eliminate).toList(),
+                inner.eliminate(myCase.t()));
+    }
+
+    private GuardEliminator bind(final List<String> xs) {
+        final var myBanlist = new LinkedHashSet<>(banlist);
+        myBanlist.addAll(xs);
+        return new GuardEliminator(myBanlist);
     }
 
     // Groups the cases by constructor name, preserving the relative order of both the groups & the
@@ -114,9 +112,7 @@ public final class GuardEliminator {
 
     // Unifies all the variable names in the provided case patterns; the fresh variable names will
     // constitute the new pattern.
-    private static List<Term.Case> renameCasesInGroup(
-            final List<Term.Case> group,
-            final Set<String> banlist) {
+    private List<Term.Case> renameCasesInGroup(final List<Term.Case> group) {
         if (group.isEmpty()) {
             throw new IllegalStateException("Case group must be non-empty");
         }

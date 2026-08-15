@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public final class SharedVariableHoister {
-    private SharedVariableHoister() {
+    public SharedVariableHoister() {
     }
 
     // Transformes:
@@ -18,7 +18,7 @@ public final class SharedVariableHoister {
     // where `S` is a non-empty spine of variables shared among the branches.
     // The rationale of this transformation is to trade duplicators, the most expensive agents in
     // our machine, for closures, before the reduction starts.
-    public static Program hoist(final Program program) {
+    public Program hoist(final Program program) {
         final var main = hoist(program.main());
         final var definitions = new LinkedHashMap<String, Term>();
         program.definitions().forEach((name, t) -> definitions.put(name, hoist(t)));

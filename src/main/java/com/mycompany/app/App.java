@@ -26,10 +26,10 @@ public final class App {
     public static void main(final String[] args) throws IOException {
         final var source = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
         try {
-            final var program = StrictnessAnalyzer.analyze(
-                    SharedVariableHoister.hoist(
-                            OperatorSaturator.saturate(
-                                    GuardEliminator.eliminate(
+            final var program = new StrictnessAnalyzer().analyze(
+                    new SharedVariableHoister().hoist(
+                            new OperatorSaturator().saturate(
+                                    new GuardEliminator().eliminate(
                                             Parser.parse("<stdin>", source)))));
             final var compilation = Compiler.compile(program);
             Motor.initialize(compilation.book());

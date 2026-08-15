@@ -11,7 +11,14 @@ import java.util.Set;
 import java.util.function.Function;
 
 public final class OperatorSaturator {
-    private OperatorSaturator() {
+    private final Set<String> banlist;
+
+    public OperatorSaturator() {
+        this(new LinkedHashSet<>());
+    }
+
+    private OperatorSaturator(final Set<String> banlist) {
+        this.banlist = banlist;
     }
 
     // Saturates all constructors, wrapping lambdas for yet-unavailable operands: `C e1 ... eN`
@@ -23,23 +30,23 @@ public final class OperatorSaturator {
     // evaluated; on the other hand, subsequent arguments applied at run-time will be evaluated
     // eagerly, except the last one that no lambda forces.
     // We doe not throw any errors on over-saturation.
-    public static Program saturate(final Program program) {
-        final var main = saturate(program.main(), new LinkedHashSet<>());
+    public Program saturate(final Program program) {
+        final var main = saturate(program.main());
         final var definitions = new LinkedHashMap<String, Term>();
-        program.definitions().forEach(
-                (name, t) -> definitions.put(name, saturate(t, new LinkedHashSet<>())));
+        program.definitions().forEach((name, t) -> definitions.put(name, saturate(t)));
         return new Program(main, definitions);
     }
 
-    private static Term saturate(final Term term, final Set<String> banlist) {
+    public Term saturate(final Term term) {
         return switch (term) {
             case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(saturate(t1, banlist), saturate(t2, banlist));
+                new Term.StrictApplication(saturate(t1), saturate(t2));
             case Term.Application _ -> {
+                // We could use `Term.nonStrictSpine` here, but it would not be much simpler.
                 final var arguments = new ArrayList<Term>();
                 Term head = term;
                 while (head instanceof Term.Application(var rator, var rand)) {
-                    arguments.add(0, saturate(rand, banlist));
+                    arguments.add(0, saturate(rand));
                     head = rator;
                 }
                 final int applied;
@@ -52,11 +59,10 @@ public final class OperatorSaturator {
                     result = wrap(
                             ts -> new Term.Constructor(name, ts, 0),
                             arguments.subList(0, applied),
-                            missing - applied,
-                            banlist);
+                            missing - applied);
                 } else {
                     applied = 0;
-                    result = saturate(head, banlist);
+                    result = saturate(head);
                 }
                 final var leftover = arguments.subList(applied, arguments.size());
                 for (final var argument : leftover) {
@@ -68,64 +74,56 @@ public final class OperatorSaturator {
                 if (!provided.isEmpty()) {
                     throw new IllegalStateException("Constructor arguments must be empty");
                 }
-                yield wrap(ts -> new Term.Constructor(name, ts, 0), List.of(), missing, banlist);
+                yield wrap(ts -> new Term.Constructor(name, ts, 0), List.of(), missing);
             }
             case Term.Operator(var op) ->
-                wrap(ts -> apply(op, ts), List.of(), op.arity(), banlist);
-            case Term.Lambda(var x, var t) -> {
-                final var myBanlist = new LinkedHashSet<>(banlist);
-                myBanlist.add(x);
-                yield new Term.Lambda(x, saturate(t, myBanlist));
-            }
+                wrap(ts -> apply(op, ts), List.of(), op.arity());
+            case Term.Lambda(var x, var t) ->
+                new Term.Lambda(x, bind(List.of(x)).saturate(t));
             case Term.Match(var s, var cases) ->
-                new Term.Match(
-                        saturate(s, banlist),
-                        cases.stream().map(myCase -> saturateCase(myCase, banlist)).toList());
+                new Term.Match(saturate(s), cases.stream().map(this::saturateCase).toList());
             case Term.IfThenElse(var t1, var t2, var t3) ->
-                new Term.IfThenElse(
-                        saturate(t1, banlist),
-                        saturate(t2, banlist),
-                        saturate(t3, banlist));
+                new Term.IfThenElse(saturate(t1), saturate(t2), saturate(t3));
             case Term.Not(var t) ->
-                new Term.Not(saturate(t, banlist));
+                new Term.Not(saturate(t));
             case Term.And(var t1, var t2) ->
-                new Term.And(saturate(t1, banlist), saturate(t2, banlist));
+                new Term.And(saturate(t1), saturate(t2));
             case Term.Or(var t1, var t2) ->
-                new Term.Or(saturate(t1, banlist), saturate(t2, banlist));
+                new Term.Or(saturate(t1), saturate(t2));
             case Term.Range(var t1, var t2, var inclusive) ->
-                new Term.Range(
-                        t1.map(t -> saturate(t, banlist)),
-                        t2.map(t -> saturate(t, banlist)),
-                        inclusive);
+                new Term.Range(t1.map(this::saturate), t2.map(this::saturate), inclusive);
             case Term.StrictOp1(var op, var t) ->
-                new Term.StrictOp1(op, saturate(t, banlist));
+                new Term.StrictOp1(op, saturate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
-                new Term.StrictOp2(saturate(t1, banlist), op, saturate(t2, banlist));
+                new Term.StrictOp2(saturate(t1), op, saturate(t2));
             case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }
 
-    private static Term.Case saturateCase(final Term.Case myCase, final Set<String> banlist) {
+    private Term.Case saturateCase(final Term.Case myCase) {
         if (!myCase.guards().isEmpty()) {
             throw new IllegalStateException("`|`-guards must be already eliminated");
         }
-        final var myBanlist = new LinkedHashSet<>(banlist);
-        myBanlist.addAll(myCase.xs());
         return new Term.Case(
                 myCase.name(),
                 myCase.xs(),
                 List.of(),
-                saturate(myCase.t(), myBanlist));
+                bind(myCase.xs()).saturate(myCase.t()));
+    }
+
+    private OperatorSaturator bind(final List<String> xs) {
+        final var myBanlist = new LinkedHashSet<>(banlist);
+        myBanlist.addAll(xs);
+        return new OperatorSaturator(myBanlist);
     }
 
     // Submits exactly `provided.size() + remaining` arguments to `build`, wrapping lambdas for
     // `remaining` arguments.
-    private static Term wrap(
+    private Term wrap(
             final Function<List<Term>, Term> build,
             final List<Term> provided,
-            final int remaining,
-            final Set<String> banlist) {
+            final int remaining) {
         final var parameters = Term.freshNames(remaining, banlist);
         final var arguments = new ArrayList<Term>(provided);
         for (final var x : parameters) {
