@@ -14,11 +14,15 @@ public final class OperatorSaturator {
     private OperatorSaturator() {
     }
 
-    // Saturates all constructors & built-in operators, wrapping lambdas for yet-unavailable
-    // operands: `f e1 ... eN` becomes `\x1, ..., xK-N -> f e1 ... eN x1 ... xK-N`, where `f` can be
-    // either a user constructor or a built-in operator, `N >= 0` is the number of the applied
-    // arguments, & `K > N` is the arity of `f`.
-    // Does not throw any errors on over-saturation.
+    // Saturates all constructors, wrapping lambdas for yet-unavailable operands: `C e1 ... eN`
+    // becomes `\x1, ..., xK-N -> C e1 ... eN x1 ... xK-N`, where `C` is a constructor, `N >= 0` is
+    // the number of the applied arguments, & `K > N` is the declared arity of `C`. Operators such
+    // as (+) are wrapped in lambdas: `\x y -> x + y`, so that the first applied argument is
+    // evaluated eagerly, whilst the second one is on demand. Note that constructors are strict in
+    // captures, meaning that for immediately applied arguments, onely their free variables are
+    // evaluated; on the other hand, subsequent arguments applied at run-time will be evaluated
+    // eagerly, except the last one that no lambda forces.
+    // We doe not throw any errors on over-saturation.
     public static Program saturate(final Program program) {
         final var main = saturate(program.main(), new LinkedHashSet<>());
         final var definitions = new LinkedHashMap<String, Term>();
@@ -49,13 +53,6 @@ public final class OperatorSaturator {
                             ts -> new Term.Constructor(name, ts, 0),
                             arguments.subList(0, applied),
                             missing - applied,
-                            banlist);
-                } else if (head instanceof Term.Operator(var op)) {
-                    applied = Math.min(arguments.size(), op.arity());
-                    result = wrap(
-                            ts -> apply(op, ts),
-                            arguments.subList(0, applied),
-                            op.arity() - applied,
                             banlist);
                 } else {
                     applied = 0;
