@@ -1,6 +1,7 @@
 package com.mycompany.app.passes;
 
 import com.mycompany.app.Program;
+import com.mycompany.app.Renamer;
 import com.mycompany.app.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -134,9 +135,9 @@ public final class GuardEliminator {
                                 ys,
                                 myCase.guards()
                                         .stream()
-                                        .map(guard -> guard.rename(myCase.xs(), ys, myBanlist))
+                                        .map(new Renamer(myCase.xs(), ys, myBanlist)::rename)
                                         .toList(),
-                                myCase.t().rename(myCase.xs(), ys, myBanlist)))
+                                new Renamer(myCase.xs(), ys, myBanlist).rename(myCase.t())))
                 .toList();
     }
 
