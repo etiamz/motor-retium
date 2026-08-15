@@ -13,10 +13,6 @@ public final class StrictnessAnalyzer {
     private StrictnessAnalyzer() {
     }
 
-    private enum Strictness {
-        STRICT, NON_STRICT
-    }
-
     @SuppressWarnings("serial")
     private static final class Environment extends LinkedHashMap<String, Set<Integer>> {
     }
@@ -107,9 +103,9 @@ public final class StrictnessAnalyzer {
             }
             case Term.Match(var s, var cases) -> {
                 final var result = demand(phi, s);
-                final var common = caseDemand(phi, cases.getFirst());
+                final var common = caseDemand(cases.getFirst());
                 for (final var myCase : cases.subList(1, cases.size())) {
-                    common.retainAll(caseDemand(phi, myCase));
+                    common.retainAll(caseDemand(myCase));
                 }
                 result.addAll(common);
                 yield result;
@@ -147,8 +143,8 @@ public final class StrictnessAnalyzer {
         };
     }
 
-    private static Set<String> caseDemand(final Environment phi, final Term.Case myCase) {
-        final var result = demand(phi, myCase.t());
+    private static Set<String> caseDemand(final Term.Case myCase) {
+        final var result = myCase.t().freeVariables();
         myCase.xs().forEach(result::remove);
         return result;
     }
@@ -165,10 +161,9 @@ public final class StrictnessAnalyzer {
                 Term result = annotate(phi, spine.head);
                 for (int i = 0; i < spine.arguments.size(); i++) {
                     final var argument = annotate(phi, spine.arguments.get(i));
-                    result = switch (strictnessAt(positions, i)) {
-                        case STRICT -> new Term.StrictApplication(result, argument);
-                        case NON_STRICT -> new Term.Application(result, argument);
-                    };
+                    result = positions.contains(i)
+                            ? new Term.StrictApplication(result, argument)
+                            : new Term.Application(result, argument);
                 }
                 yield result;
             }
@@ -221,10 +216,6 @@ public final class StrictnessAnalyzer {
                 myCase.xs(),
                 List.of(),
                 annotate(phi, myCase.t()));
-    }
-
-    private static Strictness strictnessAt(final Set<Integer> positions, final int i) {
-        return positions.contains(i) ? Strictness.STRICT : Strictness.NON_STRICT;
     }
 
     private record Spine(Term head, List<Term> arguments) {

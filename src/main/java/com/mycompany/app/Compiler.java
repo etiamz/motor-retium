@@ -123,26 +123,28 @@ public final class Compiler {
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
-                final var arities = cases.stream().mapToInt(myCase -> myCase.xs().size()).toArray();
-                final var agent = builder.mkMatch(names, arities);
+                final var agent = builder.mkMatch(names);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, s, agent.a());
                 for (int i = 0; i < cases.size(); i++) {
                     final var myCase = cases.get(i);
                     final var name = myCase.name();
                     final var xs = myCase.xs();
-                    final var guard = myCase.guards();
-                    if (!guard.isEmpty()) {
+                    final var guards = myCase.guards();
+                    final var t = myCase.t();
+                    if (!guards.isEmpty()) {
                         throw new IllegalStateException(
                                 String.format("Uneliminated `|`-guard for `%s`", name));
                     }
-                    final var body = compile(builder, myCase.t(), agent.handler(i));
-                    for (int j = 0; j < xs.size(); j++) {
-                        final var usages = body.getOrDefault(xs.get(j), List.of());
-                        bind(builder, agent.parameter(i, j), usages);
+                    final var banlist = t.freeVariables();
+                    // Make the innermost lambda dummy so that used pattern variables are always
+                    // forced. Without the dummy lambda, the last variable is not forced even when
+                    // used within the handler's body.
+                    Term handler = new Term.Lambda(Term.freshen("v", banlist), t);
+                    for (final var x : xs.reversed()) {
+                        handler = new Term.Lambda(x, handler);
                     }
-                    body.keySet().removeAll(xs);
-                    merge(fvSet, body);
+                    merge(fvSet, compile(builder, handler, agent.handler(i)));
                 }
                 yield fvSet;
             }

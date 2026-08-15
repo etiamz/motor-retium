@@ -1994,32 +1994,18 @@ public final class Motor {
         public final Consumer a;
         public final Producer b;
         public final Consumer[] handlers;
-        public final Producer[][] parameters;
 
-        public AMatch(final String[] names, final int[] arities) {
+        public AMatch(final String[] names) {
             super(K_MATCH);
             this.names = names;
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.handlers = new Consumer[names.length];
-            this.parameters = new Producer[names.length][];
             for (int i = 0; i < names.length; i++) {
                 assert names[i] == names[i].intern()
                         : String.format("Match case name not interned: `%s`", names[i]);
                 handlers[i] = new Consumer(null);
-                parameters[i] = new Producer[arities[i]];
-                for (int j = 0; j < arities[i]; j++) {
-                    parameters[i][j] = new Producer(this);
-                }
             }
-        }
-
-        private int[] arities() {
-            final var arities = new int[parameters.length];
-            for (int i = 0; i < parameters.length; i++) {
-                arities[i] = parameters[i].length;
-            }
-            return arities;
         }
 
         private void interact() {
@@ -2037,19 +2023,22 @@ public final class Motor {
                     if (index == -1) {
                         panic("No matching case for the constructor `%s`", ctr.name);
                     }
-                    final Producer[] myParameters = match.parameters[index];
-                    if (myParameters.length != ctr.arity()) {
-                        crash("Arity mismatch for the constructor `%s`", ctr.name);
+                    Producer result = match.handlers[index].producer();
+                    for (final Consumer argument : ctr.arguments) {
+                        final var app = new AApplicator();
+                        app.a.setProducer(result);
+                        app.c.setProducer(argument.producer());
+                        result = app.b;
                     }
-                    for (int i = 0; i < myParameters.length; i++) {
-                        myParameters[i].forward(ctr.arguments[i].producer());
-                    }
-                    match.b.forward(match.handlers[index].producer());
+                    final var app = new AApplicator();
+                    app.a.setProducer(result);
+                    // The innermost lambda is dummy; see the compiler note.
+                    app.c.setProducer(new AIdentity().a);
+                    match.b.forward(app.b);
                 }
                 case ASuperposition sup -> {
-                    final var arities = match.arities();
-                    final var matchx = new AMatch(match.names, arities);
-                    final var matchxx = new AMatch(match.names, arities);
+                    final var matchx = new AMatch(match.names);
+                    final var matchxx = new AMatch(match.names);
                     final var supx = sup; // reuse
                     match.b.forward(supx.a);
                     matchx.a.setProducer(sup.b.producer());
@@ -2061,12 +2050,6 @@ public final class Motor {
                         dup.a.setProducer(match.handlers[i].producer());
                         matchx.handlers[i].setProducer(dup.b);
                         matchxx.handlers[i].setProducer(dup.c);
-                        for (int j = 0; j < match.parameters[i].length; j++) {
-                            final var supxx = new ASuperposition(sup.label);
-                            match.parameters[i][j].forward(supxx.a);
-                            supxx.b.setProducer(matchx.parameters[i][j]);
-                            supxx.c.setProducer(matchxx.parameters[i][j]);
-                        }
                     }
                 }
                 default -> {
@@ -2206,19 +2189,30 @@ public final class Motor {
                     lamxx.c.setProducer(dupx.c);
                     yield new Commute(lamx.a, lamxx.a);
                 }
-                case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
-                case ANull mynull -> new Commute(mynull.a, new ANull().a);
-                case ATrue b -> new Commute(b.a, new ATrue().a);
-                case AFalse b -> new Commute(b.a, new AFalse().a);
-                case AInteger i -> new Commute(i.a, new AInteger(i.data).a);
-                case ABigInteger i -> new Commute(i.a, new ABigInteger(i.data).a);
-                case AString s -> new Commute(s.a, new AString(s.data).a);
+                case AEndOfList end ->
+                    new Commute(end.a, new AEndOfList().a);
+                case ANull mynull ->
+                    new Commute(mynull.a, new ANull().a);
+                case ATrue b ->
+                    new Commute(b.a, new ATrue().a);
+                case AFalse b ->
+                    new Commute(b.a, new AFalse().a);
+                case AInteger i ->
+                    new Commute(i.a, new AInteger(i.data).a);
+                case ABigInteger i ->
+                    new Commute(i.a, new ABigInteger(i.data).a);
+                case AString s ->
+                    new Commute(s.a, new AString(s.data).a);
                 case ARange rng ->
                     new Commute(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
-                case ARangeFrom rng -> new Commute(rng.a, new ARangeFrom(rng.start).a);
-                case ARangeTo rng -> new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
-                case ARangeFull rng -> new Commute(rng.a, new ARangeFull().a);
-                case AIdentity id -> new Commute(id.a, new AIdentity().a);
+                case ARangeFrom rng ->
+                    new Commute(rng.a, new ARangeFrom(rng.start).a);
+                case ARangeTo rng ->
+                    new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
+                case ARangeFull rng ->
+                    new Commute(rng.a, new ARangeFull().a);
+                case AIdentity id ->
+                    new Commute(id.a, new AIdentity().a);
                 default -> {
                     if (isOperator(data)) {
                         yield crash("Operand unresolved: %s", describe(data));

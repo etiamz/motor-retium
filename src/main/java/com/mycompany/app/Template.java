@@ -68,7 +68,7 @@ public final class Template {
     private record KCapture() implements Kind {
     }
 
-    private record KMatch(String[] names /* interned */, int[] arities) implements Kind {
+    private record KMatch(String[] names /* interned */) implements Kind {
     }
 
     private record KConstructorResolver(String name /* interned */, int arity) implements Kind {
@@ -295,14 +295,11 @@ public final class Template {
             consumers[i++] = agent.d;
         }
         for (final KMatch k : matchKinds) {
-            final var agent = new Motor.AMatch(k.names, k.arities);
+            final var agent = new Motor.AMatch(k.names);
             consumers[i++] = agent.a;
             producers[j++] = agent.b;
-            for (int caseIndex = 0; caseIndex < k.names.length; caseIndex++) {
-                consumers[i++] = agent.handlers[caseIndex];
-                for (final var port : agent.parameters[caseIndex]) {
-                    producers[j++] = port;
-                }
+            for (final var port : agent.handlers) {
+                consumers[i++] = port;
             }
         }
         for (final KConstructorResolver k : ctrResKinds) {
@@ -940,17 +937,11 @@ public final class Template {
             private final Consumer a;
             private final Producer b;
             private final Consumer[] handlers;
-            private final Producer[][] parameters;
 
-            private AMatch(
-                    final Consumer a,
-                    final Producer b,
-                    final Consumer[] handlers,
-                    final Producer[][] parameters) {
+            private AMatch(final Consumer a, final Producer b, final Consumer[] handlers) {
                 this.a = a;
                 this.b = b;
                 this.handlers = handlers;
-                this.parameters = parameters;
             }
 
             public Consumer a() {
@@ -963,10 +954,6 @@ public final class Template {
 
             public Consumer handler(final int i) {
                 return handlers[i];
-            }
-
-            public Producer parameter(final int i, final int j) {
-                return parameters[i][j];
             }
         }
 
@@ -1191,27 +1178,23 @@ public final class Template {
             return new AConstructor(a, arguments);
         }
 
-        public AMatch mkMatch(final String[] names, final int[] arities) {
+        public AMatch mkMatch(final String[] names) {
             final String[] myNames = Arrays.stream(names).map(String::intern)
                     .toArray(String[]::new);
             final Consumer a = new Consumer();
             final Producer b = new Producer();
             final Consumer[] handlers = new Consumer[names.length];
-            final Producer[][] parameters = new Producer[names.length][];
-            final var ports = new ArrayList<Port>();
-            ports.add(a);
-            ports.add(b);
             for (int i = 0; i < names.length; i++) {
                 handlers[i] = new Consumer();
-                ports.add(handlers[i]);
-                parameters[i] = new Producer[arities[i]];
-                for (int j = 0; j < arities[i]; j++) {
-                    parameters[i][j] = new Producer();
-                    ports.add(parameters[i][j]);
-                }
             }
-            agents.add(new Agent(new KMatch(myNames, arities), ports.toArray(Port[]::new)));
-            return new AMatch(a, b, handlers, parameters);
+            final Port[] ports = new Port[2 + names.length];
+            ports[0] = a;
+            ports[1] = b;
+            for (int i = 0; i < names.length; i++) {
+                ports[2 + i] = handlers[i];
+            }
+            agents.add(new Agent(new KMatch(myNames), ports));
+            return new AMatch(a, b, handlers);
         }
 
         private final Set<Agent> agents = new HashSet<>();
