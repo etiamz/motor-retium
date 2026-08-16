@@ -374,6 +374,7 @@ public final class Motor {
         AReference, AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, AConstructorResolver, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
+    // @formatter:on
     {
         // The agent kind for faster dispatch.
         public final byte kind;
@@ -382,7 +383,6 @@ public final class Motor {
             this.kind = kind;
         }
     }
-    // @formatter:on
 
     private record Operands(Agent first, Agent second) {
     }
@@ -1183,15 +1183,16 @@ public final class Motor {
                         reject(s1, i);
                         return;
                     }
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strchr(i.data.toInt()))).a);
+                    final var index = s1.data.strchr(i.data.toInt());
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(index)).a);
                 }
                 case STRRCHR -> {
                     if (i.ty() != U8) {
                         reject(s1, i);
                         return;
                     }
-                    op2.b.forward(
-                            new AInteger(IntegerTy.I64.of(s1.data.strrchr(i.data.toInt()))).a);
+                    final var index = s1.data.strrchr(i.data.toInt());
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(index)).a);
                 }
                 case HSEARCH -> {
                     hsearch(s1, i);
