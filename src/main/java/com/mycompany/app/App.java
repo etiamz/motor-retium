@@ -12,7 +12,6 @@ import com.mycompany.app.Motor.ATrue;
 import com.mycompany.app.Motor.Agent;
 import com.mycompany.app.passes.GuardEliminator;
 import com.mycompany.app.passes.OperatorSaturator;
-import com.mycompany.app.passes.SharedVariableHoister;
 import com.mycompany.app.passes.StrictnessAnalyzer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,10 +26,9 @@ public final class App {
         final var source = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
         try {
             final var program = new StrictnessAnalyzer().analyze(
-                    new SharedVariableHoister().hoist(
-                            new OperatorSaturator().saturate(
-                                    new GuardEliminator().eliminate(
-                                            Parser.parse("<stdin>", source)))));
+                    new OperatorSaturator().saturate(
+                            new GuardEliminator().eliminate(
+                                    Parser.parse("<stdin>", source))));
             final var compilation = Compiler.compile(program);
             Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
