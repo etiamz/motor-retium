@@ -35,6 +35,8 @@ public final class Motor {
 
     private static final int HEARTBEAT = 64; // empirically established
 
+    private static final Producer[] NO_IMPORTS = new Producer[0];
+
     private static ConcurrentHashMap<Object, Object> HSEARCH_TABLE;
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
@@ -257,7 +259,14 @@ public final class Motor {
                     if (body == null) {
                         crash("Cannot resolve a reference to `%s`", ref.name);
                     }
-                    body.materialize(p);
+                    body.materialize(p, NO_IMPORTS);
+                    return reduce(p, thunk, heart);
+                };
+            }
+            case K_EXPANSION -> {
+                final var exp = (AExpansion) agent;
+                yield (Thunk) () -> {
+                    exp.interact(p);
                     return reduce(p, thunk, heart);
                 };
             }
@@ -363,15 +372,15 @@ public final class Motor {
     // @formatter:off
     private static final byte
         // Operators.
-        K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_NOT = 4, K_AND = 5, K_OR = 6, K_DO_RANGE = 7, K_DO_RANGE_FROM = 8, K_DO_RANGE_TO = 9, K_APPLICATOR = 10, K_STRICT_APPLICATOR = 11, K_RESOLVER = 12, K_CAPTURE = 13, K_MATCH = 14, K_CONSTRUCTOR_RESOLVER = 15, K_DUPLICATOR = 16,
+        K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_EXPANSION = 4, K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_RANGE = 8, K_DO_RANGE_FROM = 9, K_DO_RANGE_TO = 10, K_APPLICATOR = 11, K_STRICT_APPLICATOR = 12, K_RESOLVER = 13, K_CAPTURE = 14, K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_DUPLICATOR = 17,
         // Data.
-        K_LAMBDA = 17, K_END_OF_LIST = 18, K_NULL = 19, K_TRUE = 20, K_FALSE = 21, K_INTEGER = 22, K_BIG_INTEGER = 23, K_STRING = 24, K_RANGE = 25, K_RANGE_FROM = 26, K_RANGE_TO = 27, K_RANGE_FULL = 28, K_IDENTITY = 29, K_CONSTRUCTOR = 30, K_SUPERPOSITION = 31;
+        K_LAMBDA = 18, K_END_OF_LIST = 19, K_NULL = 20, K_TRUE = 21, K_FALSE = 22, K_INTEGER = 23, K_BIG_INTEGER = 24, K_STRING = 25, K_RANGE = 26, K_RANGE_FROM = 27, K_RANGE_TO = 28, K_RANGE_FULL = 29, K_IDENTITY = 30, K_CONSTRUCTOR = 31, K_SUPERPOSITION = 32;
     // @formatter:on
 
     // @formatter:off
     public abstract static sealed class Agent permits
         // Operators.
-        AReference, AStrictOp1, AStrictOp2, AIfThenElse, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, AConstructorResolver, ADuplicator,
+        AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, AConstructorResolver, ADuplicator,
         // Data.
         ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
     // @formatter:on
@@ -509,7 +518,9 @@ public final class Motor {
                     supx.b.setProducer(op1x.b);
                     supx.c.setProducer(op1xx.b);
                 }
-                default -> reject(data);
+                default -> {
+                    reject(data);
+                }
             }
         }
 
@@ -585,7 +596,9 @@ public final class Motor {
                             op2x.a.setProducer(mynull.a);
                             op2xx.a.setProducer(new ANull().a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ATrue b1 -> {
@@ -649,7 +662,9 @@ public final class Motor {
                             op2x.a.setProducer(b1.a);
                             op2xx.a.setProducer(new ATrue().a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case AFalse b1 -> {
@@ -713,7 +728,9 @@ public final class Motor {
                             op2x.a.setProducer(b1.a);
                             op2xx.a.setProducer(new AFalse().a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case AInteger i1 -> {
@@ -759,7 +776,9 @@ public final class Motor {
                             op2x.a.setProducer(i1.a);
                             op2xx.a.setProducer(new AInteger(i1.data).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ABigInteger i1 -> {
@@ -805,7 +824,9 @@ public final class Motor {
                             op2x.a.setProducer(i1.a);
                             op2xx.a.setProducer(new ABigInteger(i1.data).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case AString s1 -> {
@@ -841,7 +862,9 @@ public final class Motor {
                             op2x.a.setProducer(s1.a);
                             op2xx.a.setProducer(new AString(s1.data).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ARange rng -> {
@@ -865,7 +888,9 @@ public final class Motor {
                             op2x.a.setProducer(rng.a);
                             op2xx.a.setProducer(new ARange(rng.start, rng.end, rng.inclusive).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ARangeFrom rng -> {
@@ -889,7 +914,9 @@ public final class Motor {
                             op2x.a.setProducer(rng.a);
                             op2xx.a.setProducer(new ARangeFrom(rng.start).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ARangeTo rng -> {
@@ -913,7 +940,9 @@ public final class Motor {
                             op2x.a.setProducer(rng.a);
                             op2xx.a.setProducer(new ARangeTo(rng.end, rng.inclusive).a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case ARangeFull rng -> {
@@ -937,7 +966,9 @@ public final class Motor {
                             op2x.a.setProducer(rng.a);
                             op2xx.a.setProducer(new ARangeFull().a);
                         }
-                        default -> reject(left, right);
+                        default -> {
+                            reject(left, right);
+                        }
                     }
                 }
                 case AConstructor ctr -> {
@@ -980,16 +1011,17 @@ public final class Motor {
                     op2x.c.setProducer(dup.b);
                     op2xx.c.setProducer(dup.c);
                 }
-                default -> reject(left, right);
+                default -> {
+                    reject(left, right);
+                }
             }
         }
 
         private void interact(final AInteger i1, final AInteger i2) {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
-                // @formatter:off
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT -> {
-                // @formatter:on
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
+                        SHIFT_LEFT, SHIFT_RIGHT -> {
                     if (i1.ty() != i2.ty()) {
                         reject(i1, i2);
                         return;
@@ -1052,10 +1084,10 @@ public final class Motor {
                     }
                 }
                 case OFTYPE -> {
-                    if (i1.ty() == i2.ty()) {
-                        op2.b.forward(i2.a);
-                    } else {
+                    if (i1.ty() != i2.ty()) {
                         op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
+                    } else {
+                        op2.b.forward(i2.a);
                     }
                 }
                 case HSEARCH -> {
@@ -1100,9 +1132,8 @@ public final class Motor {
         private void interact(final ABigInteger i1, final ABigInteger i2) {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
-                // @formatter:off
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR, SHIFT_LEFT, SHIFT_RIGHT -> {
-                // @formatter:on
+                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
+                        SHIFT_LEFT, SHIFT_RIGHT -> {
                     final MyBigInteger x = i1.data, y = i2.data;
                     final var r = new ABigInteger(switch (op2.op) {
                         case ADD -> x.add(y);
@@ -1183,16 +1214,16 @@ public final class Motor {
                         reject(s1, i);
                         return;
                     }
-                    final var index = s1.data.strchr(i.data.toInt());
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(index)).a);
+                    final int c = i.data.toInt();
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strchr(c))).a);
                 }
                 case STRRCHR -> {
                     if (i.ty() != U8) {
                         reject(s1, i);
                         return;
                     }
-                    final var index = s1.data.strrchr(i.data.toInt());
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(index)).a);
+                    final int c = i.data.toInt();
+                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrchr(c))).a);
                 }
                 case HSEARCH -> {
                     hsearch(s1, i);
@@ -1419,6 +1450,30 @@ public final class Motor {
                     }
                 }
             }
+        }
+    }
+
+    public static final class AExpansion extends Agent {
+        public final Template template;
+        public final Producer a;
+        public final Consumer[] imports;
+
+        public AExpansion(final Template template) {
+            super(K_EXPANSION);
+            this.template = template;
+            this.a = new Producer(this);
+            this.imports = new Consumer[template.nimports()];
+            for (int i = 0; i < imports.length; i++) {
+                imports[i] = new Consumer(null);
+            }
+        }
+
+        private void interact(final Consumer p) {
+            final var producers = new Producer[imports.length];
+            for (int i = 0; i < imports.length; i++) {
+                producers[i] = imports[i].producer();
+            }
+            template.materialize(p, producers);
         }
     }
 
@@ -2478,7 +2533,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2489,7 +2544,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2553,6 +2608,7 @@ public final class Motor {
             case AStrictOp1 op1 -> op1.op.describe();
             case AStrictOp2 op2 -> op2.op.describe();
             case AIfThenElse _ -> "an if-then-else expression";
+            case AExpansion _ -> "an unexpanded template";
             case ANot _ -> "logical negation";
             case AAnd _ -> "logical conjunction";
             case AOr _ -> "logical disjunction";

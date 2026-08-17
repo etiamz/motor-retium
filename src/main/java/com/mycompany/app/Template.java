@@ -7,7 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.SequencedMap;
 import java.util.Set;
 
 public final class Template {
@@ -16,7 +19,7 @@ public final class Template {
         // The interface.
         KRoot,
         // Operators.
-        KStrictOp1, KStrictOp2, KIfThenElse, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KConstructorResolver, KDuplicator,
+        KStrictOp1, KStrictOp2, KIfThenElse, KExpansion, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KConstructorResolver, KDuplicator,
         // Data.
         KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference, KEndOfList, KLambda, KConstructor
     {
@@ -33,6 +36,9 @@ public final class Template {
     }
 
     private record KIfThenElse() implements Kind {
+    }
+
+    private record KExpansion(Template template) implements Kind {
     }
 
     private record KNot() implements Kind {
@@ -116,6 +122,7 @@ public final class Template {
     private final KStrictOp1[] op1Kinds;
     private final KStrictOp2[] op2Kinds;
     private final KIfThenElse[] iteKinds;
+    private final KExpansion[] expKinds;
     private final KNot[] notKinds;
     private final KAnd[] andKinds;
     private final KOr[] orKinds;
@@ -144,13 +151,14 @@ public final class Template {
 
     // The uni-directional links from consumers to corresponding producers.
     private final Link[] links;
-    // The total number of consumers, the total number of producers.
-    private final int nconsumers, nproducers;
+    // The total number of consumers, template-local producers, & imported producers.
+    private final int nconsumers, nproducers, nimports;
 
     private Template(
             final KStrictOp1[] op1Kinds,
             final KStrictOp2[] op2Kinds,
             final KIfThenElse[] iteKinds,
+            final KExpansion[] expKinds,
             final KNot[] notKinds,
             final KAnd[] andKinds,
             final KOr[] orKinds,
@@ -178,10 +186,12 @@ public final class Template {
             final KConstructor[] ctrKinds,
             final Link[] links,
             final int nconsumers,
-            final int nproducers) {
+            final int nproducers,
+            final int nimports) {
         this.op1Kinds = op1Kinds;
         this.op2Kinds = op2Kinds;
         this.iteKinds = iteKinds;
+        this.expKinds = expKinds;
         this.notKinds = notKinds;
         this.andKinds = andKinds;
         this.orKinds = orKinds;
@@ -210,11 +220,20 @@ public final class Template {
         this.links = links;
         this.nconsumers = nconsumers;
         this.nproducers = nproducers;
+        this.nimports = nimports;
     }
 
-    public void materialize(final Port.Consumer consumer) {
+    public int nimports() {
+        return nimports;
+    }
+
+    public void materialize(final Port.Consumer consumer, final Port.Producer[] imports) {
+        if (imports.length != nimports) {
+            throw new IllegalArgumentException(
+                    String.format("Expected %d imports, got %d", nimports, imports.length));
+        }
         final Port.Consumer[] consumers = new Port.Consumer[nconsumers];
-        final Port.Producer[] producers = new Port.Producer[nproducers];
+        final Port.Producer[] producers = new Port.Producer[nproducers + nimports];
         int i = 0, j = 0;
         consumers[i++] = consumer;
         for (final KStrictOp1 k : op1Kinds) {
@@ -234,6 +253,13 @@ public final class Template {
             producers[j++] = agent.b;
             consumers[i++] = agent.c;
             consumers[i++] = agent.d;
+        }
+        for (final KExpansion k : expKinds) {
+            final var agent = new Motor.AExpansion(k.template);
+            producers[j++] = agent.a;
+            for (final var port : agent.imports) {
+                consumers[i++] = port;
+            }
         }
         for (final KNot _ : notKinds) {
             final var agent = new Motor.ANot();
@@ -359,6 +385,7 @@ public final class Template {
                 consumers[i++] = port;
             }
         }
+        System.arraycopy(imports, 0, producers, j, nimports);
         for (final Link link : links) {
             consumers[link.consumer].setProducer(producers[link.producer]);
         }
@@ -475,6 +502,24 @@ public final class Template {
 
             public Consumer d() {
                 return d;
+            }
+        }
+
+        public static final class AExpansion {
+            private final Producer a;
+            private final Map<String, Consumer> imports;
+
+            private AExpansion(final Producer a, final Map<String, Consumer> imports) {
+                this.a = a;
+                this.imports = imports;
+            }
+
+            public Producer a() {
+                return a;
+            }
+
+            public Consumer imported(final String name) {
+                return imports.get(name);
             }
         }
 
@@ -991,6 +1036,22 @@ public final class Template {
             return new AIfThenElse(a, b, c, d);
         }
 
+        public AExpansion mkExpansion(final Builder inner) {
+            final Template template = inner.build();
+            final Producer a = new Producer();
+            final var imports = new LinkedHashMap<String, Consumer>();
+            final Port[] ports = new Port[1 + inner.imports.size()];
+            ports[0] = a;
+            int i = 0;
+            for (final String name : inner.imports.keySet()) {
+                final Consumer consumer = new Consumer();
+                imports.put(name, consumer);
+                ports[1 + i++] = consumer;
+            }
+            agents.add(new Agent(new KExpansion(template), ports));
+            return new AExpansion(a, imports);
+        }
+
         public ANot mkNot() {
             final Consumer a = new Consumer();
             final Producer b = new Producer();
@@ -1198,7 +1259,12 @@ public final class Template {
         }
 
         private final Set<Agent> agents = new HashSet<>();
+        private final SequencedMap<String, Producer> imports = new LinkedHashMap<>();
         private Agent root;
+
+        public Producer mkImport(final String name) {
+            return imports.computeIfAbsent(name, _ -> new Producer());
+        }
 
         @SuppressWarnings("unchecked")
         private <K extends Kind> K[] collect(final Class<K> type, final List<Agent> into) {
@@ -1218,6 +1284,7 @@ public final class Template {
             final var op1Kinds = collect(KStrictOp1.class, orderedAgents);
             final var op2Kinds = collect(KStrictOp2.class, orderedAgents);
             final var iteKinds = collect(KIfThenElse.class, orderedAgents);
+            final var expKinds = collect(KExpansion.class, orderedAgents);
             final var notKinds = collect(KNot.class, orderedAgents);
             final var andKinds = collect(KAnd.class, orderedAgents);
             final var orKinds = collect(KOr.class, orderedAgents);
@@ -1246,7 +1313,7 @@ public final class Template {
 
             final var consumerIndex = new IdentityHashMap<Consumer, Integer>();
             final var producerIndex = new IdentityHashMap<Producer, Integer>();
-            // Record the producers & consumers in the same order we will materialize them.
+            // Record the consumers & producers in the same order we will materialize them.
             for (final Agent agent : orderedAgents) {
                 for (final Port port : agent.ports) {
                     switch (port) {
@@ -1256,6 +1323,9 @@ public final class Template {
                             producerIndex.put(producer, producerIndex.size());
                     }
                 }
+            }
+            for (final Producer producer : imports.values()) {
+                producerIndex.put(producer, producerIndex.size());
             }
 
             final var links = new Link[consumerIndex.size()];
@@ -1270,6 +1340,7 @@ public final class Template {
                     op1Kinds,
                     op2Kinds,
                     iteKinds,
+                    expKinds,
                     notKinds,
                     andKinds,
                     orKinds,
@@ -1297,7 +1368,8 @@ public final class Template {
                     ctrKinds,
                     links,
                     consumerIndex.size(),
-                    producerIndex.size());
+                    producerIndex.size() - imports.size(),
+                    imports.size());
         }
     }
 }

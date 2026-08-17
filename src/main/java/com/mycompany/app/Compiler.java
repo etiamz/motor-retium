@@ -140,7 +140,7 @@ public final class Compiler {
                     for (final var x : xs.reversed()) {
                         handler = new Term.Lambda(x, handler);
                     }
-                    merge(fvSet, compile(builder, handler, agent.handler(i)));
+                    merge(fvSet, expand(builder, handler, agent.handler(i)));
                 }
                 yield fvSet;
             }
@@ -148,8 +148,8 @@ public final class Compiler {
                 final var agent = builder.mkIfThenElse();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, compile(builder, t2, agent.d()));
-                merge(fvSet, compile(builder, t3, agent.c()));
+                merge(fvSet, expand(builder, t2, agent.d()));
+                merge(fvSet, expand(builder, t3, agent.c()));
                 yield fvSet;
             }
             case Term.Not(var t) -> {
@@ -161,14 +161,14 @@ public final class Compiler {
                 final var agent = builder.mkAnd();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, compile(builder, t2, agent.c()));
+                merge(fvSet, expand(builder, t2, agent.c()));
                 yield fvSet;
             }
             case Term.Or(var t1, var t2) -> {
                 final var agent = builder.mkOr();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, compile(builder, t2, agent.c()));
+                merge(fvSet, expand(builder, t2, agent.c()));
                 yield fvSet;
             }
             case Term.Range(var t1, var t2, var inclusive) when t1.isPresent()
@@ -226,6 +226,25 @@ public final class Compiler {
                 yield new TermInterface();
             }
         };
+    }
+
+    // Same interface as `compile`, but builds a term into an expansion that materializes on demand
+    // at run-time. This is used to avoid allocating possibly uselesse agents, such as untaken
+    // branches of an if-then-else or case-of.
+    private static TermInterface expand(
+            final Template.Builder builder,
+            final Term term,
+            final Consumer output) {
+        final var inner = new Template.Builder();
+        final var fvSet = compile(inner, term, inner.mkRoot().a());
+        fvSet.forEach((x, usages) -> bind(inner, inner.mkImport(x), usages));
+        final var agent = builder.mkExpansion(inner);
+        output.setProducer(agent.a());
+        final var imports = new TermInterface();
+        for (final var x : fvSet.keySet()) {
+            imports.put(x, new ArrayList<>(List.of(agent.imported(x))));
+        }
+        return imports;
     }
 
     private static TermInterface capture(
