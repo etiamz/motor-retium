@@ -255,11 +255,7 @@ public final class Motor {
             case K_REFERENCE -> {
                 final var ref = (AReference) agent;
                 yield (Thunk) () -> {
-                    final Template body = BOOK.get(ref.name);
-                    if (body == null) {
-                        crash("Cannot resolve a reference to `%s`", ref.name);
-                    }
-                    body.materialize(p, NO_IMPORTS);
+                    ref.interact(p);
                     return reduce(p, thunk, heart);
                 };
             }
@@ -408,6 +404,14 @@ public final class Motor {
             super(K_REFERENCE);
             this.name = name;
             this.a = new Producer(this);
+        }
+
+        private void interact(final Consumer p) {
+            final Template body = BOOK.get(name);
+            if (body == null) {
+                crash("Cannot resolve a reference to `%s`", name);
+            }
+            body.materialize(p, NO_IMPORTS);
         }
     }
 
