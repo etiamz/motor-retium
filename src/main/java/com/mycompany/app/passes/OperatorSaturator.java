@@ -76,24 +76,18 @@ public final class OperatorSaturator {
                 }
                 yield wrap(ts -> new Term.Constructor(name, ts, 0), List.of(), missing);
             }
-            case Term.Operator(var op) ->
-                wrap(ts -> apply(op, ts), List.of(), op.arity());
-            case Term.Lambda(var x, var t) ->
-                new Term.Lambda(x, bind(List.of(x)).saturate(t));
+            case Term.Operator(var op) -> wrap(ts -> apply(op, ts), List.of(), op.arity());
+            case Term.Lambda(var x, var t) -> new Term.Lambda(x, bind(List.of(x)).saturate(t));
             case Term.Match(var s, var cases) ->
                 new Term.Match(saturate(s), cases.stream().map(this::saturateCase).toList());
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(saturate(t1), saturate(t2), saturate(t3));
-            case Term.Not(var t) ->
-                new Term.Not(saturate(t));
-            case Term.And(var t1, var t2) ->
-                new Term.And(saturate(t1), saturate(t2));
-            case Term.Or(var t1, var t2) ->
-                new Term.Or(saturate(t1), saturate(t2));
+            case Term.Not(var t) -> new Term.Not(saturate(t));
+            case Term.And(var t1, var t2) -> new Term.And(saturate(t1), saturate(t2));
+            case Term.Or(var t1, var t2) -> new Term.Or(saturate(t1), saturate(t2));
             case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(t1.map(this::saturate), t2.map(this::saturate), inclusive);
-            case Term.StrictOp1(var op, var t) ->
-                new Term.StrictOp1(op, saturate(t));
+            case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, saturate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(saturate(t1), op, saturate(t2));
             case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->

@@ -103,21 +103,16 @@ public sealed interface Term {
 
     public default Set<String> freeVariables() {
         return switch (this) {
-            case Variable(var x) ->
-                new LinkedHashSet<>(List.of(x));
+            case Variable(var x) -> new LinkedHashSet<>(List.of(x));
             case Lambda(var x, var t) -> {
                 final var fvSet = t.freeVariables();
                 fvSet.remove(x);
                 yield fvSet;
             }
-            case Application(var t1, var t2) ->
-                union(t1, t2);
-            case StrictApplication(var t1, var t2) ->
-                union(t1, t2);
-            case Constructor(var _, var ts, var _) ->
-                union(ts.toArray(Term[]::new));
-            case IfThenElse(var t1, var t2, var t3) ->
-                union(t1, t2, t3);
+            case Application(var t1, var t2) -> union(t1, t2);
+            case StrictApplication(var t1, var t2) -> union(t1, t2);
+            case Constructor(var _, var ts, var _) -> union(ts.toArray(Term[]::new));
+            case IfThenElse(var t1, var t2, var t3) -> union(t1, t2, t3);
             case Match(var s, var cases) -> {
                 final var fvSet = s.freeVariables();
                 for (final var myCase : cases) {
@@ -128,18 +123,13 @@ public sealed interface Term {
                 }
                 yield fvSet;
             }
-            case Not(var t) ->
-                t.freeVariables();
-            case And(var t1, var t2) ->
-                union(t1, t2);
-            case Or(var t1, var t2) ->
-                union(t1, t2);
+            case Not(var t) -> t.freeVariables();
+            case And(var t1, var t2) -> union(t1, t2);
+            case Or(var t1, var t2) -> union(t1, t2);
             case Range(var t1, var t2, var _) ->
                 union(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
-            case StrictOp1(var _, var t) ->
-                t.freeVariables();
-            case StrictOp2(var t1, var _, var t2) ->
-                union(t1, t2);
+            case StrictOp1(var _, var t) -> t.freeVariables();
+            case StrictOp2(var t1, var _, var t2) -> union(t1, t2);
             case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
@@ -155,18 +145,12 @@ public sealed interface Term {
 
     public default Set<String> references() {
         return switch (this) {
-            case Reference(var name) ->
-                new LinkedHashSet<>(List.of(name));
-            case Lambda(var _, var t) ->
-                t.references();
-            case Application(var t1, var t2) ->
-                unionReferences(t1, t2);
-            case StrictApplication(var t1, var t2) ->
-                unionReferences(t1, t2);
-            case Constructor(var _, var ts, var _) ->
-                unionReferences(ts.toArray(Term[]::new));
-            case IfThenElse(var t1, var t2, var t3) ->
-                unionReferences(t1, t2, t3);
+            case Reference(var name) -> new LinkedHashSet<>(List.of(name));
+            case Lambda(var _, var t) -> t.references();
+            case Application(var t1, var t2) -> unionReferences(t1, t2);
+            case StrictApplication(var t1, var t2) -> unionReferences(t1, t2);
+            case Constructor(var _, var ts, var _) -> unionReferences(ts.toArray(Term[]::new));
+            case IfThenElse(var t1, var t2, var t3) -> unionReferences(t1, t2, t3);
             case Match(var s, var cases) -> {
                 final var refs = s.references();
                 for (final var myCase : cases) {
@@ -175,18 +159,13 @@ public sealed interface Term {
                 }
                 yield refs;
             }
-            case Not(var t) ->
-                t.references();
-            case And(var t1, var t2) ->
-                unionReferences(t1, t2);
-            case Or(var t1, var t2) ->
-                unionReferences(t1, t2);
+            case Not(var t) -> t.references();
+            case And(var t1, var t2) -> unionReferences(t1, t2);
+            case Or(var t1, var t2) -> unionReferences(t1, t2);
             case Range(var t1, var t2, var _) ->
                 unionReferences(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
-            case StrictOp1(var _, var t) ->
-                t.references();
-            case StrictOp2(var t1, var _, var t2) ->
-                unionReferences(t1, t2);
+            case StrictOp1(var _, var t) -> t.references();
+            case StrictOp2(var t1, var _, var t2) -> unionReferences(t1, t2);
             case Operator _,Variable _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };

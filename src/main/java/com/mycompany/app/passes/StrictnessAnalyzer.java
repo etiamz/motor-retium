@@ -60,8 +60,7 @@ public final class StrictnessAnalyzer {
             return switch (head) {
                 case Term.Reference(var name) when phi.get(name) instanceof Set<Integer> summary ->
                     summary;
-                default ->
-                    strictParameters(head);
+                default -> strictParameters(head);
             };
         }
 
@@ -79,8 +78,7 @@ public final class StrictnessAnalyzer {
 
         private Set<String> demand(final Term term) {
             return switch (term) {
-                case Term.Variable(var x) ->
-                    new LinkedHashSet<>(List.of(x));
+                case Term.Variable(var x) -> new LinkedHashSet<>(List.of(x));
                 case Term.Lambda _ ->
                     // Unlike normal-order reduction, our closures are strict in captures.
                     term.freeVariables();
@@ -116,20 +114,16 @@ public final class StrictnessAnalyzer {
                     result.addAll(common);
                     yield result;
                 }
-                case Term.Not(var t) ->
-                    demand(t);
-                case Term.And(var t1, var _) ->
-                    demand(t1);
-                case Term.Or(var t1, var _) ->
-                    demand(t1);
+                case Term.Not(var t) -> demand(t);
+                case Term.And(var t1, var _) -> demand(t1);
+                case Term.Or(var t1, var _) -> demand(t1);
                 case Term.Range(var t1, var t2, var _) -> {
                     final var result = new LinkedHashSet<String>();
                     t1.ifPresent(t -> result.addAll(demand(t)));
                     t2.ifPresent(t -> result.addAll(demand(t)));
                     yield result;
                 }
-                case Term.StrictOp1(var _, var t) ->
-                    demand(t);
+                case Term.StrictOp1(var _, var t) -> demand(t);
                 case Term.StrictOp2(var t1, var _, var t2) -> {
                     final var result = demand(t1);
                     result.addAll(demand(t2));
@@ -161,8 +155,7 @@ public final class StrictnessAnalyzer {
 
         public Term annotate(final Term term) {
             return switch (term) {
-                case Term.Lambda(var x, var t) ->
-                    new Term.Lambda(x, annotate(t));
+                case Term.Lambda(var x, var t) -> new Term.Lambda(x, annotate(t));
                 case Term.StrictApplication(var t1, var t2) ->
                     new Term.StrictApplication(annotate(t1), annotate(t2));
                 case Term.Application _ -> {
@@ -187,16 +180,12 @@ public final class StrictnessAnalyzer {
                     new Term.Match(annotate(s), cases.stream().map(this::annotateCase).toList());
                 case Term.IfThenElse(var t1, var t2, var t3) ->
                     new Term.IfThenElse(annotate(t1), annotate(t2), annotate(t3));
-                case Term.Not(var t) ->
-                    new Term.Not(annotate(t));
-                case Term.And(var t1, var t2) ->
-                    new Term.And(annotate(t1), annotate(t2));
-                case Term.Or(var t1, var t2) ->
-                    new Term.Or(annotate(t1), annotate(t2));
+                case Term.Not(var t) -> new Term.Not(annotate(t));
+                case Term.And(var t1, var t2) -> new Term.And(annotate(t1), annotate(t2));
+                case Term.Or(var t1, var t2) -> new Term.Or(annotate(t1), annotate(t2));
                 case Term.Range(var t1, var t2, var inclusive) ->
                     new Term.Range(t1.map(this::annotate), t2.map(this::annotate), inclusive);
-                case Term.StrictOp1(var op, var t) ->
-                    new Term.StrictOp1(op, annotate(t));
+                case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, annotate(t));
                 case Term.StrictOp2(var t1, var op, var t2) ->
                     new Term.StrictOp2(annotate(t1), op, annotate(t2));
                 case Term.Operator _ ->

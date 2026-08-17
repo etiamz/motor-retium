@@ -14,17 +14,17 @@ import java.util.SequencedMap;
 import java.util.Set;
 
 public final class Template {
-    // @formatter:off
     private sealed interface Kind permits
-        // The interface.
-        KRoot,
-        // Operators.
-        KStrictOp1, KStrictOp2, KIfThenElse, KExpansion, KNot, KAnd, KOr, KDoRange, KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch, KConstructorResolver, KDuplicator,
-        // Data.
-        KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference, KEndOfList, KLambda, KConstructor
-    {
+            // The interface.
+            KRoot,
+            // Operators.
+            KStrictOp1, KStrictOp2, KIfThenElse, KExpansion, KNot, KAnd, KOr, KDoRange,
+            KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch,
+            KConstructorResolver, KDuplicator,
+            // Data.
+            KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference,
+            KEndOfList, KLambda, KConstructor {
     }
-    // @formatter:on
 
     private record KRoot() implements Kind {
     }
@@ -1317,10 +1317,12 @@ public final class Template {
             for (final Agent agent : orderedAgents) {
                 for (final Port port : agent.ports) {
                     switch (port) {
-                        case Consumer consumer ->
+                        case Consumer consumer -> {
                             consumerIndex.put(consumer, consumerIndex.size());
-                        case Producer producer ->
+                        }
+                        case Producer producer -> {
                             producerIndex.put(producer, producerIndex.size());
+                        }
                     }
                 }
             }

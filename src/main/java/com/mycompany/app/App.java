@@ -27,8 +27,7 @@ public final class App {
         try {
             final var program = new StrictnessAnalyzer().analyze(
                     new OperatorSaturator().saturate(
-                            new GuardEliminator().eliminate(
-                                    Parser.parse("<stdin>", source))));
+                            new GuardEliminator().eliminate(Parser.parse("<stdin>", source))));
             final var compilation = Compiler.compile(program);
             Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);

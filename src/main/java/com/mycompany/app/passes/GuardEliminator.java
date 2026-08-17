@@ -34,8 +34,7 @@ public final class GuardEliminator {
 
     public Term eliminate(final Term term) {
         return switch (term) {
-            case Term.Lambda(var x, var t) ->
-                new Term.Lambda(x, bind(List.of(x)).eliminate(t));
+            case Term.Lambda(var x, var t) -> new Term.Lambda(x, bind(List.of(x)).eliminate(t));
             case Term.Application(var t1, var t2) ->
                 new Term.Application(eliminate(t1), eliminate(t2));
             case Term.StrictApplication(var t1, var t2) ->
@@ -45,25 +44,18 @@ public final class GuardEliminator {
             case Term.Match(var s, var cases) -> {
                 final var myS = eliminate(s);
                 final var myCases = cases.stream().map(this::eliminateCase).toList();
-                final var myMyCases = groupCases(myCases)
-                        .stream()
-                        .map(this::renameCasesInGroup)
-                        .map(group -> foldGroup(group))
-                        .toList();
+                final var myMyCases = groupCases(myCases).stream().map(this::renameCasesInGroup)
+                        .map(group -> foldGroup(group)).toList();
                 yield new Term.Match(myS, myMyCases);
             }
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(eliminate(t1), eliminate(t2), eliminate(t3));
-            case Term.Not(var t) ->
-                new Term.Not(eliminate(t));
-            case Term.And(var t1, var t2) ->
-                new Term.And(eliminate(t1), eliminate(t2));
-            case Term.Or(var t1, var t2) ->
-                new Term.Or(eliminate(t1), eliminate(t2));
+            case Term.Not(var t) -> new Term.Not(eliminate(t));
+            case Term.And(var t1, var t2) -> new Term.And(eliminate(t1), eliminate(t2));
+            case Term.Or(var t1, var t2) -> new Term.Or(eliminate(t1), eliminate(t2));
             case Term.Range(var t1, var t2, var inclusive) ->
                 new Term.Range(t1.map(this::eliminate), t2.map(this::eliminate), inclusive);
-            case Term.StrictOp1(var op, var t) ->
-                new Term.StrictOp1(op, eliminate(t));
+            case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, eliminate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(eliminate(t1), op, eliminate(t2));
             case Term.Variable _,Term.Operator _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
@@ -123,17 +115,13 @@ public final class GuardEliminator {
         final var ys = Term.freshNames(representative.xs().size(), banlist);
         final var myBanlist = new LinkedHashSet<>(banlist);
         myBanlist.addAll(ys);
-        return group
-                .stream()
-                .map(
-                        myCase -> new Term.Case(
-                                myCase.name(),
-                                ys,
-                                myCase.guards()
-                                        .stream()
-                                        .map(new Renamer(myCase.xs(), ys, myBanlist)::rename)
-                                        .toList(),
-                                new Renamer(myCase.xs(), ys, myBanlist).rename(myCase.t())))
+        return group.stream().map(
+                myCase -> new Term.Case(
+                        myCase.name(),
+                        ys,
+                        myCase.guards().stream()
+                                .map(new Renamer(myCase.xs(), ys, myBanlist)::rename).toList(),
+                        new Renamer(myCase.xs(), ys, myBanlist).rename(myCase.t())))
                 .toList();
     }
 

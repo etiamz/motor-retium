@@ -369,22 +369,26 @@ public final class Motor {
         });
     }
 
-    // @formatter:off
     private static final byte
-        // Operators.
-        K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_EXPANSION = 4, K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_RANGE = 8, K_DO_RANGE_FROM = 9, K_DO_RANGE_TO = 10, K_APPLICATOR = 11, K_STRICT_APPLICATOR = 12, K_RESOLVER = 13, K_CAPTURE = 14, K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_DUPLICATOR = 17,
-        // Data.
-        K_LAMBDA = 18, K_END_OF_LIST = 19, K_NULL = 20, K_TRUE = 21, K_FALSE = 22, K_INTEGER = 23, K_BIG_INTEGER = 24, K_STRING = 25, K_RANGE = 26, K_RANGE_FROM = 27, K_RANGE_TO = 28, K_RANGE_FULL = 29, K_IDENTITY = 30, K_CONSTRUCTOR = 31, K_SUPERPOSITION = 32;
-    // @formatter:on
+    // Operators.
+    K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_EXPANSION = 4,
+            K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_RANGE = 8, K_DO_RANGE_FROM = 9, K_DO_RANGE_TO = 10,
+            K_APPLICATOR = 11, K_STRICT_APPLICATOR = 12, K_RESOLVER = 13, K_CAPTURE = 14,
+            K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_DUPLICATOR = 17,
+            // Data.
+            K_LAMBDA = 18, K_END_OF_LIST = 19, K_NULL = 20, K_TRUE = 21, K_FALSE = 22,
+            K_INTEGER = 23, K_BIG_INTEGER = 24, K_STRING = 25, K_RANGE = 26, K_RANGE_FROM = 27,
+            K_RANGE_TO = 28, K_RANGE_FULL = 29, K_IDENTITY = 30, K_CONSTRUCTOR = 31,
+            K_SUPERPOSITION = 32;
 
-    // @formatter:off
     public abstract static sealed class Agent permits
-        // Operators.
-        AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch, AConstructorResolver, ADuplicator,
-        // Data.
-        ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition
-    // @formatter:on
-    {
+            // Operators.
+            AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoRange,
+            ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch,
+            AConstructorResolver, ADuplicator,
+            // Data.
+            ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange,
+            ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
         // The agent kind for faster dispatch.
         public final byte kind;
 
@@ -449,8 +453,7 @@ public final class Motor {
                 }
                 case AInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF ->
-                            op1.b.forward(new AString(i.data.show()).a);
+                        case STRING_OF -> op1.b.forward(new AString(i.data.show()).a);
                         case STRING_OF_CHARACTER -> {
                             if (i.ty() == U8) {
                                 op1.b.forward(new AString(MyString.ofByte(i.data.toInt())).a);
@@ -458,54 +461,35 @@ public final class Motor {
                                 reject(data);
                             }
                         }
-                        case NEGATE ->
-                            op1.b.forward(new AInteger(i.data.negate()).a);
-                        case FFS ->
-                            op1.b.forward(new AInteger(i.data.ffs()).a);
-                        case CLZ ->
-                            op1.b.forward(new AInteger(i.data.clz()).a);
-                        case CTZ ->
-                            op1.b.forward(new AInteger(i.data.ctz()).a);
-                        case CLRSB ->
-                            op1.b.forward(new AInteger(i.data.clrsb()).a);
-                        case POPCOUNT ->
-                            op1.b.forward(new AInteger(i.data.popcount()).a);
-                        case PARITY ->
-                            op1.b.forward(new AInteger(i.data.parity()).a);
-                        case HASH ->
-                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        default ->
-                            reject(data);
+                        case NEGATE -> op1.b.forward(new AInteger(i.data.negate()).a);
+                        case FFS -> op1.b.forward(new AInteger(i.data.ffs()).a);
+                        case CLZ -> op1.b.forward(new AInteger(i.data.clz()).a);
+                        case CTZ -> op1.b.forward(new AInteger(i.data.ctz()).a);
+                        case CLRSB -> op1.b.forward(new AInteger(i.data.clrsb()).a);
+                        case POPCOUNT -> op1.b.forward(new AInteger(i.data.popcount()).a);
+                        case PARITY -> op1.b.forward(new AInteger(i.data.parity()).a);
+                        case HASH -> op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        default -> reject(data);
                     }
                 }
                 case ABigInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF ->
-                            op1.b.forward(new AString(i.data.show()).a);
-                        case NEGATE ->
-                            op1.b.forward(new ABigInteger(i.data.negate()).a);
-                        case POPCOUNT ->
-                            op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
-                        case PARITY ->
-                            op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
-                        case HASH ->
-                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        default ->
-                            reject(data);
+                        case STRING_OF -> op1.b.forward(new AString(i.data.show()).a);
+                        case NEGATE -> op1.b.forward(new ABigInteger(i.data.negate()).a);
+                        case POPCOUNT -> op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
+                        case PARITY -> op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
+                        case HASH -> op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        default -> reject(data);
                     }
                 }
                 case AString s -> {
                     switch (op1.op) {
-                        case STRING_OF ->
-                            op1.b.forward(s.a);
+                        case STRING_OF -> op1.b.forward(s.a);
                         case STRLEN ->
                             op1.b.forward(new AInteger(IntegerTy.U64.of(s.data.length())).a);
-                        case PANIC ->
-                            panic("User panic: %s", s.data.toString());
-                        case HASH ->
-                            op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
-                        default ->
-                            reject(data);
+                        case PANIC -> panic("User panic: %s", s.data.toString());
+                        case HASH -> op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
+                        default -> reject(data);
                     }
                 }
                 case ASuperposition sup -> {
@@ -2241,30 +2225,19 @@ public final class Motor {
                     lamxx.c.setProducer(dupx.c);
                     yield new Commute(lamx.a, lamxx.a);
                 }
-                case AEndOfList end ->
-                    new Commute(end.a, new AEndOfList().a);
-                case ANull mynull ->
-                    new Commute(mynull.a, new ANull().a);
-                case ATrue b ->
-                    new Commute(b.a, new ATrue().a);
-                case AFalse b ->
-                    new Commute(b.a, new AFalse().a);
-                case AInteger i ->
-                    new Commute(i.a, new AInteger(i.data).a);
-                case ABigInteger i ->
-                    new Commute(i.a, new ABigInteger(i.data).a);
-                case AString s ->
-                    new Commute(s.a, new AString(s.data).a);
+                case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
+                case ANull mynull -> new Commute(mynull.a, new ANull().a);
+                case ATrue b -> new Commute(b.a, new ATrue().a);
+                case AFalse b -> new Commute(b.a, new AFalse().a);
+                case AInteger i -> new Commute(i.a, new AInteger(i.data).a);
+                case ABigInteger i -> new Commute(i.a, new ABigInteger(i.data).a);
+                case AString s -> new Commute(s.a, new AString(s.data).a);
                 case ARange rng ->
                     new Commute(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
-                case ARangeFrom rng ->
-                    new Commute(rng.a, new ARangeFrom(rng.start).a);
-                case ARangeTo rng ->
-                    new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
-                case ARangeFull rng ->
-                    new Commute(rng.a, new ARangeFull().a);
-                case AIdentity id ->
-                    new Commute(id.a, new AIdentity().a);
+                case ARangeFrom rng -> new Commute(rng.a, new ARangeFrom(rng.start).a);
+                case ARangeTo rng -> new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
+                case ARangeFull rng -> new Commute(rng.a, new ARangeFull().a);
+                case AIdentity id -> new Commute(id.a, new AIdentity().a);
                 default -> {
                     if (isOperator(data)) {
                         yield crash("Operand unresolved: %s", describe(data));
@@ -2584,8 +2557,7 @@ public final class Motor {
             case AInteger i -> i.data;
             case ABigInteger i -> i.data;
             case AString s -> s.data;
-            case AConstructor ctr when ctr.isNullary() ->
-                new HsearchConstructor(ctr.name);
+            case AConstructor ctr when ctr.isNullary() -> new HsearchConstructor(ctr.name);
             default -> throw new IllegalStateException();
         };
     }
@@ -2596,8 +2568,7 @@ public final class Motor {
             case Value v -> new AInteger(v).a;
             case MyBigInteger i -> new ABigInteger(i).a;
             case MyString s -> new AString(s).a;
-            case HsearchConstructor(var name) ->
-                new AConstructor(name, 0).a;
+            case HsearchConstructor(var name) -> new AConstructor(name, 0).a;
             default -> throw new IllegalStateException();
         };
     }
@@ -2650,8 +2621,7 @@ public final class Motor {
     }
 
     private static <T> T typeError(final String op, final Agent... arguments) {
-        final var message = Arrays.stream(arguments)
-                .map(Motor::describe)
+        final var message = Arrays.stream(arguments).map(Motor::describe)
                 .collect(Collectors.joining(", "));
         return panic("Type error: %s: %s", op, message);
     }

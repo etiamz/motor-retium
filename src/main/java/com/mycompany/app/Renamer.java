@@ -30,34 +30,26 @@ public final class Renamer {
 
     public Term rename(final Term term) {
         return switch (term) {
-            case Variable(var x) ->
-                new Variable(renaming.getOrDefault(x, x));
+            case Variable(var x) -> new Variable(renaming.getOrDefault(x, x));
             case Lambda(var x, var t) -> {
                 final var inner = bind(List.of(x));
                 yield new Lambda(inner.renaming.get(x), inner.rename(t));
             }
-            case Application(var t1, var t2) ->
-                new Application(rename(t1), rename(t2));
-            case StrictApplication(var t1, var t2) ->
-                new StrictApplication(rename(t1), rename(t2));
+            case Application(var t1, var t2) -> new Application(rename(t1), rename(t2));
+            case StrictApplication(var t1, var t2) -> new StrictApplication(rename(t1), rename(t2));
             case Constructor(var name, var ts, var missing) ->
                 new Constructor(name, ts.stream().map(this::rename).toList(), missing);
             case IfThenElse(var t1, var t2, var t3) ->
                 new IfThenElse(rename(t1), rename(t2), rename(t3));
             case Match(var s, var cases) ->
                 new Match(rename(s), cases.stream().map(this::renameCase).toList());
-            case Not(var t) ->
-                new Not(rename(t));
-            case And(var t1, var t2) ->
-                new And(rename(t1), rename(t2));
-            case Or(var t1, var t2) ->
-                new Or(rename(t1), rename(t2));
+            case Not(var t) -> new Not(rename(t));
+            case And(var t1, var t2) -> new And(rename(t1), rename(t2));
+            case Or(var t1, var t2) -> new Or(rename(t1), rename(t2));
             case Range(var t1, var t2, var inclusive) ->
                 new Range(t1.map(this::rename), t2.map(this::rename), inclusive);
-            case StrictOp1(var op, var t) ->
-                new StrictOp1(op, rename(t));
-            case StrictOp2(var t1, var op, var t2) ->
-                new StrictOp2(rename(t1), op, rename(t2));
+            case StrictOp1(var op, var t) -> new StrictOp1(op, rename(t));
+            case StrictOp2(var t1, var op, var t2) -> new StrictOp2(rename(t1), op, rename(t2));
             case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 term;
         };

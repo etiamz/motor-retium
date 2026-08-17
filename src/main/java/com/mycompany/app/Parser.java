@@ -324,39 +324,27 @@ public final class Parser {
         public Term visitRangeFromTerm(final MotorParser.RangeFromTermContext ctx) {
             checkNotRange(ctx.term());
             final boolean inclusive = false;
-            return new Term.Range(
-                    Optional.of(visit(ctx.term())),
-                    Optional.empty(),
-                    inclusive);
+            return new Term.Range(Optional.of(visit(ctx.term())), Optional.empty(), inclusive);
         }
 
         @Override
         public Term visitRangeToTerm(final MotorParser.RangeToTermContext ctx) {
             checkNotRange(ctx.term());
             final boolean inclusive = false;
-            return new Term.Range(
-                    Optional.empty(),
-                    Optional.of(visit(ctx.term())),
-                    inclusive);
+            return new Term.Range(Optional.empty(), Optional.of(visit(ctx.term())), inclusive);
         }
 
         @Override
         public Term visitInclusiveRangeToTerm(final MotorParser.InclusiveRangeToTermContext ctx) {
             checkNotRange(ctx.term());
             final boolean inclusive = true;
-            return new Term.Range(
-                    Optional.empty(),
-                    Optional.of(visit(ctx.term())),
-                    inclusive);
+            return new Term.Range(Optional.empty(), Optional.of(visit(ctx.term())), inclusive);
         }
 
         @Override
         public Term visitRangeFullTerm(final MotorParser.RangeFullTermContext ctx) {
             final boolean inclusive = false;
-            return new Term.Range(
-                    Optional.empty(),
-                    Optional.empty(),
-                    inclusive);
+            return new Term.Range(Optional.empty(), Optional.empty(), inclusive);
         }
 
         @Override
@@ -436,8 +424,8 @@ public final class Parser {
                 final var name = myCase.CONSTRUCTOR().getText();
                 final var prefix = ctx.case_().subList(0, i);
                 final var suffix = ctx.case_().subList(i + 1, ctx.case_().size());
-                final Predicate<MotorParser.CaseContext> isFallback = c -> c.term().size() == 1 &&
-                        c.CONSTRUCTOR().getText().equals(name);
+                final Predicate<MotorParser.CaseContext> isFallback = c -> c.term().size() == 1
+                        && c.CONSTRUCTOR().getText().equals(name);
                 if (prefix.stream().anyMatch(isFallback)) {
                     throw error(
                             filename,
@@ -446,42 +434,33 @@ public final class Parser {
                             name);
                 }
                 if (myCase.term().size() > 1 && suffix.stream().noneMatch(isFallback)) {
-                    throw error(
-                            filename,
-                            myCase,
-                            "No fallback case for `%s` is provided",
-                            name);
+                    throw error(filename, myCase, "No fallback case for `%s` is provided", name);
                 }
             }
             final var s = visit(ctx.term());
-            final var cases = ctx.case_().stream()
-                    .map(myCase -> {
-                        final var parameters = myCase.SYMBOL();
-                        final var xs = bindingNames(myCase, parameters);
-                        final var seen = new LinkedHashSet<String>();
-                        for (final var x : xs) {
-                            if (!seen.add(x)) {
-                                throw error(
-                                        filename,
-                                        myCase,
-                                        "Found a duplicate variable in a case pattern: `%s`",
-                                        x);
-                            }
-                        }
-                        final var name = myCase.CONSTRUCTOR().getText();
-                        checkArity(myCase, name, parameters.size());
-                        final var terms = myCase.term();
-                        xs.forEach(this::push);
-                        final var guards = terms
-                                .subList(0, terms.size() - 1)
-                                .stream()
-                                .map(this::visit)
-                                .toList();
-                        final var t = visit(terms.getLast());
-                        xs.forEach(this::pop);
-                        return new Term.Case(name, xs, guards, t);
-                    })
-                    .toList();
+            final var cases = ctx.case_().stream().map(myCase -> {
+                final var parameters = myCase.SYMBOL();
+                final var xs = bindingNames(myCase, parameters);
+                final var seen = new LinkedHashSet<String>();
+                for (final var x : xs) {
+                    if (!seen.add(x)) {
+                        throw error(
+                                filename,
+                                myCase,
+                                "Found a duplicate variable in a case pattern: `%s`",
+                                x);
+                    }
+                }
+                final var name = myCase.CONSTRUCTOR().getText();
+                checkArity(myCase, name, parameters.size());
+                final var terms = myCase.term();
+                xs.forEach(this::push);
+                final var guards = terms.subList(0, terms.size() - 1).stream().map(this::visit)
+                        .toList();
+                final var t = visit(terms.getLast());
+                xs.forEach(this::pop);
+                return new Term.Case(name, xs, guards, t);
+            }).toList();
             return new Term.Match(s, cases);
         }
 
@@ -649,15 +628,13 @@ public final class Parser {
                 final ParserRuleContext site,
                 final List<TerminalNode> parameters) {
             final var banlist = freeVariables(site);
-            return IntStream.range(0, parameters.size())
-                    .mapToObj(i -> {
-                        final var p = parameters.get(i).getText();
-                        if (p.equals("_")) {
-                            return Term.freshen("v" + i, banlist);
-                        }
-                        return p;
-                    })
-                    .toList();
+            return IntStream.range(0, parameters.size()).mapToObj(i -> {
+                final var p = parameters.get(i).getText();
+                if (p.equals("_")) {
+                    return Term.freshen("v" + i, banlist);
+                }
+                return p;
+            }).toList();
         }
 
         private Term operatorOf(final Token token) {
