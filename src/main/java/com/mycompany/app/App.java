@@ -31,8 +31,14 @@ public final class App {
             final var compilation = Compiler.compile(program);
             Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
+            final var start = System.nanoTime();
             compilation.main().materialize(root, new Port.Producer[0]);
-            System.out.println(show(Motor.whnf(root)));
+            final String output = show(Motor.whnf(root));
+            final double elapsedSeconds = (System.nanoTime() - start) / 1e9;
+            System.out.println(output);
+            final long ninteractions = Motor.interactionCount();
+            final double mips = ninteractions / elapsedSeconds / 1e6;
+            System.err.printf("Interactions: %d (%.2f MIPS)\n", ninteractions, mips);
         } catch (final SyntaxError e) {
             System.err.println(e.getMessage());
             System.exit(1);

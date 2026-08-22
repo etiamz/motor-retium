@@ -41,6 +41,12 @@ public final class Motor {
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
 
+    private static final java.util.concurrent.atomic.LongAdder INTERACTIONS = new java.util.concurrent.atomic.LongAdder();
+
+    public static long interactionCount() {
+        return INTERACTIONS.sum();
+    }
+
     private Motor() {
     }
 
@@ -255,6 +261,7 @@ public final class Motor {
             case K_REFERENCE -> {
                 final var ref = (AReference) agent;
                 yield (Thunk) () -> {
+                    INTERACTIONS.increment();
                     ref.interact(p);
                     return reduce(p, thunk, heart);
                 };
@@ -262,6 +269,7 @@ public final class Motor {
             case K_EXPANSION -> {
                 final var exp = (AExpansion) agent;
                 yield (Thunk) () -> {
+                    INTERACTIONS.increment();
                     exp.interact(p);
                     return reduce(p, thunk, heart);
                 };
@@ -283,11 +291,13 @@ public final class Motor {
             final Heart heart) {
         if (isWhnf(target)) {
             return () -> {
+                INTERACTIONS.increment();
                 interactor.run();
                 return reduce(p, thunk, heart);
             };
         }
         return () -> reduce(target, () -> {
+            INTERACTIONS.increment();
             interactor.run();
             return reduce(p, thunk, heart);
         }, heart);
@@ -303,18 +313,21 @@ public final class Motor {
         final boolean isLeftWhnf = isWhnf(left), isRightWhnf = isWhnf(right);
         if (isLeftWhnf && isRightWhnf) {
             return () -> {
+                INTERACTIONS.increment();
                 interactor.run();
                 return reduce(p, thunk, heart);
             };
         }
         if (isRightWhnf) {
             return () -> reduce(left, () -> {
+                INTERACTIONS.increment();
                 interactor.run();
                 return reduce(p, thunk, heart);
             }, heart);
         }
         if (isLeftWhnf) {
             return () -> reduce(right, () -> {
+                INTERACTIONS.increment();
                 interactor.run();
                 return reduce(p, thunk, heart);
             }, heart);
@@ -327,6 +340,7 @@ public final class Motor {
                 // once it is ready.
                 if (future != null) {
                     return new Await(future, () -> {
+                        INTERACTIONS.increment();
                         interactor.run();
                         return reduce(p, thunk, heart);
                     });
@@ -335,6 +349,7 @@ public final class Motor {
                 // right operand inline.
                 heart.unlink(frame);
                 return reduce(right, () -> {
+                    INTERACTIONS.increment();
                     interactor.run();
                     return reduce(p, thunk, heart);
                 }, heart);
@@ -353,6 +368,7 @@ public final class Motor {
         final var owner = dup.sync.compareAndExchange(null, mine);
         if (owner == null) {
             return (Thunk) () -> reduce(dup.a, () -> {
+                INTERACTIONS.increment();
                 final Duplicand duplicand = dup.interact();
                 mine.complete(duplicand);
                 duplicand.connect(p, origin);
