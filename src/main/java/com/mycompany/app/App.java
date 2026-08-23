@@ -36,9 +36,11 @@ public final class App {
             final String output = show(Motor.whnf(root));
             final double elapsedSeconds = (System.nanoTime() - start) / 1e9;
             System.out.println(output);
-            final long ninteractions = Motor.interactionCount();
-            final double mips = ninteractions / elapsedSeconds / 1e6;
-            System.err.printf("Interactions: %d (%.2f MIPS)\n", ninteractions, mips);
+            if (Motor.statsEnabled()) {
+                final long ninteractions = Motor.interactionCount();
+                final double mips = ninteractions / elapsedSeconds / 1e6;
+                System.err.printf("Interactions: %d (%.2f MIPS)\n", ninteractions, mips);
+            }
         } catch (final SyntaxError e) {
             System.err.println(e.getMessage());
             System.exit(1);

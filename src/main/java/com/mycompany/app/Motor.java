@@ -36,6 +36,8 @@ public final class Motor {
 
     private static final int HEARTBEAT = 64; // empirically established
 
+    private static final boolean STATS = Boolean.getBoolean("motor.stats");
+
     private static final Producer[] NO_IMPORTS = new Producer[0];
 
     private static ConcurrentHashMap<Object, Object> HSEARCH_TABLE;
@@ -43,8 +45,22 @@ public final class Motor {
     private static Map<String, Template> BOOK;
     private static LongAdder INTERACTIONS;
 
+    public static boolean statsEnabled() {
+        return STATS;
+    }
+
     public static long interactionCount() {
+        if (!STATS) {
+            throw new IllegalStateException(
+                    "Statistics are disabled; re-run with `-Dmotor.stats=true`");
+        }
         return INTERACTIONS.sum();
+    }
+
+    private static void countInteraction() {
+        if (STATS) {
+            INTERACTIONS.increment();
+        }
     }
 
     private Motor() {
@@ -57,7 +73,9 @@ public final class Motor {
         HSEARCH_TABLE = new ConcurrentHashMap<>();
         POOL = new ForkJoinPool();
         BOOK = book;
-        INTERACTIONS = new LongAdder();
+        if (STATS) {
+            INTERACTIONS = new LongAdder();
+        }
     }
 
     // Whether to fork a right operand or reduce it inline depends on whether the work performed by
@@ -262,7 +280,7 @@ public final class Motor {
             case K_REFERENCE -> {
                 final var ref = (AReference) agent;
                 yield (Thunk) () -> {
-                    INTERACTIONS.increment();
+                    countInteraction();
                     ref.interact(p);
                     return reduce(p, thunk, heart);
                 };
@@ -270,7 +288,7 @@ public final class Motor {
             case K_EXPANSION -> {
                 final var exp = (AExpansion) agent;
                 yield (Thunk) () -> {
-                    INTERACTIONS.increment();
+                    countInteraction();
                     exp.interact(p);
                     return reduce(p, thunk, heart);
                 };
@@ -292,13 +310,13 @@ public final class Motor {
             final Heart heart) {
         if (isWhnf(target)) {
             return () -> {
-                INTERACTIONS.increment();
+                countInteraction();
                 interactor.run();
                 return reduce(p, thunk, heart);
             };
         }
         return () -> reduce(target, () -> {
-            INTERACTIONS.increment();
+            countInteraction();
             interactor.run();
             return reduce(p, thunk, heart);
         }, heart);
@@ -314,21 +332,21 @@ public final class Motor {
         final boolean isLeftWhnf = isWhnf(left), isRightWhnf = isWhnf(right);
         if (isLeftWhnf && isRightWhnf) {
             return () -> {
-                INTERACTIONS.increment();
+                countInteraction();
                 interactor.run();
                 return reduce(p, thunk, heart);
             };
         }
         if (isRightWhnf) {
             return () -> reduce(left, () -> {
-                INTERACTIONS.increment();
+                countInteraction();
                 interactor.run();
                 return reduce(p, thunk, heart);
             }, heart);
         }
         if (isLeftWhnf) {
             return () -> reduce(right, () -> {
-                INTERACTIONS.increment();
+                countInteraction();
                 interactor.run();
                 return reduce(p, thunk, heart);
             }, heart);
@@ -341,7 +359,7 @@ public final class Motor {
                 // once it is ready.
                 if (future != null) {
                     return new Await(future, () -> {
-                        INTERACTIONS.increment();
+                        countInteraction();
                         interactor.run();
                         return reduce(p, thunk, heart);
                     });
@@ -350,7 +368,7 @@ public final class Motor {
                 // right operand inline.
                 heart.unlink(frame);
                 return reduce(right, () -> {
-                    INTERACTIONS.increment();
+                    countInteraction();
                     interactor.run();
                     return reduce(p, thunk, heart);
                 }, heart);
@@ -369,7 +387,7 @@ public final class Motor {
         final var owner = dup.sync.compareAndExchange(null, mine);
         if (owner == null) {
             return (Thunk) () -> reduce(dup.a, () -> {
-                INTERACTIONS.increment();
+                countInteraction();
                 final Duplicand duplicand = dup.interact();
                 mine.complete(duplicand);
                 duplicand.connect(p, origin);
