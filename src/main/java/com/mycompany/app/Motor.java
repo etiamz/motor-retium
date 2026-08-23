@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 public final class Motor {
@@ -40,8 +41,7 @@ public final class Motor {
     private static ConcurrentHashMap<Object, Object> HSEARCH_TABLE;
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
-
-    private static final java.util.concurrent.atomic.LongAdder INTERACTIONS = new java.util.concurrent.atomic.LongAdder();
+    private static LongAdder INTERACTIONS;
 
     public static long interactionCount() {
         return INTERACTIONS.sum();
@@ -57,6 +57,7 @@ public final class Motor {
         HSEARCH_TABLE = new ConcurrentHashMap<>();
         POOL = new ForkJoinPool();
         BOOK = book;
+        INTERACTIONS = new LongAdder();
     }
 
     // Whether to fork a right operand or reduce it inline depends on whether the work performed by
