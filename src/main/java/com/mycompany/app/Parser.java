@@ -1,5 +1,7 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.Primitives.StrictOp2.*;
+
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.grammar.MotorBaseVisitor;
 import com.mycompany.app.grammar.MotorLexer;
@@ -242,42 +244,63 @@ public final class Parser {
 
         @Override
         public Term visitIndexingTerm(final MotorParser.IndexingTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final var op = switch (ctx.op.getText()) {
+                case "@" -> CHARACTER_AT;
+                case "@@" -> SLICE;
+                default -> throw unknownOperator(ctx.op);
+            };
+            return new Term.StrictOp2(visit(ctx.term(0)), op, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitMultiplicativeTerm(final MotorParser.MultiplicativeTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final var op = switch (ctx.op.getText()) {
+                case "*" -> MULTIPLY;
+                case "/" -> DIVIDE;
+                case "%" -> REMAINDER;
+                default -> throw unknownOperator(ctx.op);
+            };
+            return new Term.StrictOp2(visit(ctx.term(0)), op, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitAdditiveTerm(final MotorParser.AdditiveTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final var op = switch (ctx.op.getText()) {
+                case "+" -> ADD;
+                case "-" -> SUBTRACT;
+                default -> throw unknownOperator(ctx.op);
+            };
+            return new Term.StrictOp2(visit(ctx.term(0)), op, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitShiftTerm(final MotorParser.ShiftTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final var op = switch (ctx.op.getText()) {
+                case "<<" -> SHIFT_LEFT;
+                case ">>" -> SHIFT_RIGHT;
+                default -> throw unknownOperator(ctx.op);
+            };
+            return new Term.StrictOp2(visit(ctx.term(0)), op, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitStrictAndTerm(final MotorParser.StrictAndTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.StrictOp2(visit(ctx.term(0)), STRICT_AND, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitStrictXorTerm(final MotorParser.StrictXorTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.StrictOp2(visit(ctx.term(0)), STRICT_XOR, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitStrictOrTerm(final MotorParser.StrictOrTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.StrictOp2(visit(ctx.term(0)), STRICT_OR, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitConcatenationTerm(final MotorParser.ConcatenationTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.StrictOp2(visit(ctx.term(0)), PLUS_PLUS, visit(ctx.term(1)));
         }
 
         @Override
@@ -287,17 +310,26 @@ public final class Parser {
                     throw error(filename, ctx, "Chained comparisons require parentheses");
                 }
             }
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final var op = switch (ctx.op.getText()) {
+                case "==" -> EQUALS;
+                case "!=" -> NOT_EQUALS;
+                case "<" -> LESS;
+                case "<=" -> LESS_OR_EQUALS;
+                case ">" -> GREATER;
+                case ">=" -> GREATER_OR_EQUALS;
+                default -> throw unknownOperator(ctx.op);
+            };
+            return new Term.StrictOp2(visit(ctx.term(0)), op, visit(ctx.term(1)));
         }
 
         @Override
         public Term visitConjunctionTerm(final MotorParser.ConjunctionTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.And(visit(ctx.term(0)), visit(ctx.term(1)));
         }
 
         @Override
         public Term visitDisjunctionTerm(final MotorParser.DisjunctionTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            return new Term.Or(visit(ctx.term(0)), visit(ctx.term(1)));
         }
 
         @Override
@@ -349,7 +381,12 @@ public final class Parser {
 
         @Override
         public Term visitApplyOpTerm(final MotorParser.ApplyOpTermContext ctx) {
-            return infix(ctx.op, ctx.term(0), ctx.term(1));
+            final Term t1 = visit(ctx.term(0)), t2 = visit(ctx.term(1));
+            return switch (ctx.op.getText()) {
+                case "$" -> new Term.Application(t1, t2);
+                case "$!" -> new Term.StrictApplication(t1, t2);
+                default -> throw unknownOperator(ctx.op);
+            };
         }
 
         @Override
@@ -588,12 +625,6 @@ public final class Parser {
             throw error(filename, ctx, "Variable not in scope: `%s`", x);
         }
 
-        private Term infix(final Token op, final ParseTree left, final ParseTree right) {
-            return new Term.Application(
-                    new Term.Application(operatorOf(op), visit(left)),
-                    visit(right));
-        }
-
         private void checkNotRange(final MotorParser.TermContext ctx) {
             if (RANGE_CONTEXTS.contains(ctx.getClass())) {
                 throw error(filename, ctx, "Chained ranges require parentheses");
@@ -645,8 +676,14 @@ public final class Parser {
             if (BINARY_OPS.containsKey(text)) {
                 return new Term.Operator(BINARY_OPS.get(text));
             }
-            throw new IllegalStateException(
-                    String.format("Unknown operator: `%s`", StringEscapeUtils.escapeJava(text)));
+            throw unknownOperator(token);
+        }
+
+        private IllegalStateException unknownOperator(final Token token) {
+            return new IllegalStateException(
+                    String.format(
+                            "Unknown operator: `%s`",
+                            StringEscapeUtils.escapeJava(token.getText())));
         }
     }
 }
