@@ -77,6 +77,16 @@ public final class Compiler {
                 agent.d().setProducer(result.producer());
                 yield captures;
             }
+            case Term.Let(var x, var e, var t) -> {
+                final var fvSet = compile(builder, t, output);
+                final var usages = fvSet.remove(x);
+                if (usages == null) {
+                    yield fvSet;
+                }
+                // Build a duplicator tree of `e` & connect it to `t`'s wires requesting `e`.
+                merge(fvSet, compile(builder, e, share(builder, usages)));
+                yield fvSet;
+            }
             case Term.StrictApplication(var t1, var t2) -> {
                 final var agent = builder.mkStrictApplicator();
                 output.setProducer(agent.b());
@@ -262,6 +272,16 @@ public final class Compiler {
         }
         tail.setProducer(builder.mkEndOfList().a());
         return myCaptures;
+    }
+
+    private static Consumer share(final Template.Builder builder, final List<Consumer> usages) {
+        if (usages.size() == 1) {
+            return usages.getFirst();
+        }
+        final var dup = builder.mkDuplicator();
+        usages.getFirst().setProducer(dup.b());
+        bind(builder, dup.c(), usages.subList(1, usages.size()));
+        return dup.a();
     }
 
     private static void bind(

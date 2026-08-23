@@ -82,6 +82,13 @@ public final class StrictnessAnalyzer {
                 case Term.Lambda _ ->
                     // Unlike normal-order reduction, our closures are strict in captures.
                     term.freeVariables();
+                case Term.Let(var x, var e, var t) -> {
+                    final var result = demand(t);
+                    if (result.remove(x)) {
+                        result.addAll(demand(e));
+                    }
+                    yield result;
+                }
                 case Term.StrictApplication(var t1, var t2) -> {
                     final var result = demand(t1);
                     result.addAll(demand(t2));
@@ -156,6 +163,7 @@ public final class StrictnessAnalyzer {
         public Term annotate(final Term term) {
             return switch (term) {
                 case Term.Lambda(var x, var t) -> new Term.Lambda(x, annotate(t));
+                case Term.Let(var x, var e, var t) -> new Term.Let(x, annotate(e), annotate(t));
                 case Term.StrictApplication(var t1, var t2) ->
                     new Term.StrictApplication(annotate(t1), annotate(t2));
                 case Term.Application _ -> {

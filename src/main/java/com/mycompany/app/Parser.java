@@ -409,7 +409,7 @@ public final class Parser {
             push(x);
             final var t2 = visit(ctx.term(1));
             pop(x);
-            return new Term.Application(new Term.Lambda(x, t2), t1);
+            return new Term.Let(x, t1, t2);
         }
 
         @Override

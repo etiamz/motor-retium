@@ -35,6 +35,8 @@ public final class GuardEliminator {
     public Term eliminate(final Term term) {
         return switch (term) {
             case Term.Lambda(var x, var t) -> new Term.Lambda(x, bind(List.of(x)).eliminate(t));
+            case Term.Let(var x, var e, var t) ->
+                new Term.Let(x, eliminate(e), bind(List.of(x)).eliminate(t));
             case Term.Application(var t1, var t2) ->
                 new Term.Application(eliminate(t1), eliminate(t2));
             case Term.StrictApplication(var t1, var t2) ->

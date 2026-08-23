@@ -35,6 +35,10 @@ public final class Renamer {
                 final var inner = bind(List.of(x));
                 yield new Lambda(inner.renaming.get(x), inner.rename(t));
             }
+            case Let(var x, var e, var t) -> {
+                final var inner = bind(List.of(x));
+                yield new Let(inner.renaming.get(x), rename(e), inner.rename(t));
+            }
             case Application(var t1, var t2) -> new Application(rename(t1), rename(t2));
             case StrictApplication(var t1, var t2) -> new StrictApplication(rename(t1), rename(t2));
             case Constructor(var name, var ts, var missing) ->
