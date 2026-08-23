@@ -24,7 +24,7 @@ public final class OperatorSaturator {
     // Saturates all constructors, wrapping lambdas for yet-unavailable operands: `C e1 ... eN`
     // becomes `\x1, ..., xK-N -> C e1 ... eN x1 ... xK-N`, where `C` is a constructor, `N >= 0` is
     // the number of the applied arguments, & `K > N` is the declared arity of `C`. Operators such
-    // as (+) are wrapped in lambdas: `\x y -> x + y`, so that the first applied argument is
+    // as `(+)` are wrapped in lambdas: `\x y -> x + y`, so that the first applied argument is
     // evaluated eagerly, whilst the second one is on demand. Note that constructors are strict in
     // captures, meaning that for immediately applied arguments, onely their free variables are
     // evaluated; on the other hand, subsequent arguments applied at run-time will be evaluated
