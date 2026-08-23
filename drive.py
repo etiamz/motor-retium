@@ -3,6 +3,7 @@
 # $ black -l 80 drive.py
 
 import math
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +11,15 @@ from pathlib import Path
 HERE = Path(__file__).parent
 
 PANIC_PREFIX = "Panic: User panic: "
+
+JAVA_FLAGS = ["-XX:+UseParallelGC", "-Xmn8g"]
+
+
+def java() -> str:
+    home = os.environ.get("GRAALVM_HOME") or os.environ.get("JAVA_HOME")
+    if home is None:
+        sys.exit("Neither `GRAALVM_HOME` nor `JAVA_HOME` is set")
+    return str(Path(home) / "bin" / "java")
 
 
 def main() -> None:
@@ -36,7 +46,7 @@ def run(target: int, level: int) -> str | None:
         text=True,
     ).stdout
     engine = subprocess.run(
-        ["java", "-jar", HERE / "target" / "motor-retium.jar"],
+        [java(), *JAVA_FLAGS, "-jar", HERE / "target" / "motor-retium.jar"],
         input=program,
         capture_output=True,
         text=True,
