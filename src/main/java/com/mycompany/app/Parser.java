@@ -413,16 +413,6 @@ public final class Parser {
         }
 
         @Override
-        public Term visitStrictLetTerm(final MotorParser.StrictLetTermContext ctx) {
-            final var x = bindingNames(ctx, List.of(ctx.SYMBOL())).getFirst();
-            final var t1 = visit(ctx.term(0));
-            push(x);
-            final var t2 = visit(ctx.term(1));
-            pop(x);
-            return new Term.StrictApplication(new Term.Lambda(x, t2), t1);
-        }
-
-        @Override
         public Term visitCaseLetTerm(final MotorParser.CaseLetTermContext ctx) {
             final var name = ctx.CONSTRUCTOR().getText();
             final var parameters = ctx.SYMBOL();
