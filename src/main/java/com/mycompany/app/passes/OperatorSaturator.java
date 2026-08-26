@@ -23,12 +23,18 @@ public final class OperatorSaturator {
 
     // Saturates all constructors, wrapping lambdas for yet-unavailable operands: `C e1 ... eN`
     // becomes `\x1, ..., xK-N -> C e1 ... eN x1 ... xK-N`, where `C` is a constructor, `N >= 0` is
-    // the number of the applied arguments, & `K > N` is the declared arity of `C`. Operators such
-    // as `(+)` are wrapped in lambdas: `\x y -> x + y`, so that the first applied argument is
-    // evaluated eagerly, whilst the second one is on demand. Note that constructors are strict in
-    // captures, meaning that for immediately applied arguments, onely their free variables are
-    // evaluated; on the other hand, subsequent arguments applied at run-time will be evaluated
-    // eagerly, except the last one that no lambda forces.
+    // the number of the applied arguments, & `K > N` is the declared arity of `C`. Since
+    // constructors are strict in captures, for immediately applied arguments onely their free
+    // variables are evaluated; on the other hand, subsequent arguments applied at run-time will be
+    // evaluated eagerly, because the constructor's captures will force them. For instance, if `Foo`
+    // has arity 3, then `let foo = Foo a in foo b c` will evaluate the captures of `a`, then
+    // evaluate `b` itself, then evaluate `c` itself.
+    // All fully-applied unary & binary operators are rendered as primitive operations;
+    // under-applied operators such as `negate` or `(+) a` are wrapped in as many lambdas as their
+    // arity dictates: `\x -> negate x` & `(\x y -> x + y) a`, respectively. This behaviour respects
+    // the termination property of operands: it would be incorrect to, say, render `(+) a` as `(\y
+    // -> a + x)` over `(\x y -> x + y) a`, because unlike the latter term, the former one forces
+    // onely the captures of `a` instead of `a` itself.
     // We doe not throw any errors on over-saturation.
     public Program saturate(final Program program) {
         final var main = saturate(program.main());
@@ -51,18 +57,25 @@ public final class OperatorSaturator {
                 }
                 final int applied;
                 Term result;
-                if (head instanceof Term.Constructor(var name, var provided, var missing)) {
-                    if (!provided.isEmpty()) {
-                        throw new IllegalStateException("Constructor arguments must be empty");
+                switch (head) {
+                    case Term.Constructor(var name, var provided, var missing) -> {
+                        if (!provided.isEmpty()) {
+                            throw new IllegalStateException("Constructor arguments must be empty");
+                        }
+                        applied = Math.min(arguments.size(), missing);
+                        result = wrap(
+                                ts -> new Term.Constructor(name, ts, 0),
+                                arguments.subList(0, applied),
+                                missing - applied);
                     }
-                    applied = Math.min(arguments.size(), missing);
-                    result = wrap(
-                            ts -> new Term.Constructor(name, ts, 0),
-                            arguments.subList(0, applied),
-                            missing - applied);
-                } else {
-                    applied = 0;
-                    result = saturate(head);
+                    case Term.Operator(var op) when arguments.size() >= op.arity() -> {
+                        applied = op.arity();
+                        result = apply(op, arguments.subList(0, applied));
+                    }
+                    default -> {
+                        applied = 0;
+                        result = saturate(head);
+                    }
                 }
                 final var leftover = arguments.subList(applied, arguments.size());
                 for (final var argument : leftover) {
