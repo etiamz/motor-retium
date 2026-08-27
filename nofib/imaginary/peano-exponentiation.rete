@@ -1,0 +1,26 @@
+-- Low sharing, no parallelisme; ported from `imaginary/exp3_8/Main.hs`.
+
+#ifndef N
+#define N 8u64
+#endif
+
+Z : 0;
+S : 1;
+
+main =
+    int (pow (nat 3u64) (nat N));
+
+nat n =
+    if n < 1u64 then Z else S (nat (n - 1u64));
+
+int x =
+    case x of { Z -> 0u64; S x -> 1u64 + int x };
+
+add x y =
+    case x of { Z -> y; S x -> S (add x y) };
+
+mul x y =
+    case y of { Z -> Z; S y -> add (mul x y) x };
+
+pow x y =
+    case y of { Z -> S Z; S y -> mul x (pow x y) };

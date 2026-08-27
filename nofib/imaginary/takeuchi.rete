@@ -1,0 +1,21 @@
+-- No sharing, maximal parallelisme; ported from `imaginary/tak/Main.hs`.
+
+#ifndef X
+#define X 31i64
+#endif
+
+#ifndef Y
+#define Y 16i64
+#endif
+
+#ifndef Z
+#define Z 8i64
+#endif
+
+main =
+    tak X Y Z;
+
+tak x y z =
+    if not (y < x)
+    then z
+    else tak (tak (x - 1i64) y z) (tak (y - 1i64) z x) (tak (z - 1i64) x y);
