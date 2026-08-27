@@ -1,0 +1,37 @@
+-- No sharing, high parallelisme; ported from `parallel/coins/coins.hs`.
+
+#ifndef N
+#define N 350u64
+#endif
+
+Nil : 0;
+Cons : 2;
+Pair : 2;
+
+main =
+    payN
+    N
+    (
+        Cons (Pair 250u64 55u64)
+            (Cons (Pair 100u64 88u64)
+                (Cons (Pair 25u64 88u64)
+                    (Cons (Pair 10u64 99u64)
+                        (Cons (Pair 5u64 122u64)
+                            (Cons (Pair 1u64 177u64) Nil))))));
+
+payN val coins =
+    if val == 0u64
+    then 1u64
+    else case coins of {
+        Nil -> 0u64;
+        Cons cq coins -> case cq of {
+            Pair c _ | c > val -> payN val coins;
+            Pair c q ->
+                let coins' =
+                    if q == 1u64 then coins else Cons (Pair c (q - 1u64)) coins
+                in
+                let left = payN (val - c) coins' in
+                let right = payN val coins in
+                left + right
+        }
+    };

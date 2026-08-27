@@ -1,0 +1,39 @@
+-- No sharing, no parallelisme; ported from `imaginary/queens/Main.hs`.
+
+#ifndef N
+#define N 8i64
+#endif
+
+Nil : 0;
+Cons : 2;
+
+main =
+    nsoln N;
+
+nsoln nq =
+    length (gen nq nq);
+
+gen nq n =
+    if n == 0i64 then Cons Nil Nil else expand nq (gen nq (n - 1i64));
+
+expand nq boards =
+    case boards of {
+        Nil -> Nil;
+        Cons b xs -> extend nq b 1i64 (expand nq xs)
+    };
+
+extend nq b q acc =
+    if q > nq
+    then acc
+    else if safe q 1i64 b
+    then Cons (Cons q b) (extend nq b (q + 1i64) acc)
+    else extend nq b (q + 1i64) acc;
+
+safe x d board =
+    case board of {
+        Nil -> true;
+        Cons q l -> x != q && x != q + d && x != q - d && safe x (d + 1i64) l
+    };
+
+length xs =
+    case xs of { Nil -> 0u64; Cons _ xs -> 1u64 + length xs };

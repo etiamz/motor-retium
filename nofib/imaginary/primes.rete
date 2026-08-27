@@ -1,0 +1,45 @@
+-- Full sharing, no parallelisme; ported from `imaginary/primes/Main.hs`.
+
+#ifndef N
+#define N 200u64
+#endif
+
+Nil : 0;
+Cons : 2;
+
+main =
+    prime N;
+
+prime n =
+    index (map head (iterate theFilter (enumFromTo 2u64 (n * n)))) n;
+
+theFilter xs =
+    case xs of { Cons n ns -> filter (isdivs n) ns };
+
+isdivs n x =
+    x % n != 0u64;
+
+filter p xs =
+    case xs of {
+        Nil -> Nil;
+        Cons x xs | p x -> Cons x (filter p xs);
+        Cons _ xs -> filter p xs
+    };
+
+iterate f x =
+    Cons x (iterate f (f x));
+
+map f xs =
+    case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
+
+head xs =
+    case xs of { Cons x _ -> x };
+
+index xs n =
+    case xs of {
+        Cons x _ | n == 0u64 -> x;
+        Cons _ xs -> index xs (n - 1u64)
+    };
+
+enumFromTo n m =
+    if n > m then Nil else Cons n (enumFromTo (n + 1u64) m);

@@ -1,0 +1,64 @@
+-- Full sharing, substantial parallelisme; ported from `parallel/matmult/MatMult.hs`.
+
+#ifndef N
+#define N 150i64
+#endif
+
+Nil : 0;
+Cons : 2;
+
+main =
+    renderMatrix (multMatricesTr (m1 N) (transpose (m1 N)));
+
+multMatricesTr m1 m2 =
+    map (\row -> map (\col -> prodEscalar row col) m2) m1;
+
+prodEscalar v1 v2 =
+    addProd v1 v2 0i64;
+
+addProd v1 v2 acc =
+    case v1 of {
+        Nil -> acc;
+        Cons v vs -> case v2 of {
+            Nil -> acc;
+            Cons w ws -> addProd vs ws (acc + v * w)
+        }
+    };
+
+transpose m =
+    case m of {
+        Nil -> Nil;
+        Cons row _ -> case row of {
+            Nil -> Nil;
+            Cons _ _ -> Cons (map head m) (transpose (map tail m))
+        }
+    };
+
+m1 size = replicate size (enumFromTo 1i64 size);
+
+renderMatrix m =
+    case m of {
+        Nil -> "";
+        Cons row rows -> renderRow row ++ "\n" ++ renderMatrix rows
+    };
+
+renderRow row =
+    case row of {
+        Nil -> "";
+        Cons x xs -> $show x ++ " " ++ renderRow xs
+    };
+
+map f xs =
+    case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
+
+head xs =
+    case xs of { Cons x _ -> x };
+
+tail xs =
+    case xs of { Cons _ xs -> xs };
+
+replicate n x =
+    if n == 0i64 then Nil else Cons x (replicate (n - 1i64) x);
+
+enumFromTo n m =
+    if n > m then Nil else Cons n (enumFromTo (n + 1i64) m);
