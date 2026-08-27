@@ -1260,15 +1260,10 @@ public final class Template {
 
         private final Set<Agent> agents = new HashSet<>();
         private final SequencedMap<String, Producer> imports = new LinkedHashMap<>();
-        private final Map<Consumer, Consumer> aliasing = new IdentityHashMap<>();
         private Agent root;
 
         public Producer mkImport(final String name) {
             return imports.computeIfAbsent(name, _ -> new Producer());
-        }
-
-        public void alias(final Consumer alias, final Consumer representative) {
-            aliasing.put(alias, representative);
         }
 
         @SuppressWarnings("unchecked")
@@ -1284,8 +1279,6 @@ public final class Template {
         }
 
         public Template build() {
-            aliasing.forEach(
-                    (alias, representative) -> alias.setProducer(representative.producer()));
             final var orderedAgents = new ArrayList<Agent>(agents.size());
             orderedAgents.add(root);
             final var op1Kinds = collect(KStrictOp1.class, orderedAgents);
