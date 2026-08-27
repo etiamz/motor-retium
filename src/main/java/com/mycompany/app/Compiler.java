@@ -136,6 +136,7 @@ public final class Compiler {
                 final var agent = builder.mkMatch(names);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, s, agent.a());
+                final var arms = new ArrayList<TermInterface>();
                 for (int i = 0; i < cases.size(); i++) {
                     final var myCase = cases.get(i);
                     final var name = myCase.name();
@@ -150,16 +151,18 @@ public final class Compiler {
                     for (final var x : xs.reversed()) {
                         handler = new Term.Lambda(x, handler);
                     }
-                    merge(fvSet, expand(builder, handler, agent.handler(i)));
+                    arms.add(expand(builder, handler, agent.handler(i)));
                 }
+                merge(fvSet, mergeArms(builder, arms));
                 yield fvSet;
             }
             case Term.IfThenElse(var t1, var t2, var t3) -> {
                 final var agent = builder.mkIfThenElse();
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, expand(builder, t2, agent.d()));
-                merge(fvSet, expand(builder, t3, agent.c()));
+                final var thenArm = expand(builder, t2, agent.d());
+                final var elseArm = expand(builder, t3, agent.c());
+                merge(fvSet, mergeArms(builder, List.of(thenArm, elseArm)));
                 yield fvSet;
             }
             case Term.Not(var t) -> {
@@ -306,5 +309,29 @@ public final class Compiler {
     private static <K, V> void merge(final Map<K, List<V>> into, final Map<K, List<V>> from) {
         from.forEach(
                 (key, values) -> into.computeIfAbsent(key, _ -> new ArrayList<>()).addAll(values));
+    }
+
+    // Combines the free-variable interfaces of mutually-exclusive arms. Unlike `merge`, a variable
+    // used in more than one arm needs no duplicator, since onely one arm is ever evaluated at
+    // run-time. Therefore, we keep the first arm's usage as the representative & alias the others
+    // to it, so that all the arms share a single wire.
+    private static TermInterface mergeArms(
+            final Template.Builder builder,
+            final List<TermInterface> arms) {
+        final var result = new TermInterface();
+        for (final var arm : arms) {
+            arm.forEach((x, usages) -> {
+                final var existing = result.get(x);
+                if (existing == null) {
+                    result.put(x, new ArrayList<>(usages));
+                } else {
+                    final var representative = existing.getFirst();
+                    for (final var consumer : usages) {
+                        builder.alias(consumer, representative);
+                    }
+                }
+            });
+        }
+        return result;
     }
 }
