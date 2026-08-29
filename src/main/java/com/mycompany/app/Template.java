@@ -2,223 +2,134 @@ package com.mycompany.app;
 
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
-import java.lang.reflect.Array;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.SequencedMap;
-import java.util.Set;
 
 public final class Template {
-    private sealed interface Kind permits
+    private sealed interface Payload permits
             // The interface.
-            KRoot,
+            PRoot,
             // Operators.
-            KStrictOp1, KStrictOp2, KIfThenElse, KExpansion, KNot, KAnd, KOr, KDoRange,
-            KDoRangeFrom, KDoRangeTo, KApplicator, KStrictApplicator, KResolver, KCapture, KMatch,
-            KConstructorResolver, KDuplicator,
+            PReference, PStrictOp1, PStrictOp2, PIfThenElse, PExpansion, PNot, PAnd, POr, PDoRange,
+            PDoRangeFrom, PDoRangeTo, PApplicator, PStrictApplicator, PResolver, PCapture, PMatch,
+            PConstructorResolver, PDuplicator,
             // Data.
-            KNull, KTrue, KFalse, KInteger, KBigInteger, KString, KRangeFull, KIdentity, KReference,
-            KEndOfList, KLambda, KConstructor {
+            PLambda, PEndOfList, PNull, PTrue, PFalse, PInteger, PBigInteger, PString, PRangeFull,
+            PIdentity, PConstructor {
     }
 
-    private record KRoot() implements Kind {
+    private record PRoot() implements Payload {
     }
 
-    private record KStrictOp1(StrictOp1 op) implements Kind {
+    private record PReference(String name) implements Payload {
     }
 
-    private record KStrictOp2(StrictOp2 op) implements Kind {
+    private record PStrictOp1(StrictOp1 op) implements Payload {
     }
 
-    private record KIfThenElse() implements Kind {
+    private record PStrictOp2(StrictOp2 op) implements Payload {
     }
 
-    private record KExpansion(Template template) implements Kind {
+    private record PIfThenElse() implements Payload {
     }
 
-    private record KNot() implements Kind {
+    private record PExpansion(Template template) implements Payload {
     }
 
-    private record KAnd() implements Kind {
+    private record PNot() implements Payload {
     }
 
-    private record KOr() implements Kind {
+    private record PAnd() implements Payload {
     }
 
-    private record KDoRange(boolean inclusive) implements Kind {
+    private record POr() implements Payload {
     }
 
-    private record KDoRangeFrom() implements Kind {
+    private record PDoRange(boolean inclusive) implements Payload {
     }
 
-    private record KDoRangeTo(boolean inclusive) implements Kind {
+    private record PDoRangeFrom() implements Payload {
     }
 
-    private record KRangeFull() implements Kind {
+    private record PDoRangeTo(boolean inclusive) implements Payload {
     }
 
-    private record KApplicator() implements Kind {
+    private record PApplicator() implements Payload {
     }
 
-    private record KStrictApplicator() implements Kind {
+    private record PStrictApplicator() implements Payload {
     }
 
-    private record KResolver() implements Kind {
+    private record PResolver() implements Payload {
     }
 
-    private record KCapture() implements Kind {
+    private record PCapture() implements Payload {
     }
 
-    private record KMatch(String[] names /* interned */) implements Kind {
+    private record PMatch(String[] names /* interned */) implements Payload {
     }
 
-    private record KConstructorResolver(String name /* interned */, int arity) implements Kind {
+    private record PConstructorResolver(String name /* interned */, int arity) implements Payload {
     }
 
-    private record KDuplicator() implements Kind {
+    private record PDuplicator() implements Payload {
     }
 
-    private record KNull() implements Kind {
+    private record PLambda() implements Payload {
     }
 
-    private record KTrue() implements Kind {
+    private record PEndOfList() implements Payload {
     }
 
-    private record KFalse() implements Kind {
+    private record PNull() implements Payload {
     }
 
-    private record KInteger(CheckedInteger.Value value) implements Kind {
+    private record PTrue() implements Payload {
     }
 
-    private record KBigInteger(MyBigInteger value) implements Kind {
+    private record PFalse() implements Payload {
     }
 
-    private record KString(MyString value) implements Kind {
+    private record PInteger(CheckedInteger.Value value) implements Payload {
     }
 
-    private record KIdentity() implements Kind {
+    private record PBigInteger(MyBigInteger value) implements Payload {
     }
 
-    private record KReference(String name) implements Kind {
+    private record PString(MyString value) implements Payload {
     }
 
-    private record KEndOfList() implements Kind {
+    private record PRangeFull() implements Payload {
     }
 
-    private record KLambda() implements Kind {
+    private record PIdentity() implements Payload {
     }
 
-    private record KConstructor(String name /* interned */, int arity) implements Kind {
+    private record PConstructor(String name /* interned */, int arity) implements Payload {
     }
 
-    private record Link(int consumer, int producer) {
-    }
-
-    private final KStrictOp1[] op1Kinds;
-    private final KStrictOp2[] op2Kinds;
-    private final KIfThenElse[] iteKinds;
-    private final KExpansion[] expKinds;
-    private final KNot[] notKinds;
-    private final KAnd[] andKinds;
-    private final KOr[] orKinds;
-    private final KDoRange[] doRngKinds;
-    private final KDoRangeFrom[] doRngFromKinds;
-    private final KDoRangeTo[] doRngToKinds;
-    private final KApplicator[] appKinds;
-    private final KStrictApplicator[] sappKinds;
-    private final KResolver[] resKinds;
-    private final KCapture[] capKinds;
-    private final KMatch[] matchKinds;
-    private final KConstructorResolver[] ctrResKinds;
-    private final KDuplicator[] dupKinds;
-    private final KNull[] nullKinds;
-    private final KTrue[] bTrueKinds;
-    private final KFalse[] bFalseKinds;
-    private final KInteger[] iKinds;
-    private final KBigInteger[] biKinds;
-    private final KString[] sKinds;
-    private final KRangeFull[] rngFullKinds;
-    private final KIdentity[] idKinds;
-    private final KReference[] refKinds;
-    private final KEndOfList[] endKinds;
-    private final KLambda[] lamKinds;
-    private final KConstructor[] ctrKinds;
-
-    // The uni-directional links from consumers to corresponding producers.
-    private final Link[] links;
-    // The total number of consumers, template-local producers, & imported producers.
-    private final int nconsumers, nproducers, nimports;
+    // The array of objects that hold auxiliary data for run-time agents.
+    private final Payload[] payloads;
+    // `links[i]` is the index of the producer that the `i`th consumer reads.
+    private final int[] links;
+    // The total number of template-local producers.
+    private final int nproducers;
+    // The total number of imported producers.
+    private final int nimports;
 
     private Template(
-            final KStrictOp1[] op1Kinds,
-            final KStrictOp2[] op2Kinds,
-            final KIfThenElse[] iteKinds,
-            final KExpansion[] expKinds,
-            final KNot[] notKinds,
-            final KAnd[] andKinds,
-            final KOr[] orKinds,
-            final KDoRange[] doRngKinds,
-            final KDoRangeFrom[] doRngFromKinds,
-            final KDoRangeTo[] doRngToKinds,
-            final KApplicator[] appKinds,
-            final KStrictApplicator[] sappKinds,
-            final KResolver[] resKinds,
-            final KCapture[] capKinds,
-            final KMatch[] matchKinds,
-            final KConstructorResolver[] ctrResKinds,
-            final KDuplicator[] dupKinds,
-            final KNull[] nullKinds,
-            final KTrue[] bTrueKinds,
-            final KFalse[] bFalseKinds,
-            final KInteger[] iKinds,
-            final KBigInteger[] biKinds,
-            final KString[] sKinds,
-            final KRangeFull[] rngFullKinds,
-            final KIdentity[] idKinds,
-            final KReference[] refKinds,
-            final KEndOfList[] endKinds,
-            final KLambda[] lamKinds,
-            final KConstructor[] ctrKinds,
-            final Link[] links,
-            final int nconsumers,
+            final Payload[] payloads,
+            final int[] links,
             final int nproducers,
             final int nimports) {
-        this.op1Kinds = op1Kinds;
-        this.op2Kinds = op2Kinds;
-        this.iteKinds = iteKinds;
-        this.expKinds = expKinds;
-        this.notKinds = notKinds;
-        this.andKinds = andKinds;
-        this.orKinds = orKinds;
-        this.doRngKinds = doRngKinds;
-        this.doRngFromKinds = doRngFromKinds;
-        this.doRngToKinds = doRngToKinds;
-        this.appKinds = appKinds;
-        this.sappKinds = sappKinds;
-        this.resKinds = resKinds;
-        this.capKinds = capKinds;
-        this.matchKinds = matchKinds;
-        this.ctrResKinds = ctrResKinds;
-        this.dupKinds = dupKinds;
-        this.nullKinds = nullKinds;
-        this.bTrueKinds = bTrueKinds;
-        this.bFalseKinds = bFalseKinds;
-        this.iKinds = iKinds;
-        this.biKinds = biKinds;
-        this.sKinds = sKinds;
-        this.rngFullKinds = rngFullKinds;
-        this.idKinds = idKinds;
-        this.refKinds = refKinds;
-        this.endKinds = endKinds;
-        this.lamKinds = lamKinds;
-        this.ctrKinds = ctrKinds;
+        this.payloads = payloads;
         this.links = links;
-        this.nconsumers = nconsumers;
         this.nproducers = nproducers;
         this.nimports = nimports;
     }
@@ -232,178 +143,169 @@ public final class Template {
             throw new IllegalArgumentException(
                     String.format("Expected %d imports, got %d", nimports, imports.length));
         }
-        final Port.Consumer[] consumers = new Port.Consumer[nconsumers];
+        final Port.Consumer[] consumers = new Port.Consumer[links.length];
         final Port.Producer[] producers = new Port.Producer[nproducers + nimports];
         int i = 0, j = 0;
-        consumers[i++] = consumer;
-        for (final KStrictOp1 k : op1Kinds) {
-            final var agent = new Motor.AStrictOp1(k.op);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-        }
-        for (final KStrictOp2 k : op2Kinds) {
-            final var agent = new Motor.AStrictOp2(k.op);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KIfThenElse _ : iteKinds) {
-            final var agent = new Motor.AIfThenElse();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-            consumers[i++] = agent.d;
-        }
-        for (final KExpansion k : expKinds) {
-            final var agent = new Motor.AExpansion(k.template);
-            producers[j++] = agent.a;
-            for (final var port : agent.imports) {
-                consumers[i++] = port;
-            }
-        }
-        for (final KNot _ : notKinds) {
-            final var agent = new Motor.ANot();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-        }
-        for (final KAnd _ : andKinds) {
-            final var agent = new Motor.AAnd();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KOr _ : orKinds) {
-            final var agent = new Motor.AOr();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KDoRange kind : doRngKinds) {
-            final var agent = new Motor.ADoRange(kind.inclusive);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KDoRangeFrom _ : doRngFromKinds) {
-            final var agent = new Motor.ADoRangeFrom();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-        }
-        for (final KDoRangeTo kind : doRngToKinds) {
-            final var agent = new Motor.ADoRangeTo(kind.inclusive);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-        }
-        for (final KApplicator _ : appKinds) {
-            final var agent = new Motor.AApplicator();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KStrictApplicator _ : sappKinds) {
-            final var agent = new Motor.AStrictApplicator();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KResolver _ : resKinds) {
-            final var agent = new Motor.AResolver();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            producers[j++] = agent.c;
-            consumers[i++] = agent.d;
-        }
-        for (final KCapture _ : capKinds) {
-            final var agent = new Motor.ACapture();
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            producers[j++] = agent.c;
-            consumers[i++] = agent.d;
-        }
-        for (final KMatch k : matchKinds) {
-            final var agent = new Motor.AMatch(k.names);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            for (final var port : agent.handlers) {
-                consumers[i++] = port;
-            }
-        }
-        for (final KConstructorResolver k : ctrResKinds) {
-            final var agent = new Motor.AConstructorResolver(k.name, k.arity);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            for (final var port : agent.arguments) {
-                consumers[i++] = port;
-            }
-        }
-        for (final KDuplicator _ : dupKinds) {
-            final var agent = new Motor.ADuplicator(Motor.Label.COPY);
-            consumers[i++] = agent.a;
-            producers[j++] = agent.b;
-            producers[j++] = agent.c;
-        }
-        for (final KNull _ : nullKinds) {
-            producers[j++] = new Motor.ANull().a;
-        }
-        for (final KTrue _ : bTrueKinds) {
-            producers[j++] = new Motor.ATrue().a;
-        }
-        for (final KFalse _ : bFalseKinds) {
-            producers[j++] = new Motor.AFalse().a;
-        }
-        for (final KInteger k : iKinds) {
-            producers[j++] = new Motor.AInteger(k.value).a;
-        }
-        for (final KBigInteger k : biKinds) {
-            producers[j++] = new Motor.ABigInteger(k.value).a;
-        }
-        for (final KString k : sKinds) {
-            producers[j++] = new Motor.AString(k.value).a;
-        }
-        for (final KRangeFull _ : rngFullKinds) {
-            producers[j++] = new Motor.ARangeFull().a;
-        }
-        for (final KIdentity _ : idKinds) {
-            producers[j++] = new Motor.AIdentity().a;
-        }
-        for (final KReference k : refKinds) {
-            producers[j++] = new Motor.AReference(k.name).a;
-        }
-        for (final KEndOfList _ : endKinds) {
-            producers[j++] = new Motor.AEndOfList().a;
-        }
-        for (final KLambda _ : lamKinds) {
-            final var agent = new Motor.ALambda();
-            producers[j++] = agent.a;
-            producers[j++] = agent.b;
-            consumers[i++] = agent.c;
-        }
-        for (final KConstructor k : ctrKinds) {
-            final var agent = new Motor.AConstructor(k.name, k.arity);
-            producers[j++] = agent.a;
-            for (final var port : agent.arguments) {
-                consumers[i++] = port;
+        for (final Payload payload : payloads) {
+            switch (payload) {
+                case PRoot _ -> consumers[i++] = consumer;
+                case PReference p -> producers[j++] = new Motor.AReference(p.name).a;
+                case PStrictOp1 p -> {
+                    final var agent = new Motor.AStrictOp1(p.op);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                }
+                case PStrictOp2 p -> {
+                    final var agent = new Motor.AStrictOp2(p.op);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PIfThenElse _ -> {
+                    final var agent = new Motor.AIfThenElse();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                    consumers[i++] = agent.d;
+                }
+                case PExpansion p -> {
+                    final var agent = new Motor.AExpansion(p.template);
+                    producers[j++] = agent.a;
+                    for (final var port : agent.imports) {
+                        consumers[i++] = port;
+                    }
+                }
+                case PNot _ -> {
+                    final var agent = new Motor.ANot();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                }
+                case PAnd _ -> {
+                    final var agent = new Motor.AAnd();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case POr _ -> {
+                    final var agent = new Motor.AOr();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PDoRange p -> {
+                    final var agent = new Motor.ADoRange(p.inclusive);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PDoRangeFrom _ -> {
+                    final var agent = new Motor.ADoRangeFrom();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                }
+                case PDoRangeTo p -> {
+                    final var agent = new Motor.ADoRangeTo(p.inclusive);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                }
+                case PApplicator _ -> {
+                    final var agent = new Motor.AApplicator();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PStrictApplicator _ -> {
+                    final var agent = new Motor.AStrictApplicator();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PResolver _ -> {
+                    final var agent = new Motor.AResolver();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    producers[j++] = agent.c;
+                    consumers[i++] = agent.d;
+                }
+                case PCapture _ -> {
+                    final var agent = new Motor.ACapture();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    producers[j++] = agent.c;
+                    consumers[i++] = agent.d;
+                }
+                case PMatch p -> {
+                    final var agent = new Motor.AMatch(p.names);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    for (final var port : agent.handlers) {
+                        consumers[i++] = port;
+                    }
+                }
+                case PConstructorResolver p -> {
+                    final var agent = new Motor.AConstructorResolver(p.name, p.arity);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    for (final var port : agent.arguments) {
+                        consumers[i++] = port;
+                    }
+                }
+                case PDuplicator _ -> {
+                    final var agent = new Motor.ADuplicator(Motor.Label.COPY);
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    producers[j++] = agent.c;
+                }
+                case PLambda _ -> {
+                    final var agent = new Motor.ALambda();
+                    producers[j++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PEndOfList _ -> producers[j++] = new Motor.AEndOfList().a;
+                case PNull _ -> producers[j++] = new Motor.ANull().a;
+                case PTrue _ -> producers[j++] = new Motor.ATrue().a;
+                case PFalse _ -> producers[j++] = new Motor.AFalse().a;
+                case PInteger p -> producers[j++] = new Motor.AInteger(p.value).a;
+                case PBigInteger p -> producers[j++] = new Motor.ABigInteger(p.value).a;
+                case PString p -> producers[j++] = new Motor.AString(p.value).a;
+                case PRangeFull _ -> producers[j++] = new Motor.ARangeFull().a;
+                case PIdentity _ -> producers[j++] = new Motor.AIdentity().a;
+                case PConstructor p -> {
+                    final var agent = new Motor.AConstructor(p.name, p.arity);
+                    producers[j++] = agent.a;
+                    for (final var port : agent.arguments) {
+                        consumers[i++] = port;
+                    }
+                }
             }
         }
         System.arraycopy(imports, 0, producers, j, nimports);
-        for (final Link link : links) {
-            consumers[link.consumer].setProducer(producers[link.producer]);
+        for (int k = 0; k < links.length; k++) {
+            consumers[k].setProducer(producers[links[k]]);
         }
     }
 
     public static final class Builder {
-        public sealed interface Port permits Consumer, Producer {
-        }
-
-        public static final class Consumer implements Port {
+        // This class follows the same design as run-time `Port.Consumer`.
+        public static final class Consumer {
             private Producer producer;
 
-            public Consumer() {
-                this.producer = null;
+            public Consumer(final Producer producer) {
+                this.producer = producer;
             }
 
             public Producer producer() {
                 return this.producer;
+            }
+
+            public Agent chase() {
+                Producer port = this.producer;
+                while (port.meaning instanceof Producer forwarder) {
+                    port = forwarder;
+                }
+                this.producer = port;
+                return (Agent) port.meaning;
             }
 
             public void setProducer(final Producer producer) {
@@ -411,17 +313,36 @@ public final class Template {
             }
         }
 
-        public static final class Producer implements Port {
+        // This class follows the same design as run-time `Port.Producer`.
+        public static final class Producer {
+            private Object meaning;
+
+            public Producer(final Agent owner) {
+                this.meaning = owner;
+            }
+
+            public void forward(final Producer other) {
+                this.meaning = other;
+            }
         }
 
-        private record Agent(Kind kind, Port[] ports) {
+        public sealed interface Agent permits
+                // The interface.
+                ARoot,
+                // Operators.
+                AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr,
+                ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver,
+                ACapture, AMatch, AConstructorResolver, ADuplicator,
+                // Data.
+                ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString,
+                ARangeFull, AIdentity, AConstructor {
         }
 
-        public static final class ARoot {
+        public static final class ARoot implements Agent {
             private final Consumer a;
 
-            private ARoot(final Consumer a) {
-                this.a = a;
+            private ARoot() {
+                this.a = new Consumer(null);
             }
 
             public Consumer a() {
@@ -429,13 +350,29 @@ public final class Template {
             }
         }
 
-        public static final class AStrictOp1 {
+        public static final class AReference implements Agent {
+            private final String name;
+            private final Producer a;
+
+            private AReference(final String name) {
+                this.name = name;
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AStrictOp1 implements Agent {
+            private final StrictOp1 op;
             private final Consumer a;
             private final Producer b;
 
-            private AStrictOp1(final Consumer a, final Producer b) {
-                this.a = a;
-                this.b = b;
+            private AStrictOp1(final StrictOp1 op) {
+                this.op = op;
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
             }
 
             public Consumer a() {
@@ -447,15 +384,17 @@ public final class Template {
             }
         }
 
-        public static final class AStrictOp2 {
+        public static final class AStrictOp2 implements Agent {
+            private final StrictOp2 op;
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AStrictOp2(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private AStrictOp2(final StrictOp2 op) {
+                this.op = op;
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -471,21 +410,17 @@ public final class Template {
             }
         }
 
-        public static final class AIfThenElse {
+        public static final class AIfThenElse implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
             private final Consumer d;
 
-            private AIfThenElse(
-                    final Consumer a,
-                    final Producer b,
-                    final Consumer c,
-                    final Consumer d) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-                this.d = d;
+            private AIfThenElse() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
+                this.d = new Consumer(null);
             }
 
             public Consumer a() {
@@ -505,13 +440,18 @@ public final class Template {
             }
         }
 
-        public static final class AExpansion {
+        public static final class AExpansion implements Agent {
+            private final Builder inner;
             private final Producer a;
-            private final Map<String, Consumer> imports;
+            private final SequencedMap<String, Consumer> imports;
 
-            private AExpansion(final Producer a, final Map<String, Consumer> imports) {
-                this.a = a;
-                this.imports = imports;
+            private AExpansion(final Builder inner) {
+                this.inner = inner;
+                this.a = new Producer(this);
+                this.imports = new LinkedHashMap<>();
+                for (final String name : inner.imports.keySet()) {
+                    this.imports.put(name, new Consumer(null));
+                }
             }
 
             public Producer a() {
@@ -523,13 +463,13 @@ public final class Template {
             }
         }
 
-        public static final class ANot {
+        public static final class ANot implements Agent {
             private final Consumer a;
             private final Producer b;
 
-            private ANot(final Consumer a, final Producer b) {
-                this.a = a;
-                this.b = b;
+            private ANot() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
             }
 
             public Consumer a() {
@@ -541,15 +481,15 @@ public final class Template {
             }
         }
 
-        public static final class AAnd {
+        public static final class AAnd implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AAnd(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private AAnd() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -565,15 +505,15 @@ public final class Template {
             }
         }
 
-        public static final class AOr {
+        public static final class AOr implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AOr(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private AOr() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -589,15 +529,17 @@ public final class Template {
             }
         }
 
-        public static final class ADoRange {
+        public static final class ADoRange implements Agent {
+            private final boolean inclusive;
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private ADoRange(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private ADoRange(final boolean inclusive) {
+                this.inclusive = inclusive;
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -613,13 +555,13 @@ public final class Template {
             }
         }
 
-        public static final class ADoRangeFrom {
+        public static final class ADoRangeFrom implements Agent {
             private final Consumer a;
             private final Producer b;
 
-            private ADoRangeFrom(final Consumer a, final Producer b) {
-                this.a = a;
-                this.b = b;
+            private ADoRangeFrom() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
             }
 
             public Consumer a() {
@@ -631,13 +573,15 @@ public final class Template {
             }
         }
 
-        public static final class ADoRangeTo {
+        public static final class ADoRangeTo implements Agent {
+            private final boolean inclusive;
             private final Consumer a;
             private final Producer b;
 
-            private ADoRangeTo(final Consumer a, final Producer b) {
-                this.a = a;
-                this.b = b;
+            private ADoRangeTo(final boolean inclusive) {
+                this.inclusive = inclusive;
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
             }
 
             public Consumer a() {
@@ -649,27 +593,15 @@ public final class Template {
             }
         }
 
-        public static final class ARangeFull {
-            private final Producer a;
-
-            private ARangeFull(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AApplicator {
+        public static final class AApplicator implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AApplicator(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private AApplicator() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -685,15 +617,15 @@ public final class Template {
             }
         }
 
-        public static final class AStrictApplicator {
+        public static final class AStrictApplicator implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AStrictApplicator(final Consumer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
+            private AStrictApplicator() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
             }
 
             public Consumer a() {
@@ -709,21 +641,17 @@ public final class Template {
             }
         }
 
-        public static final class AResolver {
+        public static final class AResolver implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Producer c;
             private final Consumer d;
 
-            private AResolver(
-                    final Consumer a,
-                    final Producer b,
-                    final Producer c,
-                    final Consumer d) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-                this.d = d;
+            private AResolver() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Producer(this);
+                this.d = new Consumer(null);
             }
 
             public Consumer a() {
@@ -743,21 +671,17 @@ public final class Template {
             }
         }
 
-        public static final class ACapture {
+        public static final class ACapture implements Agent {
             private final Consumer a;
             private final Producer b;
             private final Producer c;
             private final Consumer d;
 
-            private ACapture(
-                    final Consumer a,
-                    final Producer b,
-                    final Producer c,
-                    final Consumer d) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-                this.d = d;
+            private ACapture() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Producer(this);
+                this.d = new Consumer(null);
             }
 
             public Consumer a() {
@@ -777,216 +701,20 @@ public final class Template {
             }
         }
 
-        public static final class AConstructorResolver {
-            private final Consumer a;
-            private final Producer b;
-            private final Consumer[] arguments;
-
-            private AConstructorResolver(
-                    final Consumer a,
-                    final Producer b,
-                    final Consumer[] arguments) {
-                this.a = a;
-                this.b = b;
-                this.arguments = arguments;
-            }
-
-            public Consumer a() {
-                return a;
-            }
-
-            public Producer b() {
-                return b;
-            }
-
-            public Consumer argument(final int i) {
-                return arguments[i];
-            }
-        }
-
-        public static final class ADuplicator {
-            private final Consumer a;
-            private final Producer b;
-            private final Producer c;
-
-            private ADuplicator(final Consumer a, final Producer b, final Producer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-            }
-
-            public Consumer a() {
-                return a;
-            }
-
-            public Producer b() {
-                return b;
-            }
-
-            public Producer c() {
-                return c;
-            }
-        }
-
-        public static final class ANull {
-            private final Producer a;
-
-            private ANull(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class ATrue {
-            private final Producer a;
-
-            private ATrue(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AFalse {
-            private final Producer a;
-
-            private AFalse(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AInteger {
-            private final Producer a;
-
-            private AInteger(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class ABigInteger {
-            private final Producer a;
-
-            private ABigInteger(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AString {
-            private final Producer a;
-
-            private AString(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AIdentity {
-            private final Producer a;
-
-            private AIdentity(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AReference {
-            private final Producer a;
-
-            private AReference(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class AEndOfList {
-            private final Producer a;
-
-            private AEndOfList(final Producer a) {
-                this.a = a;
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
-        public static final class ALambda {
-            private final Producer a;
-            private final Producer b;
-            private final Consumer c;
-
-            private ALambda(final Producer a, final Producer b, final Consumer c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-            }
-
-            public Producer a() {
-                return a;
-            }
-
-            public Producer b() {
-                return b;
-            }
-
-            public Consumer c() {
-                return c;
-            }
-        }
-
-        public static final class AConstructor {
-            private final Producer a;
-            private final Consumer[] arguments;
-
-            private AConstructor(final Producer a, final Consumer[] arguments) {
-                this.a = a;
-                this.arguments = arguments;
-            }
-
-            public Producer a() {
-                return a;
-            }
-
-            public Consumer argument(final int i) {
-                return arguments[i];
-            }
-        }
-
-        public static final class AMatch {
+        public static final class AMatch implements Agent {
+            private final String[] names;
             private final Consumer a;
             private final Producer b;
             private final Consumer[] handlers;
 
-            private AMatch(final Consumer a, final Producer b, final Consumer[] handlers) {
-                this.a = a;
-                this.b = b;
-                this.handlers = handlers;
+            private AMatch(final String[] names) {
+                this.names = Arrays.stream(names).map(String::intern).toArray(String[]::new);
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.handlers = new Consumer[names.length];
+                for (int i = 0; i < names.length; i++) {
+                    this.handlers[i] = new Consumer(null);
+                }
             }
 
             public Consumer a() {
@@ -1002,374 +730,498 @@ public final class Template {
             }
         }
 
+        public static final class AConstructorResolver implements Agent {
+            private final String name;
+            private final Consumer a;
+            private final Producer b;
+            private final Consumer[] arguments;
+
+            private AConstructorResolver(final String name, final int arity) {
+                this.name = name.intern();
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.arguments = new Consumer[arity];
+                for (int i = 0; i < arity; i++) {
+                    this.arguments[i] = new Consumer(null);
+                }
+            }
+
+            public Consumer a() {
+                return a;
+            }
+
+            public Producer b() {
+                return b;
+            }
+
+            public Consumer argument(final int i) {
+                return arguments[i];
+            }
+        }
+
+        public static final class ADuplicator implements Agent {
+            private final Consumer a;
+            private final Producer b;
+            private final Producer c;
+
+            private ADuplicator() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Producer(this);
+            }
+
+            public Consumer a() {
+                return a;
+            }
+
+            public Producer b() {
+                return b;
+            }
+
+            public Producer c() {
+                return c;
+            }
+        }
+
+        public static final class ALambda implements Agent {
+            private final Producer a;
+            private final Producer b;
+            private final Consumer c;
+
+            private ALambda() {
+                this.a = new Producer(this);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
+            }
+
+            public Producer a() {
+                return a;
+            }
+
+            public Producer b() {
+                return b;
+            }
+
+            public Consumer c() {
+                return c;
+            }
+        }
+
+        public static final class AEndOfList implements Agent {
+            private final Producer a;
+
+            private AEndOfList() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class ANull implements Agent {
+            private final Producer a;
+
+            private ANull() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class ATrue implements Agent {
+            private final Producer a;
+
+            private ATrue() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AFalse implements Agent {
+            private final Producer a;
+
+            private AFalse() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AInteger implements Agent {
+            private final CheckedInteger.Value value;
+            private final Producer a;
+
+            private AInteger(final CheckedInteger.Value value) {
+                this.value = value;
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class ABigInteger implements Agent {
+            private final MyBigInteger value;
+            private final Producer a;
+
+            private ABigInteger(final MyBigInteger value) {
+                this.value = value;
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AString implements Agent {
+            private final MyString value;
+            private final Producer a;
+
+            private AString(final MyString value) {
+                this.value = value;
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class ARangeFull implements Agent {
+            private final Producer a;
+
+            private ARangeFull() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AIdentity implements Agent {
+            private final Producer a;
+
+            private AIdentity() {
+                this.a = new Producer(this);
+            }
+
+            public Producer a() {
+                return a;
+            }
+        }
+
+        public static final class AConstructor implements Agent {
+            private final String name;
+            private final Producer a;
+            private final Consumer[] arguments;
+
+            private AConstructor(final String name, final int arity) {
+                this.name = name.intern();
+                this.a = new Producer(this);
+                this.arguments = new Consumer[arity];
+                for (int i = 0; i < arity; i++) {
+                    this.arguments[i] = new Consumer(null);
+                }
+            }
+
+            public Producer a() {
+                return a;
+            }
+
+            public Consumer argument(final int i) {
+                return arguments[i];
+            }
+        }
+
+        private final SequencedMap<String, Producer> imports = new LinkedHashMap<>();
+        private ARoot root;
+
         public ARoot mkRoot() {
             if (root != null) {
                 throw new IllegalStateException("Attempting to create a second root");
             }
-            final Consumer a = new Consumer();
-            root = new Agent(new KRoot(), new Port[]{a});
-            agents.add(root);
-            return new ARoot(a);
-        }
-
-        public AStrictOp1 mkStrictOp1(final StrictOp1 op) {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            agents.add(new Agent(new KStrictOp1(op), new Port[]{a, b}));
-            return new AStrictOp1(a, b);
-        }
-
-        public AStrictOp2 mkStrictOp2(final StrictOp2 op) {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KStrictOp2(op), new Port[]{a, b, c}));
-            return new AStrictOp2(a, b, c);
-        }
-
-        public AIfThenElse mkIfThenElse() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            final Consumer d = new Consumer();
-            agents.add(new Agent(new KIfThenElse(), new Port[]{a, b, c, d}));
-            return new AIfThenElse(a, b, c, d);
-        }
-
-        public AExpansion mkExpansion(final Builder inner) {
-            final Template template = inner.build();
-            final Producer a = new Producer();
-            final var imports = new LinkedHashMap<String, Consumer>();
-            final Port[] ports = new Port[1 + inner.imports.size()];
-            ports[0] = a;
-            int i = 0;
-            for (final String name : inner.imports.keySet()) {
-                final Consumer consumer = new Consumer();
-                imports.put(name, consumer);
-                ports[1 + i++] = consumer;
-            }
-            agents.add(new Agent(new KExpansion(template), ports));
-            return new AExpansion(a, imports);
-        }
-
-        public ANot mkNot() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            agents.add(new Agent(new KNot(), new Port[]{a, b}));
-            return new ANot(a, b);
-        }
-
-        public AAnd mkAnd() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KAnd(), new Port[]{a, b, c}));
-            return new AAnd(a, b, c);
-        }
-
-        public AOr mkOr() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KOr(), new Port[]{a, b, c}));
-            return new AOr(a, b, c);
-        }
-
-        public ADoRange mkDoRange(final boolean inclusive) {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KDoRange(inclusive), new Port[]{a, b, c}));
-            return new ADoRange(a, b, c);
-        }
-
-        public ADoRangeFrom mkDoRangeFrom() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            agents.add(new Agent(new KDoRangeFrom(), new Port[]{a, b}));
-            return new ADoRangeFrom(a, b);
-        }
-
-        public ADoRangeTo mkDoRangeTo(final boolean inclusive) {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            agents.add(new Agent(new KDoRangeTo(inclusive), new Port[]{a, b}));
-            return new ADoRangeTo(a, b);
-        }
-
-        public ARangeFull mkRangeFull() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KRangeFull(), new Port[]{a}));
-            return new ARangeFull(a);
-        }
-
-        public AApplicator mkApplicator() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KApplicator(), new Port[]{a, b, c}));
-            return new AApplicator(a, b, c);
-        }
-
-        public AStrictApplicator mkStrictApplicator() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KStrictApplicator(), new Port[]{a, b, c}));
-            return new AStrictApplicator(a, b, c);
-        }
-
-        public AResolver mkResolver() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Producer c = new Producer();
-            final Consumer d = new Consumer();
-            agents.add(new Agent(new KResolver(), new Port[]{a, b, c, d}));
-            return new AResolver(a, b, c, d);
-        }
-
-        public ACapture mkCapture() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Producer c = new Producer();
-            final Consumer d = new Consumer();
-            agents.add(new Agent(new KCapture(), new Port[]{a, b, c, d}));
-            return new ACapture(a, b, c, d);
-        }
-
-        public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer[] arguments = new Consumer[arity];
-            for (int i = 0; i < arity; i++) {
-                arguments[i] = new Consumer();
-            }
-            final Port[] ports = new Port[2 + arity];
-            ports[0] = a;
-            ports[1] = b;
-            for (int i = 0; i < arity; i++) {
-                ports[2 + i] = arguments[i];
-            }
-            agents.add(new Agent(new KConstructorResolver(name.intern(), arity), ports));
-            return new AConstructorResolver(a, b, arguments);
-        }
-
-        public ADuplicator mkDuplicator() {
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Producer c = new Producer();
-            agents.add(new Agent(new KDuplicator(), new Port[]{a, b, c}));
-            return new ADuplicator(a, b, c);
-        }
-
-        public ANull mkNull() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KNull(), new Port[]{a}));
-            return new ANull(a);
-        }
-
-        public ATrue mkTrue() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KTrue(), new Port[]{a}));
-            return new ATrue(a);
-        }
-
-        public AFalse mkFalse() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KFalse(), new Port[]{a}));
-            return new AFalse(a);
-        }
-
-        public AInteger mkInteger(final CheckedInteger.Value i) {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KInteger(i), new Port[]{a}));
-            return new AInteger(a);
-        }
-
-        public ABigInteger mkBigInteger(final MyBigInteger i) {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KBigInteger(i), new Port[]{a}));
-            return new ABigInteger(a);
-        }
-
-        public AString mkString(final MyString s) {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KString(s), new Port[]{a}));
-            return new AString(a);
-        }
-
-        public AIdentity mkIdentity() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KIdentity(), new Port[]{a}));
-            return new AIdentity(a);
+            root = new ARoot();
+            return root;
         }
 
         public AReference mkReference(final String name) {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KReference(name), new Port[]{a}));
-            return new AReference(a);
+            return new AReference(name);
         }
 
-        public AEndOfList mkEndOfList() {
-            final Producer a = new Producer();
-            agents.add(new Agent(new KEndOfList(), new Port[]{a}));
-            return new AEndOfList(a);
+        public AStrictOp1 mkStrictOp1(final StrictOp1 op) {
+            return new AStrictOp1(op);
         }
 
-        public ALambda mkLambda() {
-            final Producer a = new Producer();
-            final Producer b = new Producer();
-            final Consumer c = new Consumer();
-            agents.add(new Agent(new KLambda(), new Port[]{a, b, c}));
-            return new ALambda(a, b, c);
+        public AStrictOp2 mkStrictOp2(final StrictOp2 op) {
+            return new AStrictOp2(op);
         }
 
-        public AConstructor mkConstructor(final String name, final int arity) {
-            final Producer a = new Producer();
-            final Consumer[] arguments = new Consumer[arity];
-            for (int i = 0; i < arity; i++) {
-                arguments[i] = new Consumer();
-            }
-            final Port[] ports = new Port[1 + arity];
-            ports[0] = a;
-            for (int i = 0; i < arity; i++) {
-                ports[1 + i] = arguments[i];
-            }
-            agents.add(new Agent(new KConstructor(name.intern(), arity), ports));
-            return new AConstructor(a, arguments);
+        public AIfThenElse mkIfThenElse() {
+            return new AIfThenElse();
+        }
+
+        public AExpansion mkExpansion(final Builder inner) {
+            return new AExpansion(inner);
+        }
+
+        public ANot mkNot() {
+            return new ANot();
+        }
+
+        public AAnd mkAnd() {
+            return new AAnd();
+        }
+
+        public AOr mkOr() {
+            return new AOr();
+        }
+
+        public ADoRange mkDoRange(final boolean inclusive) {
+            return new ADoRange(inclusive);
+        }
+
+        public ADoRangeFrom mkDoRangeFrom() {
+            return new ADoRangeFrom();
+        }
+
+        public ADoRangeTo mkDoRangeTo(final boolean inclusive) {
+            return new ADoRangeTo(inclusive);
+        }
+
+        public AApplicator mkApplicator() {
+            return new AApplicator();
+        }
+
+        public AStrictApplicator mkStrictApplicator() {
+            return new AStrictApplicator();
+        }
+
+        public AResolver mkResolver() {
+            return new AResolver();
+        }
+
+        public ACapture mkCapture() {
+            return new ACapture();
         }
 
         public AMatch mkMatch(final String[] names) {
-            final String[] myNames = Arrays.stream(names).map(String::intern)
-                    .toArray(String[]::new);
-            final Consumer a = new Consumer();
-            final Producer b = new Producer();
-            final Consumer[] handlers = new Consumer[names.length];
-            for (int i = 0; i < names.length; i++) {
-                handlers[i] = new Consumer();
-            }
-            final Port[] ports = new Port[2 + names.length];
-            ports[0] = a;
-            ports[1] = b;
-            for (int i = 0; i < names.length; i++) {
-                ports[2 + i] = handlers[i];
-            }
-            agents.add(new Agent(new KMatch(myNames), ports));
-            return new AMatch(a, b, handlers);
+            return new AMatch(names);
         }
 
-        private final Set<Agent> agents = new HashSet<>();
-        private final SequencedMap<String, Producer> imports = new LinkedHashMap<>();
-        private Agent root;
+        public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
+            return new AConstructorResolver(name, arity);
+        }
+
+        public ADuplicator mkDuplicator() {
+            return new ADuplicator();
+        }
+
+        public ALambda mkLambda() {
+            return new ALambda();
+        }
+
+        public AEndOfList mkEndOfList() {
+            return new AEndOfList();
+        }
+
+        public ANull mkNull() {
+            return new ANull();
+        }
+
+        public ATrue mkTrue() {
+            return new ATrue();
+        }
+
+        public AFalse mkFalse() {
+            return new AFalse();
+        }
+
+        public AInteger mkInteger(final CheckedInteger.Value i) {
+            return new AInteger(i);
+        }
+
+        public ABigInteger mkBigInteger(final MyBigInteger i) {
+            return new ABigInteger(i);
+        }
+
+        public AString mkString(final MyString s) {
+            return new AString(s);
+        }
+
+        public ARangeFull mkRangeFull() {
+            return new ARangeFull();
+        }
+
+        public AIdentity mkIdentity() {
+            return new AIdentity();
+        }
+
+        public AConstructor mkConstructor(final String name, final int arity) {
+            return new AConstructor(name, arity);
+        }
 
         public Producer mkImport(final String name) {
-            return imports.computeIfAbsent(name, _ -> new Producer());
+            return imports.computeIfAbsent(name, _ -> new Producer(null));
         }
 
-        @SuppressWarnings("unchecked")
-        private <K extends Kind> K[] collect(final Class<K> type, final List<Agent> into) {
-            final var result = new ArrayList<K>();
-            for (final Agent agent : agents) {
-                if (type.isInstance(agent.kind)) {
-                    result.add(type.cast(agent.kind));
-                    into.add(agent);
+        private static List<Consumer> consumers(final Agent agent) {
+            return switch (agent) {
+                case ARoot a -> List.of(a.a);
+                case AStrictOp1 a -> List.of(a.a);
+                case AStrictOp2 a -> List.of(a.a, a.c);
+                case AIfThenElse a -> List.of(a.a, a.c, a.d);
+                case AExpansion a -> List.copyOf(a.imports.values());
+                case ANot a -> List.of(a.a);
+                case AAnd a -> List.of(a.a, a.c);
+                case AOr a -> List.of(a.a, a.c);
+                case ADoRange a -> List.of(a.a, a.c);
+                case ADoRangeFrom a -> List.of(a.a);
+                case ADoRangeTo a -> List.of(a.a);
+                case AApplicator a -> List.of(a.a, a.c);
+                case AStrictApplicator a -> List.of(a.a, a.c);
+                case AResolver a -> List.of(a.a, a.d);
+                case ACapture a -> List.of(a.a, a.d);
+                case AMatch a -> {
+                    final var result = new ArrayList<Consumer>();
+                    result.add(a.a);
+                    result.addAll(List.of(a.handlers));
+                    yield result;
                 }
-            }
-            return result.toArray((K[]) Array.newInstance(type, result.size()));
+                case AConstructorResolver a -> {
+                    final var result = new ArrayList<Consumer>();
+                    result.add(a.a);
+                    result.addAll(List.of(a.arguments));
+                    yield result;
+                }
+                case ADuplicator a -> List.of(a.a);
+                case ALambda a -> List.of(a.c);
+                case AConstructor a -> List.of(a.arguments);
+                case AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    List.of();
+            };
+        }
+
+        private static List<Producer> producers(final Agent agent) {
+            return switch (agent) {
+                case ARoot _ -> List.of();
+                case AReference a -> List.of(a.a);
+                case AStrictOp1 a -> List.of(a.b);
+                case AStrictOp2 a -> List.of(a.b);
+                case AIfThenElse a -> List.of(a.b);
+                case AExpansion a -> List.of(a.a);
+                case ANot a -> List.of(a.b);
+                case AAnd a -> List.of(a.b);
+                case AOr a -> List.of(a.b);
+                case ADoRange a -> List.of(a.b);
+                case ADoRangeFrom a -> List.of(a.b);
+                case ADoRangeTo a -> List.of(a.b);
+                case AApplicator a -> List.of(a.b);
+                case AStrictApplicator a -> List.of(a.b);
+                case AResolver a -> List.of(a.b, a.c);
+                case ACapture a -> List.of(a.b, a.c);
+                case AMatch a -> List.of(a.b);
+                case AConstructorResolver a -> List.of(a.b);
+                case ADuplicator a -> List.of(a.b, a.c);
+                case ALambda a -> List.of(a.a, a.b);
+                case AEndOfList a -> List.of(a.a);
+                case ANull a -> List.of(a.a);
+                case ATrue a -> List.of(a.a);
+                case AFalse a -> List.of(a.a);
+                case AInteger a -> List.of(a.a);
+                case ABigInteger a -> List.of(a.a);
+                case AString a -> List.of(a.a);
+                case ARangeFull a -> List.of(a.a);
+                case AIdentity a -> List.of(a.a);
+                case AConstructor a -> List.of(a.a);
+            };
+        }
+
+        private static Payload payload(final Agent agent) {
+            return switch (agent) {
+                case ARoot _ -> new PRoot();
+                case AReference a -> new PReference(a.name);
+                case AStrictOp1 a -> new PStrictOp1(a.op);
+                case AStrictOp2 a -> new PStrictOp2(a.op);
+                case AIfThenElse _ -> new PIfThenElse();
+                case AExpansion a -> new PExpansion(a.inner.build());
+                case ANot _ -> new PNot();
+                case AAnd _ -> new PAnd();
+                case AOr _ -> new POr();
+                case ADoRange a -> new PDoRange(a.inclusive);
+                case ADoRangeFrom _ -> new PDoRangeFrom();
+                case ADoRangeTo a -> new PDoRangeTo(a.inclusive);
+                case AApplicator _ -> new PApplicator();
+                case AStrictApplicator _ -> new PStrictApplicator();
+                case AResolver _ -> new PResolver();
+                case ACapture _ -> new PCapture();
+                case AMatch a -> new PMatch(a.names);
+                case AConstructorResolver a -> new PConstructorResolver(a.name, a.arguments.length);
+                case ADuplicator _ -> new PDuplicator();
+                case ALambda _ -> new PLambda();
+                case AEndOfList _ -> new PEndOfList();
+                case ANull _ -> new PNull();
+                case ATrue _ -> new PTrue();
+                case AFalse _ -> new PFalse();
+                case AInteger a -> new PInteger(a.value);
+                case ABigInteger a -> new PBigInteger(a.value);
+                case AString a -> new PString(a.value);
+                case ARangeFull _ -> new PRangeFull();
+                case AIdentity _ -> new PIdentity();
+                case AConstructor a -> new PConstructor(a.name, a.arguments.length);
+            };
         }
 
         public Template build() {
-            final var orderedAgents = new ArrayList<Agent>(agents.size());
-            orderedAgents.add(root);
-            final var op1Kinds = collect(KStrictOp1.class, orderedAgents);
-            final var op2Kinds = collect(KStrictOp2.class, orderedAgents);
-            final var iteKinds = collect(KIfThenElse.class, orderedAgents);
-            final var expKinds = collect(KExpansion.class, orderedAgents);
-            final var notKinds = collect(KNot.class, orderedAgents);
-            final var andKinds = collect(KAnd.class, orderedAgents);
-            final var orKinds = collect(KOr.class, orderedAgents);
-            final var doRngKinds = collect(KDoRange.class, orderedAgents);
-            final var doRngFromKinds = collect(KDoRangeFrom.class, orderedAgents);
-            final var doRngToKinds = collect(KDoRangeTo.class, orderedAgents);
-            final var appKinds = collect(KApplicator.class, orderedAgents);
-            final var sappKinds = collect(KStrictApplicator.class, orderedAgents);
-            final var resKinds = collect(KResolver.class, orderedAgents);
-            final var capKinds = collect(KCapture.class, orderedAgents);
-            final var matchKinds = collect(KMatch.class, orderedAgents);
-            final var ctrResKinds = collect(KConstructorResolver.class, orderedAgents);
-            final var dupKinds = collect(KDuplicator.class, orderedAgents);
-            final var nullKinds = collect(KNull.class, orderedAgents);
-            final var bTrueKinds = collect(KTrue.class, orderedAgents);
-            final var bFalseKinds = collect(KFalse.class, orderedAgents);
-            final var iKinds = collect(KInteger.class, orderedAgents);
-            final var biKinds = collect(KBigInteger.class, orderedAgents);
-            final var sKinds = collect(KString.class, orderedAgents);
-            final var rngFullKinds = collect(KRangeFull.class, orderedAgents);
-            final var idKinds = collect(KIdentity.class, orderedAgents);
-            final var refKinds = collect(KReference.class, orderedAgents);
-            final var endKinds = collect(KEndOfList.class, orderedAgents);
-            final var lamKinds = collect(KLambda.class, orderedAgents);
-            final var ctrKinds = collect(KConstructor.class, orderedAgents);
-
+            final var payloads = new ArrayList<Payload>();
             final var consumerIndex = new IdentityHashMap<Consumer, Integer>();
             final var producerIndex = new IdentityHashMap<Producer, Integer>();
-            // Record the consumers & producers in the same order we will materialize them.
-            for (final Agent agent : orderedAgents) {
-                for (final Port port : agent.ports) {
-                    switch (port) {
-                        case Consumer consumer -> {
-                            consumerIndex.put(consumer, consumerIndex.size());
-                        }
-                        case Producer producer -> {
-                            producerIndex.put(producer, producerIndex.size());
-                        }
+            final var visitedSet = new LinkedHashSet<Agent>();
+            final var pending = new ArrayDeque<Agent>();
+            int i = 0, j = 0;
+            visitedSet.add(root);
+            pending.add(root);
+            while (!pending.isEmpty()) {
+                final Agent agent = pending.poll();
+                payloads.add(payload(agent));
+                for (final Consumer consumer : consumers(agent)) {
+                    consumerIndex.put(consumer, i++);
+                    final Agent owner = consumer.chase();
+                    if (owner != null && visitedSet.add(owner)) {
+                        pending.add(owner);
                     }
+                }
+                for (final Producer producer : producers(agent)) {
+                    producerIndex.put(producer, j++);
                 }
             }
             for (final Producer producer : imports.values()) {
-                producerIndex.put(producer, producerIndex.size());
+                producerIndex.put(producer, j++);
             }
-
-            final var links = new Link[consumerIndex.size()];
+            assert i == consumerIndex.size();
+            assert j == producerIndex.size();
+            final var links = new int[consumerIndex.size()];
             for (final var entry : consumerIndex.entrySet()) {
                 final Consumer consumer = entry.getKey();
                 final int index = entry.getValue();
-                final int producer = producerIndex.get(consumer.producer);
-                links[index] = new Link(index, producer);
+                // Resolve the producer forwardings introduced by the optimizations, so that the
+                // resulting template is clean.
+                consumer.chase();
+                links[index] = producerIndex.get(consumer.producer);
             }
-
             return new Template(
-                    op1Kinds,
-                    op2Kinds,
-                    iteKinds,
-                    expKinds,
-                    notKinds,
-                    andKinds,
-                    orKinds,
-                    doRngKinds,
-                    doRngFromKinds,
-                    doRngToKinds,
-                    appKinds,
-                    sappKinds,
-                    resKinds,
-                    capKinds,
-                    matchKinds,
-                    ctrResKinds,
-                    dupKinds,
-                    nullKinds,
-                    bTrueKinds,
-                    bFalseKinds,
-                    iKinds,
-                    biKinds,
-                    sKinds,
-                    rngFullKinds,
-                    idKinds,
-                    refKinds,
-                    endKinds,
-                    lamKinds,
-                    ctrKinds,
+                    payloads.toArray(Payload[]::new),
                     links,
-                    consumerIndex.size(),
                     producerIndex.size() - imports.size(),
                     imports.size());
         }

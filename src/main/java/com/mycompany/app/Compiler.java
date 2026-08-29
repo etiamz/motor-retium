@@ -58,7 +58,7 @@ public final class Compiler {
                     output.setProducer(builder.mkIdentity().a());
                     yield new TermInterface();
                 }
-                final var result = new Consumer();
+                final var result = new Consumer(null);
                 final var fvSet = compile(builder, t, result);
                 final var usages = fvSet.remove(x);
                 if (fvSet.isEmpty()) {
@@ -109,7 +109,7 @@ public final class Compiler {
                 }
                 final int arity = ts.size();
                 final var results = new Consumer[arity];
-                Arrays.setAll(results, _ -> new Consumer());
+                Arrays.setAll(results, _ -> new Consumer(null));
                 final var fvSet = new TermInterface();
                 for (int i = 0; i < arity; i++) {
                     merge(fvSet, compile(builder, ts.get(i), results[i]));
