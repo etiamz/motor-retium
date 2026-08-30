@@ -944,6 +944,10 @@ public final class Template {
             public Consumer argument(final int i) {
                 return arguments[i];
             }
+
+            public boolean isNullary() {
+                return arguments.length == 0;
+            }
         }
 
         private final SequencedMap<String, Producer> imports = new LinkedHashMap<>();
@@ -1187,6 +1191,8 @@ public final class Template {
         private static final class Optimizer {
             private static final boolean COLLAPSE_CAPTURES = Boolean
                     .parseBoolean(System.getProperty("motor.collapseCaptures", "true"));
+            private static final boolean DUPLICATE_ATOMS = Boolean
+                    .parseBoolean(System.getProperty("motor.duplicateAtoms", "true"));
 
             // Set whenever a rewrite fires during a pass.
             private boolean proceed;
@@ -1201,11 +1207,14 @@ public final class Template {
                     if (COLLAPSE_CAPTURES) {
                         collapseCaptures(root, new HashSet<>());
                     }
+                    if (DUPLICATE_ATOMS) {
+                        duplicateAtoms(root, new HashSet<>());
+                    }
                 } while (proceed);
             }
 
             // Collapses capture chains: when the upper capture points to the lower capture's port
-            // `c`, safely remove the latter.
+            // `c`, safely remove the former.
             private void collapseCaptures(final Consumer p, final Set<Agent> visitedSet) {
                 final Agent agent = p.chase();
                 if (agent == null || !visitedSet.add(agent)) {
@@ -1287,6 +1296,108 @@ public final class Template {
                         {
                         }
                 }
+            }
+
+            // Duplicates atomic values, including nullary constructors. The rationale is to reduce
+            // the number of duplicators in the template.
+            private void duplicateAtoms(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> duplicateAtoms(op1.a, visitedSet);
+                    case AStrictOp2 op2 -> {
+                        duplicateAtoms(op2.a, visitedSet);
+                        duplicateAtoms(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        duplicateAtoms(ite.a, visitedSet);
+                        duplicateAtoms(ite.c, visitedSet);
+                        duplicateAtoms(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            duplicateAtoms(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> duplicateAtoms(not.a, visitedSet);
+                    case AAnd and -> {
+                        duplicateAtoms(and.a, visitedSet);
+                        duplicateAtoms(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        duplicateAtoms(or.a, visitedSet);
+                        duplicateAtoms(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        duplicateAtoms(doRng.a, visitedSet);
+                        duplicateAtoms(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> duplicateAtoms(doRng.a, visitedSet);
+                    case ADoRangeTo doRng -> duplicateAtoms(doRng.a, visitedSet);
+                    case AApplicator app -> {
+                        duplicateAtoms(app.a, visitedSet);
+                        duplicateAtoms(app.c, visitedSet);
+                    }
+                    case AStrictApplicator sapp -> {
+                        duplicateAtoms(sapp.a, visitedSet);
+                        duplicateAtoms(sapp.c, visitedSet);
+                    }
+                    case AResolver res -> {
+                        duplicateAtoms(res.a, visitedSet);
+                        duplicateAtoms(res.d, visitedSet);
+                    }
+                    case ACapture cap -> {
+                        duplicateAtoms(cap.a, visitedSet);
+                        duplicateAtoms(cap.d, visitedSet);
+                    }
+                    case AMatch match -> {
+                        duplicateAtoms(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            duplicateAtoms(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        duplicateAtoms(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            duplicateAtoms(argument, visitedSet);
+                        }
+                    }
+                    case ADuplicator dup -> {
+                        duplicateAtoms(dup.a, visitedSet);
+                        switch (dup.a.chase()) {
+                            case AEndOfList _ -> duplicate(dup, new AEndOfList().a);
+                            case ANull _ -> duplicate(dup, new ANull().a);
+                            case ATrue _ -> duplicate(dup, new ATrue().a);
+                            case AFalse _ -> duplicate(dup, new AFalse().a);
+                            case AInteger i -> duplicate(dup, new AInteger(i.value).a);
+                            case ABigInteger i -> duplicate(dup, new ABigInteger(i.value).a);
+                            case AString s -> duplicate(dup, new AString(s.value).a);
+                            case ARangeFull _ -> duplicate(dup, new ARangeFull().a);
+                            case AIdentity _ -> duplicate(dup, new AIdentity().a);
+                            case AConstructor ctr when ctr.isNullary() ->
+                                duplicate(dup, new AConstructor(ctr.name, 0).a);
+                            case null, default -> {
+                            }
+                        }
+                    }
+                    case ALambda lam -> duplicateAtoms(lam.c, visitedSet);
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            duplicateAtoms(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+
+            private void duplicate(final ADuplicator dup, final Producer copy) {
+                dup.b.forward(dup.a.producer());
+                dup.c.forward(copy);
+                proceed = true;
             }
         }
 
