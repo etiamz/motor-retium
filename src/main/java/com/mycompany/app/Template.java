@@ -5,11 +5,13 @@ import com.mycompany.app.Primitives.StrictOp2;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.SequencedMap;
+import java.util.Set;
 
 public final class Template {
     private sealed interface Payload permits
@@ -1182,7 +1184,114 @@ public final class Template {
             };
         }
 
+        private static final class Optimizer {
+            private static final boolean COLLAPSE_CAPTURES = Boolean
+                    .parseBoolean(System.getProperty("motor.collapseCaptures", "true"));
+
+            // Set whenever a rewrite fires during a pass.
+            private boolean proceed;
+
+            public Optimizer() {
+                this.proceed = false;
+            }
+
+            public void optimize(final Consumer root) {
+                do {
+                    proceed = false;
+                    if (COLLAPSE_CAPTURES) {
+                        collapseCaptures(root, new HashSet<>());
+                    }
+                } while (proceed);
+            }
+
+            // Collapses capture chains: when the upper capture points to the lower capture's port
+            // `c`, safely remove the latter.
+            private void collapseCaptures(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> collapseCaptures(op1.a, visitedSet);
+                    case AStrictOp2 op2 -> {
+                        collapseCaptures(op2.a, visitedSet);
+                        collapseCaptures(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        collapseCaptures(ite.a, visitedSet);
+                        collapseCaptures(ite.c, visitedSet);
+                        collapseCaptures(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            collapseCaptures(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> collapseCaptures(not.a, visitedSet);
+                    case AAnd and -> {
+                        collapseCaptures(and.a, visitedSet);
+                        collapseCaptures(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        collapseCaptures(or.a, visitedSet);
+                        collapseCaptures(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        collapseCaptures(doRng.a, visitedSet);
+                        collapseCaptures(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> collapseCaptures(doRng.a, visitedSet);
+                    case ADoRangeTo doRng -> collapseCaptures(doRng.a, visitedSet);
+                    case AApplicator app -> {
+                        collapseCaptures(app.a, visitedSet);
+                        collapseCaptures(app.c, visitedSet);
+                    }
+                    case AStrictApplicator sapp -> {
+                        collapseCaptures(sapp.a, visitedSet);
+                        collapseCaptures(sapp.c, visitedSet);
+                    }
+                    case AResolver res -> {
+                        collapseCaptures(res.a, visitedSet);
+                        collapseCaptures(res.d, visitedSet);
+                    }
+                    case ACapture cap -> {
+                        collapseCaptures(cap.a, visitedSet);
+                        collapseCaptures(cap.d, visitedSet);
+                        if (cap.a.chase() instanceof ACapture other
+                                && cap.a.producer() == other.c) {
+                            cap.c.forward(cap.a.producer());
+                            cap.b.forward(cap.d.producer());
+                            proceed = true;
+                        }
+                    }
+                    case AMatch match -> {
+                        collapseCaptures(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            collapseCaptures(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        collapseCaptures(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            collapseCaptures(argument, visitedSet);
+                        }
+                    }
+                    case ADuplicator dup -> collapseCaptures(dup.a, visitedSet);
+                    case ALambda lam -> collapseCaptures(lam.c, visitedSet);
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            collapseCaptures(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+        }
+
         public Template build() {
+            new Optimizer().optimize(root.a);
             final var payloads = new ArrayList<Payload>();
             final var consumerIndex = new IdentityHashMap<Consumer, Integer>();
             final var producerIndex = new IdentityHashMap<Producer, Integer>();
