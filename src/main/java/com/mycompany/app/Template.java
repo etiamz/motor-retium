@@ -341,6 +341,10 @@ public final class Template {
                 ARangeFull, AIdentity, AConstructor {
         }
 
+        // Data agents that can stand in the function position of an application.
+        public sealed interface Callable permits ALambda, AIdentity {
+        }
+
         public static final class ARoot implements Agent {
             private final Consumer a;
 
@@ -788,7 +792,7 @@ public final class Template {
             }
         }
 
-        public static final class ALambda implements Agent {
+        public static final class ALambda implements Agent, Callable {
             private final Producer a;
             private final Producer b;
             private final Consumer c;
@@ -914,7 +918,7 @@ public final class Template {
             }
         }
 
-        public static final class AIdentity implements Agent {
+        public static final class AIdentity implements Agent, Callable {
             private final Producer a;
 
             private AIdentity() {
@@ -1234,7 +1238,9 @@ public final class Template {
                     return;
                 }
                 switch (agent) {
-                    case AStrictOp1 op1 -> collapseCaptures(op1.a, visitedSet);
+                    case AStrictOp1 op1 -> {
+                        collapseCaptures(op1.a, visitedSet);
+                    }
                     case AStrictOp2 op2 -> {
                         collapseCaptures(op2.a, visitedSet);
                         collapseCaptures(op2.c, visitedSet);
@@ -1249,7 +1255,9 @@ public final class Template {
                             collapseCaptures(imported, visitedSet);
                         }
                     }
-                    case ANot not -> collapseCaptures(not.a, visitedSet);
+                    case ANot not -> {
+                        collapseCaptures(not.a, visitedSet);
+                    }
                     case AAnd and -> {
                         collapseCaptures(and.a, visitedSet);
                         collapseCaptures(and.c, visitedSet);
@@ -1262,8 +1270,12 @@ public final class Template {
                         collapseCaptures(doRng.a, visitedSet);
                         collapseCaptures(doRng.c, visitedSet);
                     }
-                    case ADoRangeFrom doRng -> collapseCaptures(doRng.a, visitedSet);
-                    case ADoRangeTo doRng -> collapseCaptures(doRng.a, visitedSet);
+                    case ADoRangeFrom doRng -> {
+                        collapseCaptures(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        collapseCaptures(doRng.a, visitedSet);
+                    }
                     case AApplicator app -> {
                         collapseCaptures(app.a, visitedSet);
                         collapseCaptures(app.c, visitedSet);
@@ -1296,8 +1308,12 @@ public final class Template {
                             collapseCaptures(argument, visitedSet);
                         }
                     }
-                    case ADuplicator dup -> collapseCaptures(dup.a, visitedSet);
-                    case ALambda lam -> collapseCaptures(lam.c, visitedSet);
+                    case ADuplicator dup -> {
+                        collapseCaptures(dup.a, visitedSet);
+                    }
+                    case ALambda lam -> {
+                        collapseCaptures(lam.c, visitedSet);
+                    }
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             collapseCaptures(argument, visitedSet);
@@ -1316,7 +1332,9 @@ public final class Template {
                     return;
                 }
                 switch (agent) {
-                    case AStrictOp1 op1 -> resolveCaptures(op1.a, visitedSet);
+                    case AStrictOp1 op1 -> {
+                        resolveCaptures(op1.a, visitedSet);
+                    }
                     case AStrictOp2 op2 -> {
                         resolveCaptures(op2.a, visitedSet);
                         resolveCaptures(op2.c, visitedSet);
@@ -1331,7 +1349,9 @@ public final class Template {
                             resolveCaptures(imported, visitedSet);
                         }
                     }
-                    case ANot not -> resolveCaptures(not.a, visitedSet);
+                    case ANot not -> {
+                        resolveCaptures(not.a, visitedSet);
+                    }
                     case AAnd and -> {
                         resolveCaptures(and.a, visitedSet);
                         resolveCaptures(and.c, visitedSet);
@@ -1344,8 +1364,12 @@ public final class Template {
                         resolveCaptures(doRng.a, visitedSet);
                         resolveCaptures(doRng.c, visitedSet);
                     }
-                    case ADoRangeFrom doRng -> resolveCaptures(doRng.a, visitedSet);
-                    case ADoRangeTo doRng -> resolveCaptures(doRng.a, visitedSet);
+                    case ADoRangeFrom doRng -> {
+                        resolveCaptures(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        resolveCaptures(doRng.a, visitedSet);
+                    }
                     case AApplicator app -> {
                         resolveCaptures(app.a, visitedSet);
                         resolveCaptures(app.c, visitedSet);
@@ -1391,8 +1415,12 @@ public final class Template {
                             resolveCaptures(argument, visitedSet);
                         }
                     }
-                    case ADuplicator dup -> resolveCaptures(dup.a, visitedSet);
-                    case ALambda lam -> resolveCaptures(lam.c, visitedSet);
+                    case ADuplicator dup -> {
+                        resolveCaptures(dup.a, visitedSet);
+                    }
+                    case ALambda lam -> {
+                        resolveCaptures(lam.c, visitedSet);
+                    }
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             resolveCaptures(argument, visitedSet);
@@ -1404,12 +1432,6 @@ public final class Template {
                 }
             }
 
-            private void resolve(final ACapture cap) {
-                cap.c.forward(cap.a.producer());
-                cap.b.forward(cap.d.producer());
-                proceed = true;
-            }
-
             // Duplicates atomic values, including nullary constructors. The rationale is to reduce
             // the number of duplicators in the template.
             private void duplicateAtoms(final Consumer p, final Set<Agent> visitedSet) {
@@ -1418,7 +1440,9 @@ public final class Template {
                     return;
                 }
                 switch (agent) {
-                    case AStrictOp1 op1 -> duplicateAtoms(op1.a, visitedSet);
+                    case AStrictOp1 op1 -> {
+                        duplicateAtoms(op1.a, visitedSet);
+                    }
                     case AStrictOp2 op2 -> {
                         duplicateAtoms(op2.a, visitedSet);
                         duplicateAtoms(op2.c, visitedSet);
@@ -1433,7 +1457,9 @@ public final class Template {
                             duplicateAtoms(imported, visitedSet);
                         }
                     }
-                    case ANot not -> duplicateAtoms(not.a, visitedSet);
+                    case ANot not -> {
+                        duplicateAtoms(not.a, visitedSet);
+                    }
                     case AAnd and -> {
                         duplicateAtoms(and.a, visitedSet);
                         duplicateAtoms(and.c, visitedSet);
@@ -1446,8 +1472,12 @@ public final class Template {
                         duplicateAtoms(doRng.a, visitedSet);
                         duplicateAtoms(doRng.c, visitedSet);
                     }
-                    case ADoRangeFrom doRng -> duplicateAtoms(doRng.a, visitedSet);
-                    case ADoRangeTo doRng -> duplicateAtoms(doRng.a, visitedSet);
+                    case ADoRangeFrom doRng -> {
+                        duplicateAtoms(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        duplicateAtoms(doRng.a, visitedSet);
+                    }
                     case AApplicator app -> {
                         duplicateAtoms(app.a, visitedSet);
                         duplicateAtoms(app.c, visitedSet);
@@ -1497,7 +1527,9 @@ public final class Template {
                             }
                         }
                     }
-                    case ALambda lam -> duplicateAtoms(lam.c, visitedSet);
+                    case ALambda lam -> {
+                        duplicateAtoms(lam.c, visitedSet);
+                    }
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             duplicateAtoms(argument, visitedSet);
@@ -1509,12 +1541,6 @@ public final class Template {
                 }
             }
 
-            private void duplicate(final ADuplicator dup, final Producer copy) {
-                dup.b.forward(dup.a.producer());
-                dup.c.forward(copy);
-                proceed = true;
-            }
-
             // Static beta reductions. Onely reduce non-strict applications & strict applications
             // _inferred_ by the analyzer, because reducing user-specified strict applications could
             // remove diverging arguments.
@@ -1524,7 +1550,9 @@ public final class Template {
                     return;
                 }
                 switch (agent) {
-                    case AStrictOp1 op1 -> betaReduce(op1.a, visitedSet);
+                    case AStrictOp1 op1 -> {
+                        betaReduce(op1.a, visitedSet);
+                    }
                     case AStrictOp2 op2 -> {
                         betaReduce(op2.a, visitedSet);
                         betaReduce(op2.c, visitedSet);
@@ -1539,7 +1567,9 @@ public final class Template {
                             betaReduce(imported, visitedSet);
                         }
                     }
-                    case ANot not -> betaReduce(not.a, visitedSet);
+                    case ANot not -> {
+                        betaReduce(not.a, visitedSet);
+                    }
                     case AAnd and -> {
                         betaReduce(and.a, visitedSet);
                         betaReduce(and.c, visitedSet);
@@ -1552,8 +1582,12 @@ public final class Template {
                         betaReduce(doRng.a, visitedSet);
                         betaReduce(doRng.c, visitedSet);
                     }
-                    case ADoRangeFrom doRng -> betaReduce(doRng.a, visitedSet);
-                    case ADoRangeTo doRng -> betaReduce(doRng.a, visitedSet);
+                    case ADoRangeFrom doRng -> {
+                        betaReduce(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        betaReduce(doRng.a, visitedSet);
+                    }
                     case AApplicator app -> {
                         betaReduce(app.a, visitedSet);
                         betaReduce(app.c, visitedSet);
@@ -1588,8 +1622,12 @@ public final class Template {
                             betaReduce(argument, visitedSet);
                         }
                     }
-                    case ADuplicator dup -> betaReduce(dup.a, visitedSet);
-                    case ALambda lam -> betaReduce(lam.c, visitedSet);
+                    case ADuplicator dup -> {
+                        betaReduce(dup.a, visitedSet);
+                    }
+                    case ALambda lam -> {
+                        betaReduce(lam.c, visitedSet);
+                    }
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             betaReduce(argument, visitedSet);
@@ -1601,24 +1639,36 @@ public final class Template {
                 }
             }
 
+            private void resolve(final ACapture cap) {
+                cap.c.forward(cap.a.producer());
+                cap.b.forward(cap.d.producer());
+                proceed = true;
+            }
+
+            private void duplicate(final ADuplicator dup, final Producer copy) {
+                dup.b.forward(dup.a.producer());
+                dup.c.forward(copy);
+                proceed = true;
+            }
+
             private void beta(
                     final Consumer function,
                     final Producer output,
                     final Consumer argument) {
-                switch (function.chase()) {
+                if (!(function.chase() instanceof Callable data)) {
+                    return;
+                }
+                switch (data) {
                     case ALambda lam when function.producer() == lam.a -> {
                         output.forward(lam.c.producer());
                         lam.b.forward(argument.producer());
                         proceed = true;
                     }
+                    case ALambda _ -> {
+                    }
                     case AIdentity _ -> {
                         output.forward(argument.producer());
                         proceed = true;
-                    }
-                    case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AConstructor _ ->
-                        {
-                        }
-                    case null -> {
                     }
                 }
             }
