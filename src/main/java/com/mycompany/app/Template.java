@@ -1191,6 +1191,8 @@ public final class Template {
         private static final class Optimizer {
             private static final boolean COLLAPSE_CAPTURES = Boolean
                     .parseBoolean(System.getProperty("motor.collapseCaptures", "true"));
+            private static final boolean RESOLVE_CAPTURES = Boolean
+                    .parseBoolean(System.getProperty("motor.resolveCaptures", "true"));
             private static final boolean DUPLICATE_ATOMS = Boolean
                     .parseBoolean(System.getProperty("motor.duplicateAtoms", "true"));
 
@@ -1206,6 +1208,9 @@ public final class Template {
                     proceed = false;
                     if (COLLAPSE_CAPTURES) {
                         collapseCaptures(root, new HashSet<>());
+                    }
+                    if (RESOLVE_CAPTURES) {
+                        resolveCaptures(root, new HashSet<>());
                     }
                     if (DUPLICATE_ATOMS) {
                         duplicateAtoms(root, new HashSet<>());
@@ -1268,9 +1273,7 @@ public final class Template {
                         collapseCaptures(cap.d, visitedSet);
                         if (cap.a.chase() instanceof ACapture other
                                 && cap.a.producer() == other.c) {
-                            cap.c.forward(cap.a.producer());
-                            cap.b.forward(cap.d.producer());
-                            proceed = true;
+                            resolve(cap);
                         }
                     }
                     case AMatch match -> {
@@ -1290,6 +1293,101 @@ public final class Template {
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             collapseCaptures(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+
+            // Interact captures with WHNF data; see the cases of `Motor.ACapture.interact`.
+            private void resolveCaptures(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> resolveCaptures(op1.a, visitedSet);
+                    case AStrictOp2 op2 -> {
+                        resolveCaptures(op2.a, visitedSet);
+                        resolveCaptures(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        resolveCaptures(ite.a, visitedSet);
+                        resolveCaptures(ite.c, visitedSet);
+                        resolveCaptures(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            resolveCaptures(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> resolveCaptures(not.a, visitedSet);
+                    case AAnd and -> {
+                        resolveCaptures(and.a, visitedSet);
+                        resolveCaptures(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        resolveCaptures(or.a, visitedSet);
+                        resolveCaptures(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        resolveCaptures(doRng.a, visitedSet);
+                        resolveCaptures(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> resolveCaptures(doRng.a, visitedSet);
+                    case ADoRangeTo doRng -> resolveCaptures(doRng.a, visitedSet);
+                    case AApplicator app -> {
+                        resolveCaptures(app.a, visitedSet);
+                        resolveCaptures(app.c, visitedSet);
+                    }
+                    case AStrictApplicator sapp -> {
+                        resolveCaptures(sapp.a, visitedSet);
+                        resolveCaptures(sapp.c, visitedSet);
+                    }
+                    case AResolver res -> {
+                        resolveCaptures(res.a, visitedSet);
+                        resolveCaptures(res.d, visitedSet);
+                    }
+                    case ACapture cap -> {
+                        resolveCaptures(cap.a, visitedSet);
+                        resolveCaptures(cap.d, visitedSet);
+                        switch (cap.a.chase()) {
+                            case ALambda lam when cap.a.producer() == lam.a -> resolve(cap);
+                            case ANull _ -> resolve(cap);
+                            case ATrue _ -> resolve(cap);
+                            case AFalse _ -> resolve(cap);
+                            case AInteger _ -> resolve(cap);
+                            case ABigInteger _ -> resolve(cap);
+                            case AString _ -> resolve(cap);
+                            case ARangeFull _ -> resolve(cap);
+                            case AIdentity _ -> resolve(cap);
+                            case AConstructor _ -> resolve(cap);
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AEndOfList _ ->
+                                {
+                                }
+                            case null -> {
+                            }
+                        }
+                    }
+                    case AMatch match -> {
+                        resolveCaptures(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            resolveCaptures(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        resolveCaptures(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            resolveCaptures(argument, visitedSet);
+                        }
+                    }
+                    case ADuplicator dup -> resolveCaptures(dup.a, visitedSet);
+                    case ALambda lam -> resolveCaptures(lam.c, visitedSet);
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            resolveCaptures(argument, visitedSet);
                         }
                     }
                     case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
@@ -1378,7 +1476,10 @@ public final class Template {
                             case AIdentity _ -> duplicate(dup, new AIdentity().a);
                             case AConstructor ctr when ctr.isNullary() ->
                                 duplicate(dup, new AConstructor(ctr.name, 0).a);
-                            case null, default -> {
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AConstructor _ ->
+                                {
+                                }
+                            case null -> {
                             }
                         }
                     }
@@ -1392,6 +1493,12 @@ public final class Template {
                         {
                         }
                 }
+            }
+
+            private void resolve(final ACapture cap) {
+                cap.c.forward(cap.a.producer());
+                cap.b.forward(cap.d.producer());
+                proceed = true;
             }
 
             private void duplicate(final ADuplicator dup, final Producer copy) {
