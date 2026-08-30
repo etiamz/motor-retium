@@ -384,7 +384,8 @@ public final class Parser {
             final Term t1 = visit(ctx.term(0)), t2 = visit(ctx.term(1));
             return switch (ctx.op.getText()) {
                 case "$" -> new Term.Application(t1, t2);
-                case "$!" -> new Term.StrictApplication(t1, t2);
+                case "$!" ->
+                    new Term.StrictApplication(t1, t2, Term.StrictnessSource.USER_SPECIFIED);
                 default -> throw unknownOperator(ctx.op);
             };
         }

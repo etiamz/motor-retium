@@ -45,8 +45,8 @@ public final class OperatorSaturator {
 
     public Term saturate(final Term term) {
         return switch (term) {
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(saturate(t1), saturate(t2));
+            case Term.StrictApplication(var t1, var t2, var source) ->
+                new Term.StrictApplication(saturate(t1), saturate(t2), source);
             case Term.Application _ -> {
                 // We could use `Term.nonStrictSpine` here, but it would not be much simpler.
                 final var arguments = new ArrayList<Term>();
@@ -148,7 +148,10 @@ public final class OperatorSaturator {
     private static Term apply(final Primitives.Operator op, final List<Term> ts) {
         return switch (op) {
             case Primitives.Apply _ -> new Term.Application(ts.get(0), ts.get(1));
-            case Primitives.StrictApply _ -> new Term.StrictApplication(ts.get(0), ts.get(1));
+            case Primitives.StrictApply _ -> new Term.StrictApplication(
+                    ts.get(0),
+                    ts.get(1),
+                    Term.StrictnessSource.USER_SPECIFIED);
             case Primitives.Not _ -> new Term.Not(ts.get(0));
             case Primitives.And _ -> new Term.And(ts.get(0), ts.get(1));
             case Primitives.Or _ -> new Term.Or(ts.get(0), ts.get(1));

@@ -2,6 +2,7 @@ package com.mycompany.app;
 
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
+import com.mycompany.app.Term.StrictnessSource;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -620,11 +621,13 @@ public final class Template {
         }
 
         public static final class AStrictApplicator implements Agent {
+            private final StrictnessSource source;
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
 
-            private AStrictApplicator() {
+            private AStrictApplicator(final StrictnessSource source) {
+                this.source = source;
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
                 this.c = new Consumer(null);
@@ -1009,8 +1012,8 @@ public final class Template {
             return new AApplicator();
         }
 
-        public AStrictApplicator mkStrictApplicator() {
-            return new AStrictApplicator();
+        public AStrictApplicator mkStrictApplicator(final StrictnessSource source) {
+            return new AStrictApplicator(source);
         }
 
         public AResolver mkResolver() {
@@ -1195,6 +1198,8 @@ public final class Template {
                     .parseBoolean(System.getProperty("motor.resolveCaptures", "true"));
             private static final boolean DUPLICATE_ATOMS = Boolean
                     .parseBoolean(System.getProperty("motor.duplicateAtoms", "true"));
+            private static final boolean BETA_REDUCE = Boolean
+                    .parseBoolean(System.getProperty("motor.betaReduce", "true"));
 
             // Set whenever a rewrite fires during a pass.
             private boolean proceed;
@@ -1214,6 +1219,9 @@ public final class Template {
                     }
                     if (DUPLICATE_ATOMS) {
                         duplicateAtoms(root, new HashSet<>());
+                    }
+                    if (BETA_REDUCE) {
+                        betaReduce(root, new HashSet<>());
                     }
                 } while (proceed);
             }
@@ -1396,6 +1404,12 @@ public final class Template {
                 }
             }
 
+            private void resolve(final ACapture cap) {
+                cap.c.forward(cap.a.producer());
+                cap.b.forward(cap.d.producer());
+                proceed = true;
+            }
+
             // Duplicates atomic values, including nullary constructors. The rationale is to reduce
             // the number of duplicators in the template.
             private void duplicateAtoms(final Consumer p, final Set<Agent> visitedSet) {
@@ -1495,16 +1509,118 @@ public final class Template {
                 }
             }
 
-            private void resolve(final ACapture cap) {
-                cap.c.forward(cap.a.producer());
-                cap.b.forward(cap.d.producer());
-                proceed = true;
-            }
-
             private void duplicate(final ADuplicator dup, final Producer copy) {
                 dup.b.forward(dup.a.producer());
                 dup.c.forward(copy);
                 proceed = true;
+            }
+
+            // Static beta reductions. Onely reduce non-strict applications & strict applications
+            // _inferred_ by the analyzer, because reducing user-specified strict applications could
+            // remove diverging arguments.
+            private void betaReduce(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> betaReduce(op1.a, visitedSet);
+                    case AStrictOp2 op2 -> {
+                        betaReduce(op2.a, visitedSet);
+                        betaReduce(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        betaReduce(ite.a, visitedSet);
+                        betaReduce(ite.c, visitedSet);
+                        betaReduce(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            betaReduce(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> betaReduce(not.a, visitedSet);
+                    case AAnd and -> {
+                        betaReduce(and.a, visitedSet);
+                        betaReduce(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        betaReduce(or.a, visitedSet);
+                        betaReduce(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        betaReduce(doRng.a, visitedSet);
+                        betaReduce(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> betaReduce(doRng.a, visitedSet);
+                    case ADoRangeTo doRng -> betaReduce(doRng.a, visitedSet);
+                    case AApplicator app -> {
+                        betaReduce(app.a, visitedSet);
+                        betaReduce(app.c, visitedSet);
+                        beta(app.a, app.b, app.c);
+                    }
+                    case AStrictApplicator sapp -> {
+                        betaReduce(sapp.a, visitedSet);
+                        betaReduce(sapp.c, visitedSet);
+                        switch (sapp.source) {
+                            case USER_SPECIFIED -> {
+                            }
+                            case INFERRED -> beta(sapp.a, sapp.b, sapp.c);
+                        }
+                    }
+                    case AResolver res -> {
+                        betaReduce(res.a, visitedSet);
+                        betaReduce(res.d, visitedSet);
+                    }
+                    case ACapture cap -> {
+                        betaReduce(cap.a, visitedSet);
+                        betaReduce(cap.d, visitedSet);
+                    }
+                    case AMatch match -> {
+                        betaReduce(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            betaReduce(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        betaReduce(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            betaReduce(argument, visitedSet);
+                        }
+                    }
+                    case ADuplicator dup -> betaReduce(dup.a, visitedSet);
+                    case ALambda lam -> betaReduce(lam.c, visitedSet);
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            betaReduce(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+
+            private void beta(
+                    final Consumer function,
+                    final Producer output,
+                    final Consumer argument) {
+                switch (function.chase()) {
+                    case ALambda lam when function.producer() == lam.a -> {
+                        output.forward(lam.c.producer());
+                        lam.b.forward(argument.producer());
+                        proceed = true;
+                    }
+                    case AIdentity _ -> {
+                        output.forward(argument.producer());
+                        proceed = true;
+                    }
+                    case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AConstructor _ ->
+                        {
+                        }
+                    case null -> {
+                    }
+                }
             }
         }
 

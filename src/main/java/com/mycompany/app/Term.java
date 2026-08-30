@@ -24,7 +24,7 @@ public sealed interface Term {
     public record Application(Term t1, Term t2) implements Term {
     }
 
-    public record StrictApplication(Term t1, Term t2) implements Term {
+    public record StrictApplication(Term t1, Term t2, StrictnessSource source) implements Term {
     }
 
     public record Constructor(String name, List<Term> ts, int missing) implements Term {
@@ -75,6 +75,10 @@ public sealed interface Term {
     public record StrictOp2(Term t1, Primitives.StrictOp2 op, Term t2) implements Term {
     }
 
+    public enum StrictnessSource {
+        USER_SPECIFIED, INFERRED
+    }
+
     public record Spine(Term head, List<Term> arguments) {
     }
 
@@ -119,7 +123,7 @@ public sealed interface Term {
                 yield fvSet;
             }
             case Application(var t1, var t2) -> union(t1, t2);
-            case StrictApplication(var t1, var t2) -> union(t1, t2);
+            case StrictApplication(var t1, var t2, var _) -> union(t1, t2);
             case Constructor(var _, var ts, var _) -> union(ts.toArray(Term[]::new));
             case IfThenElse(var t1, var t2, var t3) -> union(t1, t2, t3);
             case Match(var s, var cases) -> {
@@ -158,7 +162,7 @@ public sealed interface Term {
             case Lambda(var _, var t) -> t.references();
             case Let(var _, var e, var t) -> unionReferences(e, t);
             case Application(var t1, var t2) -> unionReferences(t1, t2);
-            case StrictApplication(var t1, var t2) -> unionReferences(t1, t2);
+            case StrictApplication(var t1, var t2, var _) -> unionReferences(t1, t2);
             case Constructor(var _, var ts, var _) -> unionReferences(ts.toArray(Term[]::new));
             case IfThenElse(var t1, var t2, var t3) -> unionReferences(t1, t2, t3);
             case Match(var s, var cases) -> {

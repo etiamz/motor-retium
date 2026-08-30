@@ -87,8 +87,8 @@ public final class Compiler {
                 merge(fvSet, compile(builder, e, share(builder, usages)));
                 yield fvSet;
             }
-            case Term.StrictApplication(var t1, var t2) -> {
-                final var agent = builder.mkStrictApplicator();
+            case Term.StrictApplication(var t1, var t2, var source) -> {
+                final var agent = builder.mkStrictApplicator(source);
                 output.setProducer(agent.b());
                 final var fvSet = compile(builder, t1, agent.a());
                 merge(fvSet, compile(builder, t2, agent.c()));

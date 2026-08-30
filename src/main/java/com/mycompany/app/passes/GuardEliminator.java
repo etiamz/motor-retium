@@ -39,8 +39,8 @@ public final class GuardEliminator {
                 new Term.Let(x, eliminate(e), bind(List.of(x)).eliminate(t));
             case Term.Application(var t1, var t2) ->
                 new Term.Application(eliminate(t1), eliminate(t2));
-            case Term.StrictApplication(var t1, var t2) ->
-                new Term.StrictApplication(eliminate(t1), eliminate(t2));
+            case Term.StrictApplication(var t1, var t2, var source) ->
+                new Term.StrictApplication(eliminate(t1), eliminate(t2), source);
             case Term.Constructor(var name, var ts, var missing) ->
                 new Term.Constructor(name, ts.stream().map(this::eliminate).toList(), missing);
             case Term.Match(var s, var cases) -> {

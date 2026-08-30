@@ -40,7 +40,8 @@ public final class Renamer {
                 yield new Let(inner.renaming.get(x), rename(e), inner.rename(t));
             }
             case Application(var t1, var t2) -> new Application(rename(t1), rename(t2));
-            case StrictApplication(var t1, var t2) -> new StrictApplication(rename(t1), rename(t2));
+            case StrictApplication(var t1, var t2, var source) ->
+                new StrictApplication(rename(t1), rename(t2), source);
             case Constructor(var name, var ts, var missing) ->
                 new Constructor(name, ts.stream().map(this::rename).toList(), missing);
             case IfThenElse(var t1, var t2, var t3) ->

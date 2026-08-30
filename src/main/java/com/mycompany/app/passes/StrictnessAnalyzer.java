@@ -89,7 +89,7 @@ public final class StrictnessAnalyzer {
                     }
                     yield result;
                 }
-                case Term.StrictApplication(var t1, var t2) -> {
+                case Term.StrictApplication(var t1, var t2, var _) -> {
                     final var result = demand(t1);
                     result.addAll(demand(t2));
                     yield result;
@@ -164,8 +164,8 @@ public final class StrictnessAnalyzer {
             return switch (term) {
                 case Term.Lambda(var x, var t) -> new Term.Lambda(x, annotate(t));
                 case Term.Let(var x, var e, var t) -> new Term.Let(x, annotate(e), annotate(t));
-                case Term.StrictApplication(var t1, var t2) ->
-                    new Term.StrictApplication(annotate(t1), annotate(t2));
+                case Term.StrictApplication(var t1, var t2, var source) ->
+                    new Term.StrictApplication(annotate(t1), annotate(t2), source);
                 case Term.Application _ -> {
                     final var spine = term.nonStrictSpine();
                     final var positions = strictPositions(spine.head());
@@ -173,7 +173,10 @@ public final class StrictnessAnalyzer {
                     for (int i = 0; i < spine.arguments().size(); i++) {
                         final var argument = annotate(spine.arguments().get(i));
                         result = positions.contains(i)
-                                ? new Term.StrictApplication(result, argument)
+                                ? new Term.StrictApplication(
+                                        result,
+                                        argument,
+                                        Term.StrictnessSource.INFERRED)
                                 : new Term.Application(result, argument);
                     }
                     yield result;
