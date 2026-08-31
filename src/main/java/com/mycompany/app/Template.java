@@ -1293,7 +1293,9 @@ public final class Template {
                         collapseCaptures(cap.d, visitedSet);
                         if (cap.a.chase() instanceof ACapture other
                                 && cap.a.producer() == other.c) {
-                            resolve(cap);
+                            cap.c.forward(cap.a.producer());
+                            cap.b.forward(cap.d.producer());
+                            proceed = true;
                         }
                     }
                     case AMatch match -> {
@@ -1385,22 +1387,25 @@ public final class Template {
                     case ACapture cap -> {
                         resolveCaptures(cap.a, visitedSet);
                         resolveCaptures(cap.d, visitedSet);
-                        switch (cap.a.chase()) {
-                            case ALambda lam when cap.a.producer() == lam.a -> resolve(cap);
-                            case ANull _ -> resolve(cap);
-                            case ATrue _ -> resolve(cap);
-                            case AFalse _ -> resolve(cap);
-                            case AInteger _ -> resolve(cap);
-                            case ABigInteger _ -> resolve(cap);
-                            case AString _ -> resolve(cap);
-                            case ARangeFull _ -> resolve(cap);
-                            case AIdentity _ -> resolve(cap);
-                            case AConstructor _ -> resolve(cap);
+                        final boolean whnf = switch (cap.a.chase()) {
+                            case ALambda lam when cap.a.producer() == lam.a -> true;
+                            case ANull _ -> true;
+                            case ATrue _ -> true;
+                            case AFalse _ -> true;
+                            case AInteger _ -> true;
+                            case ABigInteger _ -> true;
+                            case AString _ -> true;
+                            case ARangeFull _ -> true;
+                            case AIdentity _ -> true;
+                            case AConstructor _ -> true;
                             case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AEndOfList _ ->
-                                {
-                                }
-                            case null -> {
-                            }
+                                false;
+                            case null -> false;
+                        };
+                        if (whnf) {
+                            cap.c.forward(cap.a.producer());
+                            cap.b.forward(cap.d.producer());
+                            proceed = true;
                         }
                     }
                     case AMatch match -> {
@@ -1508,23 +1513,26 @@ public final class Template {
                     }
                     case ADuplicator dup -> {
                         duplicateAtoms(dup.a, visitedSet);
-                        switch (dup.a.chase()) {
-                            case AEndOfList _ -> duplicate(dup, new AEndOfList().a);
-                            case ANull _ -> duplicate(dup, new ANull().a);
-                            case ATrue _ -> duplicate(dup, new ATrue().a);
-                            case AFalse _ -> duplicate(dup, new AFalse().a);
-                            case AInteger i -> duplicate(dup, new AInteger(i.value).a);
-                            case ABigInteger i -> duplicate(dup, new ABigInteger(i.value).a);
-                            case AString s -> duplicate(dup, new AString(s.value).a);
-                            case ARangeFull _ -> duplicate(dup, new ARangeFull().a);
-                            case AIdentity _ -> duplicate(dup, new AIdentity().a);
+                        final Producer copy = switch (dup.a.chase()) {
+                            case AEndOfList _ -> new AEndOfList().a;
+                            case ANull _ -> new ANull().a;
+                            case ATrue _ -> new ATrue().a;
+                            case AFalse _ -> new AFalse().a;
+                            case AInteger i -> new AInteger(i.value).a;
+                            case ABigInteger i -> new ABigInteger(i.value).a;
+                            case AString s -> new AString(s.value).a;
+                            case ARangeFull _ -> new ARangeFull().a;
+                            case AIdentity _ -> new AIdentity().a;
                             case AConstructor ctr when ctr.isNullary() ->
-                                duplicate(dup, new AConstructor(ctr.name, 0).a);
+                                new AConstructor(ctr.name, 0).a;
                             case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,ALambda _,AConstructor _ ->
-                                {
-                                }
-                            case null -> {
-                            }
+                                null;
+                            case null -> null;
+                        };
+                        if (copy != null) {
+                            dup.b.forward(dup.a.producer());
+                            dup.c.forward(copy);
+                            proceed = true;
                         }
                     }
                     case ALambda lam -> {
@@ -1637,18 +1645,6 @@ public final class Template {
                         {
                         }
                 }
-            }
-
-            private void resolve(final ACapture cap) {
-                cap.c.forward(cap.a.producer());
-                cap.b.forward(cap.d.producer());
-                proceed = true;
-            }
-
-            private void duplicate(final ADuplicator dup, final Producer copy) {
-                dup.b.forward(dup.a.producer());
-                dup.c.forward(copy);
-                proceed = true;
             }
 
             private void beta(
