@@ -13,7 +13,8 @@ definition
     ;
 
 term
-    : term op=('@' | '@@') term # indexingTerm
+    : <assoc=right> term op='.' term # compositionTerm
+    | term op=('@' | '@@') term # indexingTerm
     | term op=('*' | '/' | '%') term # multiplicativeTerm
     | term op=('+' | '-') term # additiveTerm
     | term op=('<<' | '>>') term # shiftTerm

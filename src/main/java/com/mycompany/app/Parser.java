@@ -391,6 +391,19 @@ public final class Parser {
         }
 
         @Override
+        public Term visitCompositionTerm(final MotorParser.CompositionTermContext ctx) {
+            final Term f = visit(ctx.term(0));
+            final Term g = visit(ctx.term(1));
+            final var banlist = new LinkedHashSet<String>();
+            banlist.addAll(f.freeVariables());
+            banlist.addAll(g.freeVariables());
+            final var v = Term.freshen("v", banlist);
+            return new Term.Lambda(
+                    v,
+                    new Term.Application(f, new Term.Application(g, new Term.Variable(v))));
+        }
+
+        @Override
         public Term visitLambdaTerm(final MotorParser.LambdaTermContext ctx) {
             final var parameters = ctx.SYMBOL();
             final var parameterNames = bindingNames(ctx, parameters);
