@@ -1,0 +1,166 @@
+-- Full sharing, low parallelisme; ported from `spectral/life/Main.hs`.
+
+#ifndef N
+#define N 27u64
+#endif
+
+Nil : 0;
+Cons : 2;
+Pair : 2;
+Triple : 3;
+
+main =
+    life N;
+
+life sz =
+    let generations =
+        (map disp . zip (map $show (enumFrom 0u64)) . limit . iterate (gen sz))
+        (take
+         sz
+         (append
+          (map (take sz . (\xs -> append xs (copy sz 0u64))) start)
+          (copy sz (copy sz 0u64))))
+    in
+    $strlen (last generations);
+
+start =
+    Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons (Cons 0u64 (Cons 0u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 Nil))))))))))))))))))))))))))) Nil))))))))))))));
+
+gen n board =
+    map row (shift (copy n 0u64) board);
+
+row rows =
+    let Triple last this next = rows in
+    zipWith3 elt (shift 0u64 last) (shift 0u64 this) (shift 0u64 next);
+
+elt left middle right =
+    let Triple a b c = left in
+    let Triple d e f = middle in
+    let Triple g h i = right in
+    let tot = a + b + c + d + f + g + h + i in
+    if tot < 2u64 || tot > 3u64
+    then 0u64
+    else if tot == 3u64
+    then 1u64
+    else e;
+
+shiftr x xs =
+    Cons x (init xs);
+
+shiftl x xs =
+    append (tail xs) (Cons x Nil);
+
+shift x xs =
+    zip3 (shiftr x xs) xs (shiftl x xs);
+
+copy n x =
+    if n == 0u64 then Nil else Cons x (copy (n - 1u64) x);
+
+disp item =
+    let Pair gen xss = item in
+    gen ++ "\n\n" ++ (foldr (glue "\n") "" . map (concat . map star)) xss;
+
+star cell =
+    if cell == 0u64 then "  " else " o";
+
+glue s xs ys =
+    xs ++ s ++ ys;
+
+limit boards =
+    let Cons x rest = boards in
+    case rest of {
+        Cons y _ | equalBoard x y -> Cons x Nil;
+        Cons y xs -> Cons x (limit (Cons y xs))
+    };
+
+equalBoard xs ys =
+    case xs of {
+        Nil -> isEmpty ys;
+        Cons x xs -> case ys of {
+            Nil -> false;
+            Cons y ys -> equalRow x y && equalBoard xs ys
+        }
+    };
+
+equalRow xs ys =
+    case xs of {
+        Nil -> isEmpty ys;
+        Cons x xs -> case ys of {
+            Nil -> false;
+            Cons y ys -> x == y && equalRow xs ys
+        }
+    };
+
+enumFrom n =
+    Cons n (enumFrom (n + 1u64));
+
+iterate f x =
+    Cons x (iterate f (f x));
+
+map f xs =
+    case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
+
+foldr f z xs =
+    case xs of { Nil -> z; Cons x xs -> f x (foldr f z xs) };
+
+concat xs =
+    case xs of { Nil -> ""; Cons x xs -> x ++ concat xs };
+
+append xs ys =
+    case xs of { Nil -> ys; Cons x xs -> Cons x (append xs ys) };
+
+zip xs ys =
+    case xs of {
+        Nil -> Nil;
+        Cons x xs -> case ys of {
+            Nil -> Nil;
+            Cons y ys -> Cons (Pair x y) (zip xs ys)
+        }
+    };
+
+zip3 xs ys zs =
+    case xs of {
+        Nil -> Nil;
+        Cons x xs -> case ys of {
+            Nil -> Nil;
+            Cons y ys -> case zs of {
+                Nil -> Nil;
+                Cons z zs -> Cons (Triple x y z) (zip3 xs ys zs)
+            }
+        }
+    };
+
+zipWith3 f xs ys zs =
+    case xs of {
+        Nil -> Nil;
+        Cons x xs -> case ys of {
+            Nil -> Nil;
+            Cons y ys -> case zs of {
+                Nil -> Nil;
+                Cons z zs -> Cons (f x y z) (zipWith3 f xs ys zs)
+            }
+        }
+    };
+
+take n xs =
+    if n == 0u64
+    then Nil
+    else case xs of {
+        Nil -> Nil;
+        Cons x xs -> Cons x (take (n - 1u64) xs)
+    };
+
+init xs =
+    let Cons x rest = xs in
+    case rest of { Nil -> Nil; Cons _ _ -> Cons x (init rest) };
+
+tail xs =
+    let Cons _ xs = xs in
+    xs;
+
+last xs =
+    let Cons x rest = xs in
+    case rest of { Nil -> x; Cons _ _ -> last rest };
+
+isEmpty xs =
+    case xs of { Nil -> true; Cons _ _ -> false };
