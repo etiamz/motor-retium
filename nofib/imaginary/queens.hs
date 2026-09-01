@@ -1,4 +1,4 @@
--- No sharing, no parallelisme; mirrors `queens.rete`.
+-- No sharing, low parallelisme; mirrors `queens.rete`.
 
 -- \$ fourmolu --mode inplace nofib/imaginary/queens.hs
 

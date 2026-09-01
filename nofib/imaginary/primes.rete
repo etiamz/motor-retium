@@ -1,4 +1,4 @@
--- Full sharing, no parallelisme; ported from `imaginary/primes/Main.hs`.
+-- Full sharing, low parallelisme; ported from `imaginary/primes/Main.hs`.
 
 #ifndef N
 #define N 200u64

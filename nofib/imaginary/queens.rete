@@ -1,4 +1,4 @@
--- No sharing, no parallelisme; ported from `imaginary/queens/Main.hs`.
+-- No sharing, low parallelisme; ported from `imaginary/queens/Main.hs`.
 
 #ifndef N
 #define N 8i64

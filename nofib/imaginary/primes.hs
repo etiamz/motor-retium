@@ -1,4 +1,4 @@
--- Full sharing, no parallelisme; mirrors `primes.rete`.
+-- Full sharing, low parallelisme; mirrors `primes.rete`.
 
 -- \$ fourmolu --mode inplace nofib/imaginary/primes.hs
 
