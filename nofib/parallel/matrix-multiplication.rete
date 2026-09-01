@@ -52,10 +52,12 @@ map f xs =
     case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
 
 head xs =
-    case xs of { Cons x _ -> x };
+    let Cons x _ = xs in
+    x;
 
 tail xs =
-    case xs of { Cons _ xs -> xs };
+    let Cons _ xs = xs in
+    xs;
 
 replicate n x =
     if n == 0i64 then Nil else Cons x (replicate (n - 1i64) x);

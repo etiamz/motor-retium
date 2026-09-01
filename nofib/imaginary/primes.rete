@@ -14,7 +14,8 @@ prime n =
     index (map head (iterate theFilter (enumFromTo 2u64 (n * n)))) n;
 
 theFilter xs =
-    case xs of { Cons n ns -> filter (isdivs n) ns };
+    let Cons n ns = xs in
+    filter (isdivs n) ns;
 
 isdivs n x =
     x % n != 0u64;
@@ -33,7 +34,8 @@ map f xs =
     case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
 
 head xs =
-    case xs of { Cons x _ -> x };
+    let Cons x _ = xs in
+    x;
 
 index xs n =
     case xs of {
