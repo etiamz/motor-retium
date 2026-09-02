@@ -1,11 +1,11 @@
--- No sharing, low parallelisme; mirrors `queens.rete`.
+-- Full sharing, substantial parallelisme; mirrors `queens.rete`.
 
 -- \$ fourmolu --mode inplace nofib/imaginary/queens.hs
 
 import Data.Int (Int64)
 import Data.Word (Word64)
 import System.Environment (getArgs)
-import Prelude hiding (length)
+import Prelude hiding (concatMap, enumFromTo, length)
 
 data List a = Nil | Cons a (List a)
 
@@ -26,28 +26,38 @@ nsoln nq =
 
 gen :: Int64 -> Int64 -> List (List Int64)
 gen nq n =
-    if n == 0 then Cons Nil Nil else expand nq (gen nq (n - 1))
-
-expand :: Int64 -> List (List Int64) -> List (List Int64)
-expand nq boards =
-    case boards of
-        Nil -> Nil
-        Cons b xs -> extend nq b 1 (expand nq xs)
-
-extend :: Int64 -> List Int64 -> Int64 -> List (List Int64) -> List (List Int64)
-extend nq b q acc =
-    if q > nq
-        then acc
+    if n == 0
+        then Cons Nil Nil
         else
-            if safe q 1 b
-                then Cons (Cons q b) (extend nq b (q + 1) acc)
-                else extend nq b (q + 1) acc
+            concatMap
+                ( \b ->
+                    concatMap
+                        (\q -> if safe q 1 b then Cons (Cons q b) Nil else Nil)
+                        (enumFromTo 1 nq)
+                )
+                (gen nq (n - 1))
 
 safe :: Int64 -> Int64 -> List Int64 -> Bool
 safe x d board =
     case board of
         Nil -> True
         Cons q l -> x /= q && x /= q + d && x /= q - d && safe x (d + 1) l
+
+concatMap :: (a -> List b) -> List a -> List b
+concatMap f xs =
+    case xs of
+        Nil -> Nil
+        Cons x xs -> append (f x) (concatMap f xs)
+
+append :: List a -> List a -> List a
+append xs ys =
+    case xs of
+        Nil -> ys
+        Cons x xs -> Cons x (append xs ys)
+
+enumFromTo :: Int64 -> Int64 -> List Int64
+enumFromTo n m =
+    if n > m then Nil else Cons n (enumFromTo (n + 1) m)
 
 length :: List a -> Word64
 length xs =

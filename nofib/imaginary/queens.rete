@@ -1,4 +1,4 @@
--- No sharing, low parallelisme; ported from `imaginary/queens/Main.hs`.
+-- Full sharing, substantial parallelisme; ported from `imaginary/queens/Main.hs`.
 
 #ifndef N
 #define N 8i64
@@ -14,26 +14,30 @@ nsoln nq =
     length (gen nq nq);
 
 gen nq n =
-    if n == 0i64 then Cons Nil Nil else expand nq (gen nq (n - 1i64));
-
-expand nq boards =
-    case boards of {
-        Nil -> Nil;
-        Cons b xs -> extend nq b 1i64 (expand nq xs)
-    };
-
-extend nq b q acc =
-    if q > nq
-    then acc
-    else if safe q 1i64 b
-    then Cons (Cons q b) (extend nq b (q + 1i64) acc)
-    else extend nq b (q + 1i64) acc;
+    if n == 0i64
+    then Cons Nil Nil
+    else
+        concatMap
+        (\b ->
+            concatMap
+            (\q -> if safe q 1i64 b then Cons (Cons q b) Nil else Nil)
+            (enumFromTo 1i64 nq))
+        (gen nq (n - 1i64));
 
 safe x d board =
     case board of {
         Nil -> true;
         Cons q l -> x != q && x != q + d && x != q - d && safe x (d + 1i64) l
     };
+
+concatMap f xs =
+    case xs of { Nil -> Nil; Cons x xs -> append (f x) (concatMap f xs) };
+
+append xs ys =
+    case xs of { Nil -> ys; Cons x xs -> Cons x (append xs ys) };
+
+enumFromTo n m =
+    if n > m then Nil else Cons n (enumFromTo (n + 1i64) m);
 
 length xs =
     case xs of { Nil -> 0u64; Cons _ xs -> 1u64 + length xs };
