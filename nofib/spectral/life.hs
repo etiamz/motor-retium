@@ -48,20 +48,18 @@ gen n board =
 
 row :: Triple (List Word64) (List Word64) (List Word64) -> List Word64
 row rows =
-    case rows of
-        Triple last this next ->
-            zipWith3 elt (shift 0 last) (shift 0 this) (shift 0 next)
+    let Triple last this next = rows
+     in zipWith3 elt (shift 0 last) (shift 0 this) (shift 0 next)
 
 elt :: Triple Word64 Word64 Word64 -> Triple Word64 Word64 Word64 -> Triple Word64 Word64 Word64 -> Word64
 elt left middle right =
-    case left of
-        Triple a b c -> case middle of
-            Triple d e f -> case right of
-                Triple g h i ->
-                    let tot = a + b + c + d + f + g + h + i
-                     in if tot < 2 || tot > 3
-                            then 0
-                            else if tot == 3 then 1 else e
+    let Triple a b c = left
+     in let Triple d e f = middle
+         in let Triple g h i = right
+             in let tot = a + b + c + d + f + g + h + i
+                 in if tot < 2 || tot > 3
+                        then 0
+                        else if tot == 3 then 1 else e
 
 shiftr :: a -> List a -> List a
 shiftr x xs =
@@ -81,9 +79,8 @@ copy n x =
 
 disp :: Pair String (List (List Word64)) -> String
 disp item =
-    case item of
-        Pair gen xss ->
-            gen ++ "\n\n" ++ (foldr (glue "\n") "" . map (concat . map star)) xss
+    let Pair gen xss = item
+     in gen ++ "\n\n" ++ (foldr (glue "\n") "" . map (concat . map star)) xss
 
 star :: Word64 -> String
 star cell =
@@ -95,8 +92,8 @@ glue s xs ys =
 
 limit :: List (List (List Word64)) -> List (List (List Word64))
 limit boards =
-    case boards of
-        Cons x rest -> case rest of
+    let Cons x rest = boards
+     in case rest of
             Cons y _ | equalBoard x y -> Cons x Nil
             Cons y xs -> Cons x (limit (Cons y xs))
 
@@ -178,19 +175,20 @@ take n xs =
 
 init :: List a -> List a
 init xs =
-    case xs of
-        Cons x rest -> case rest of
+    let Cons x rest = xs
+     in case rest of
             Nil -> Nil
             Cons _ _ -> Cons x (init rest)
 
 tail :: List a -> List a
 tail xs =
-    case xs of Cons _ xs -> xs
+    let Cons _ rest = xs
+     in rest
 
 last :: List a -> a
 last xs =
-    case xs of
-        Cons x rest -> case rest of
+    let Cons x rest = xs
+     in case rest of
             Nil -> x
             Cons _ _ -> last rest
 

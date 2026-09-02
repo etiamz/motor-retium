@@ -29,17 +29,18 @@ algc :: Int64 -> Int64 -> List Int64 -> List Int64 -> List Int64 -> List Int64
 algc m n xs ys =
     case ys of
         Nil -> id
-        Cons _ _ -> case xs of
-            Cons x rest -> case rest of
-                Nil -> if elem x ys then Cons x else id
-                Cons _ _ ->
-                    let m2 = m `div` 2
-                     in let xs1 = take m2 xs
-                         in let xs2 = drop m2 xs
-                             in let l1 = algb xs1 ys
-                                 in let l2 = reverse (algb (reverse xs2) (reverse ys))
-                                     in let k = findk 0 0 (-1) (zip l1 l2)
-                                         in algc m2 k xs1 (take k ys) . algc (m - m2) (n - k) xs2 (drop k ys)
+        Cons _ _ ->
+            let Cons x rest = xs
+             in case rest of
+                    Nil -> if elem x ys then Cons x else id
+                    Cons _ _ ->
+                        let m2 = m `div` 2
+                         in let xs1 = take m2 xs
+                             in let xs2 = drop m2 xs
+                                 in let l1 = algb xs1 ys
+                                     in let l2 = reverse (algb (reverse xs2) (reverse ys))
+                                         in let k = findk 0 0 (-1) (zip l1 l2)
+                                             in algc m2 k xs1 (take k ys) . algc (m - m2) (n - k) xs2 (drop k ys)
 
 findk :: Int64 -> Int64 -> Int64 -> List (Pair Int64 Int64) -> Int64
 findk k km m xys =
@@ -63,9 +64,9 @@ algb2 :: Int64 -> Int64 -> Int64 -> List (Pair Int64 Int64) -> List (Pair Int64 
 algb2 x k0j1 k1j1 yks =
     case yks of
         Nil -> Nil
-        Cons yk ys -> case yk of
-            Pair y k0j ->
-                let kjcurr = if x == y then k0j1 + 1 else max k1j1 k0j
+        Cons yk ys ->
+            let Pair y k0j = yk
+             in let kjcurr = if x == y then k0j1 + 1 else max k1j1 k0j
                  in Cons (Pair y kjcurr) (algb2 x k0j kjcurr ys)
 
 renderList :: List Int64 -> String
@@ -127,7 +128,8 @@ enumFromThenTo n n' m =
 
 snd :: Pair a b -> b
 snd p =
-    case p of Pair _ y -> y
+    let Pair _ y = p
+     in y
 
 id :: a -> a
 id x =

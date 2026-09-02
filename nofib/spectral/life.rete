@@ -155,8 +155,8 @@ init xs =
     case rest of { Nil -> Nil; Cons _ _ -> Cons x (init rest) };
 
 tail xs =
-    let Cons _ xs = xs in
-    xs;
+    let Cons _ rest = xs in
+    rest;
 
 last xs =
     let Cons x rest = xs in

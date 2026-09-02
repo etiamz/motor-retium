@@ -25,7 +25,8 @@ prime n =
 
 theFilter :: List Word64 -> List Word64
 theFilter xs =
-    case xs of Cons n ns -> filter (isdivs n) ns
+    let Cons n ns = xs
+     in filter (isdivs n) ns
 
 isdivs :: Word64 -> Word64 -> Bool
 isdivs n x =
@@ -48,7 +49,8 @@ map f xs =
 
 head :: List a -> a
 head xs =
-    case xs of Cons x _ -> x
+    let Cons x _ = xs
+     in x
 
 index :: List a -> Word64 -> a
 index xs n =

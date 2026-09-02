@@ -64,11 +64,13 @@ map f xs =
 
 head :: List a -> a
 head xs =
-    case xs of Cons x _ -> x
+    let Cons x _ = xs
+     in x
 
 tail :: List a -> List a
 tail xs =
-    case xs of Cons _ xs -> xs
+    let Cons _ rest = xs
+     in rest
 
 replicate :: Int64 -> a -> List a
 replicate n x =

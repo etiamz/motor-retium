@@ -56,8 +56,8 @@ head xs =
     x;
 
 tail xs =
-    let Cons _ xs = xs in
-    xs;
+    let Cons _ rest = xs in
+    rest;
 
 replicate n x =
     if n == 0i64 then Nil else Cons x (replicate (n - 1i64) x);
