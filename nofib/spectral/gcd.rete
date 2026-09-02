@@ -1,0 +1,69 @@
+-- Full sharing, low parallelisme; ported from `spectral/gcd/Main.hs`.
+
+#ifndef D
+#define D 100bigint
+#endif
+
+Nil : 0;
+Cons : 2;
+Pair : 2;
+Triple : 3;
+
+main =
+    maxGcdE D;
+
+maxGcdE d =
+    let n = 5000bigint in
+    let m = 10000bigint in
+    let ns = enumFromTo n (n + d) in
+    let ms = enumFromTo m (m + d) in
+    let pairs = concatMap (\x -> concatMap (\y -> Cons (Pair x y) Nil) ms) ns in
+    let tripls =
+        map (\xy -> let Pair x y = xy in Triple x y (gcdE x y)) pairs
+    in
+    let rs =
+        map
+        (\xyg ->
+            let Triple _ _ guv = xyg in
+            let Triple g u v = guv in
+            abs (g + u + v))
+        tripls
+    in
+    max' rs;
+
+gcdE x y =
+    if x == 0bigint
+    then Triple y 0bigint 1bigint
+    else g (Triple 1bigint 0bigint x) (Triple 0bigint 1bigint y);
+
+g u v =
+    let Triple u1 u2 u3 = u in
+    let Triple v1 v2 v3 = v in
+    if v3 == 0bigint
+    then Triple u3 u1 u2
+    else
+        let q = u3 / v3 in
+        let r = u3 % v3 in
+        g (Triple v1 v2 v3) (Triple (u1 - q * v1) (u2 - q * v2) r);
+
+max' xs =
+    let Cons x rest = xs in
+    case rest of {
+        Nil -> x;
+        Cons y ys -> if x < y then max' (Cons y ys) else max' (Cons x ys)
+    };
+
+abs x =
+    if x < 0bigint then negate x else x;
+
+concatMap f xs =
+    case xs of { Nil -> Nil; Cons x xs -> append (f x) (concatMap f xs) };
+
+append xs ys =
+    case xs of { Nil -> ys; Cons x xs -> Cons x (append xs ys) };
+
+map f xs =
+    case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
+
+enumFromTo n m =
+    if n > m then Nil else Cons n (enumFromTo (n + 1bigint) m);
