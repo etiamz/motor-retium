@@ -1200,6 +1200,10 @@ public final class Template {
                     .parseBoolean(System.getProperty("motor.collapseCaptures", "true"));
             private static final boolean RESOLVE_CAPTURES = Boolean
                     .parseBoolean(System.getProperty("motor.resolveCaptures", "true"));
+            private static final boolean RESOLVE_LAMBDAS = Boolean
+                    .parseBoolean(System.getProperty("motor.resolveLambdas", "true"));
+            private static final boolean RESOLVE_CONSTRUCTORS = Boolean
+                    .parseBoolean(System.getProperty("motor.resolveConstructors", "true"));
             private static final boolean DUPLICATE_ATOMS = Boolean
                     .parseBoolean(System.getProperty("motor.duplicateAtoms", "true"));
             private static final boolean BETA_REDUCE = Boolean
@@ -1220,6 +1224,12 @@ public final class Template {
                     }
                     if (RESOLVE_CAPTURES) {
                         resolveCaptures(root, new HashSet<>());
+                    }
+                    if (RESOLVE_LAMBDAS) {
+                        resolveLambdas(root, new HashSet<>());
+                    }
+                    if (RESOLVE_CONSTRUCTORS) {
+                        resolveConstructors(root, new HashSet<>());
                     }
                     if (DUPLICATE_ATOMS) {
                         duplicateAtoms(root, new HashSet<>());
@@ -1429,6 +1439,203 @@ public final class Template {
                     case AConstructor ctr -> {
                         for (final Consumer argument : ctr.arguments) {
                             resolveCaptures(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+
+            // Interacts lambda resolvers with an `AEndOfList` agent, turning the former ones into
+            // ready, capture-free lambdas.
+            private void resolveLambdas(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> {
+                        resolveLambdas(op1.a, visitedSet);
+                    }
+                    case AStrictOp2 op2 -> {
+                        resolveLambdas(op2.a, visitedSet);
+                        resolveLambdas(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        resolveLambdas(ite.a, visitedSet);
+                        resolveLambdas(ite.c, visitedSet);
+                        resolveLambdas(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            resolveLambdas(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> {
+                        resolveLambdas(not.a, visitedSet);
+                    }
+                    case AAnd and -> {
+                        resolveLambdas(and.a, visitedSet);
+                        resolveLambdas(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        resolveLambdas(or.a, visitedSet);
+                        resolveLambdas(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        resolveLambdas(doRng.a, visitedSet);
+                        resolveLambdas(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> {
+                        resolveLambdas(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        resolveLambdas(doRng.a, visitedSet);
+                    }
+                    case AApplicator app -> {
+                        resolveLambdas(app.a, visitedSet);
+                        resolveLambdas(app.c, visitedSet);
+                    }
+                    case AStrictApplicator sapp -> {
+                        resolveLambdas(sapp.a, visitedSet);
+                        resolveLambdas(sapp.c, visitedSet);
+                    }
+                    case AResolver res -> {
+                        resolveLambdas(res.a, visitedSet);
+                        resolveLambdas(res.d, visitedSet);
+                        if (res.a.chase() instanceof AEndOfList) {
+                            final var lam = new ALambda();
+                            res.b.forward(lam.a);
+                            res.c.forward(lam.b);
+                            lam.c.setProducer(res.d.producer());
+                            proceed = true;
+                        }
+                    }
+                    case ACapture cap -> {
+                        resolveLambdas(cap.a, visitedSet);
+                        resolveLambdas(cap.d, visitedSet);
+                    }
+                    case AMatch match -> {
+                        resolveLambdas(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            resolveLambdas(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        resolveLambdas(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            resolveLambdas(argument, visitedSet);
+                        }
+                    }
+                    case ADuplicator dup -> {
+                        resolveLambdas(dup.a, visitedSet);
+                    }
+                    case ALambda lam -> {
+                        resolveLambdas(lam.c, visitedSet);
+                    }
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            resolveLambdas(argument, visitedSet);
+                        }
+                    }
+                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                        {
+                        }
+                }
+            }
+
+            // Interacts constructor resolvers with an `AEndOfList` agent, turning the former ones
+            // into ready, capture-free constructors.
+            private void resolveConstructors(final Consumer p, final Set<Agent> visitedSet) {
+                final Agent agent = p.chase();
+                if (agent == null || !visitedSet.add(agent)) {
+                    return;
+                }
+                switch (agent) {
+                    case AStrictOp1 op1 -> {
+                        resolveConstructors(op1.a, visitedSet);
+                    }
+                    case AStrictOp2 op2 -> {
+                        resolveConstructors(op2.a, visitedSet);
+                        resolveConstructors(op2.c, visitedSet);
+                    }
+                    case AIfThenElse ite -> {
+                        resolveConstructors(ite.a, visitedSet);
+                        resolveConstructors(ite.c, visitedSet);
+                        resolveConstructors(ite.d, visitedSet);
+                    }
+                    case AExpansion exp -> {
+                        for (final Consumer imported : exp.imports.values()) {
+                            resolveConstructors(imported, visitedSet);
+                        }
+                    }
+                    case ANot not -> {
+                        resolveConstructors(not.a, visitedSet);
+                    }
+                    case AAnd and -> {
+                        resolveConstructors(and.a, visitedSet);
+                        resolveConstructors(and.c, visitedSet);
+                    }
+                    case AOr or -> {
+                        resolveConstructors(or.a, visitedSet);
+                        resolveConstructors(or.c, visitedSet);
+                    }
+                    case ADoRange doRng -> {
+                        resolveConstructors(doRng.a, visitedSet);
+                        resolveConstructors(doRng.c, visitedSet);
+                    }
+                    case ADoRangeFrom doRng -> {
+                        resolveConstructors(doRng.a, visitedSet);
+                    }
+                    case ADoRangeTo doRng -> {
+                        resolveConstructors(doRng.a, visitedSet);
+                    }
+                    case AApplicator app -> {
+                        resolveConstructors(app.a, visitedSet);
+                        resolveConstructors(app.c, visitedSet);
+                    }
+                    case AStrictApplicator sapp -> {
+                        resolveConstructors(sapp.a, visitedSet);
+                        resolveConstructors(sapp.c, visitedSet);
+                    }
+                    case AResolver res -> {
+                        resolveConstructors(res.a, visitedSet);
+                        resolveConstructors(res.d, visitedSet);
+                    }
+                    case ACapture cap -> {
+                        resolveConstructors(cap.a, visitedSet);
+                        resolveConstructors(cap.d, visitedSet);
+                    }
+                    case AMatch match -> {
+                        resolveConstructors(match.a, visitedSet);
+                        for (final Consumer handler : match.handlers) {
+                            resolveConstructors(handler, visitedSet);
+                        }
+                    }
+                    case AConstructorResolver res -> {
+                        resolveConstructors(res.a, visitedSet);
+                        for (final Consumer argument : res.arguments) {
+                            resolveConstructors(argument, visitedSet);
+                        }
+                        if (res.a.chase() instanceof AEndOfList) {
+                            final var ctr = new AConstructor(res.name, res.arguments.length);
+                            for (int i = 0; i < res.arguments.length; i++) {
+                                ctr.arguments[i].setProducer(res.arguments[i].producer());
+                            }
+                            res.b.forward(ctr.a);
+                            proceed = true;
+                        }
+                    }
+                    case ADuplicator dup -> {
+                        resolveConstructors(dup.a, visitedSet);
+                    }
+                    case ALambda lam -> {
+                        resolveConstructors(lam.c, visitedSet);
+                    }
+                    case AConstructor ctr -> {
+                        for (final Consumer argument : ctr.arguments) {
+                            resolveConstructors(argument, visitedSet);
                         }
                     }
                     case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->

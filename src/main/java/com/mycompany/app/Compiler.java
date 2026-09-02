@@ -61,13 +61,6 @@ public final class Compiler {
                 final var result = new Consumer(null);
                 final var fvSet = compile(builder, t, result);
                 final var usages = fvSet.remove(x);
-                if (fvSet.isEmpty()) {
-                    final var agent = builder.mkLambda();
-                    output.setProducer(agent.a());
-                    bind(builder, agent.b(), usages == null ? List.of() : usages);
-                    agent.c().setProducer(result.producer());
-                    yield fvSet;
-                }
                 final var agent = builder.mkResolver();
                 // This line must goe before setting `agent.d()`'s producer, because it guarantees
                 // `result`'s producer to be set.
@@ -113,14 +106,6 @@ public final class Compiler {
                 final var fvSet = new TermInterface();
                 for (int i = 0; i < arity; i++) {
                     merge(fvSet, compile(builder, ts.get(i), results[i]));
-                }
-                if (fvSet.isEmpty()) {
-                    final var agent = builder.mkConstructor(name, arity);
-                    output.setProducer(agent.a());
-                    for (int i = 0; i < arity; i++) {
-                        agent.argument(i).setProducer(results[i].producer());
-                    }
-                    yield fvSet;
                 }
                 final var agent = builder.mkConstructorResolver(name, arity);
                 // See the same line in the lambda case for the ordering constraint.
