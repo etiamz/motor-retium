@@ -607,7 +607,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final Agent left = op2.a.chase(), right = op2.c.chase();
             switch (left) {
-                case ANull mynull -> {
+                case ANull myNull -> {
                     switch (right) {
                         case ANull _ -> {
                             switch (op2.op) {
@@ -632,7 +632,7 @@ public final class Motor {
                             op2xx.c.setProducer(sup.c.producer());
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(mynull.a);
+                            op2x.a.setProducer(myNull.a);
                             op2xx.a.setProducer(new ANull().a);
                         }
                         default -> {
@@ -2007,8 +2007,8 @@ public final class Motor {
                     cap.c.forward(lam.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case ANull mynull -> {
-                    cap.c.forward(mynull.a);
+                case ANull myNull -> {
+                    cap.c.forward(myNull.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case ATrue b -> {
@@ -2335,7 +2335,7 @@ public final class Motor {
                     yield new Commute(lamx.a, lamxx.a);
                 }
                 case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
-                case ANull mynull -> new Commute(mynull.a, new ANull().a);
+                case ANull myNull -> new Commute(myNull.a, new ANull().a);
                 case ATrue b -> new Commute(b.a, new ATrue().a);
                 case AFalse b -> new Commute(b.a, new AFalse().a);
                 case AInteger i -> new Commute(i.a, new AInteger(i.data).a);

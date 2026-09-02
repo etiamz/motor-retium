@@ -1124,37 +1124,37 @@ public final class Template {
 
         private static List<Consumer> consumers(final Agent agent) {
             return switch (agent) {
-                case ARoot a -> List.of(a.a);
-                case AStrictOp1 a -> List.of(a.a);
-                case AStrictOp2 a -> List.of(a.a, a.c);
-                case AIfThenElse a -> List.of(a.a, a.c, a.d);
-                case AExpansion a -> List.copyOf(a.imports.values());
-                case ANot a -> List.of(a.a);
-                case AAnd a -> List.of(a.a, a.c);
-                case AOr a -> List.of(a.a, a.c);
-                case ADoRange a -> List.of(a.a, a.c);
-                case ADoRangeFrom a -> List.of(a.a);
-                case ADoRangeTo a -> List.of(a.a);
-                case AApplicator a -> List.of(a.a, a.c);
-                case AStrictApplicator a -> List.of(a.a, a.c);
-                case AResolver a -> List.of(a.a, a.d);
-                case ACapture a -> List.of(a.a, a.d);
-                case AMatch a -> {
+                case ARoot root -> List.of(root.a);
+                case AStrictOp1 op1 -> List.of(op1.a);
+                case AStrictOp2 op2 -> List.of(op2.a, op2.c);
+                case AIfThenElse ite -> List.of(ite.a, ite.c, ite.d);
+                case AExpansion exp -> List.copyOf(exp.imports.values());
+                case ANot not -> List.of(not.a);
+                case AAnd and -> List.of(and.a, and.c);
+                case AOr or -> List.of(or.a, or.c);
+                case ADoRange doRng -> List.of(doRng.a, doRng.c);
+                case ADoRangeFrom doRng -> List.of(doRng.a);
+                case ADoRangeTo doRng -> List.of(doRng.a);
+                case AApplicator app -> List.of(app.a, app.c);
+                case AStrictApplicator sapp -> List.of(sapp.a, sapp.c);
+                case AResolver res -> List.of(res.a, res.d);
+                case ACapture cap -> List.of(cap.a, cap.d);
+                case AMatch match -> {
                     final var result = new ArrayList<Consumer>();
-                    result.add(a.a);
-                    result.addAll(List.of(a.handlers));
+                    result.add(match.a);
+                    result.addAll(List.of(match.handlers));
                     yield result;
                 }
-                case AConstructorResolver a -> {
+                case AConstructorResolver res -> {
                     final var result = new ArrayList<Consumer>();
-                    result.add(a.a);
-                    result.addAll(List.of(a.arguments));
+                    result.add(res.a);
+                    result.addAll(List.of(res.arguments));
                     yield result;
                 }
-                case ASelect a -> List.of(a.a);
-                case ADuplicator a -> List.of(a.a);
-                case ALambda a -> List.of(a.c);
-                case AConstructor a -> List.of(a.arguments);
+                case ASelect sel -> List.of(sel.a);
+                case ADuplicator dup -> List.of(dup.a);
+                case ALambda lam -> List.of(lam.c);
+                case AConstructor ctr -> List.of(ctr.arguments);
                 case AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                     List.of();
             };
@@ -1163,72 +1163,73 @@ public final class Template {
         private static List<Producer> producers(final Agent agent) {
             return switch (agent) {
                 case ARoot _ -> List.of();
-                case AReference a -> List.of(a.a);
-                case AStrictOp1 a -> List.of(a.b);
-                case AStrictOp2 a -> List.of(a.b);
-                case AIfThenElse a -> List.of(a.b);
-                case AExpansion a -> List.of(a.a);
-                case ANot a -> List.of(a.b);
-                case AAnd a -> List.of(a.b);
-                case AOr a -> List.of(a.b);
-                case ADoRange a -> List.of(a.b);
-                case ADoRangeFrom a -> List.of(a.b);
-                case ADoRangeTo a -> List.of(a.b);
-                case AApplicator a -> List.of(a.b);
-                case AStrictApplicator a -> List.of(a.b);
-                case AResolver a -> List.of(a.b, a.c);
-                case ACapture a -> List.of(a.b, a.c);
-                case AMatch a -> List.of(a.b);
-                case AConstructorResolver a -> List.of(a.b);
-                case ASelect a -> List.of(a.b);
-                case ADuplicator a -> List.of(a.b, a.c);
-                case ALambda a -> List.of(a.a, a.b);
-                case AEndOfList a -> List.of(a.a);
-                case ANull a -> List.of(a.a);
-                case ATrue a -> List.of(a.a);
-                case AFalse a -> List.of(a.a);
-                case AInteger a -> List.of(a.a);
-                case ABigInteger a -> List.of(a.a);
-                case AString a -> List.of(a.a);
-                case ARangeFull a -> List.of(a.a);
-                case AIdentity a -> List.of(a.a);
-                case AConstructor a -> List.of(a.a);
+                case AReference ref -> List.of(ref.a);
+                case AStrictOp1 op1 -> List.of(op1.b);
+                case AStrictOp2 op2 -> List.of(op2.b);
+                case AIfThenElse ite -> List.of(ite.b);
+                case AExpansion exp -> List.of(exp.a);
+                case ANot not -> List.of(not.b);
+                case AAnd and -> List.of(and.b);
+                case AOr or -> List.of(or.b);
+                case ADoRange doRng -> List.of(doRng.b);
+                case ADoRangeFrom doRng -> List.of(doRng.b);
+                case ADoRangeTo doRng -> List.of(doRng.b);
+                case AApplicator app -> List.of(app.b);
+                case AStrictApplicator sapp -> List.of(sapp.b);
+                case AResolver res -> List.of(res.b, res.c);
+                case ACapture cap -> List.of(cap.b, cap.c);
+                case AMatch match -> List.of(match.b);
+                case AConstructorResolver res -> List.of(res.b);
+                case ASelect sel -> List.of(sel.b);
+                case ADuplicator dup -> List.of(dup.b, dup.c);
+                case ALambda lam -> List.of(lam.a, lam.b);
+                case AEndOfList end -> List.of(end.a);
+                case ANull myNull -> List.of(myNull.a);
+                case ATrue b -> List.of(b.a);
+                case AFalse b -> List.of(b.a);
+                case AInteger i -> List.of(i.a);
+                case ABigInteger i -> List.of(i.a);
+                case AString s -> List.of(s.a);
+                case ARangeFull rng -> List.of(rng.a);
+                case AIdentity id -> List.of(id.a);
+                case AConstructor ctr -> List.of(ctr.a);
             };
         }
 
         private static Payload payload(final Agent agent) {
             return switch (agent) {
                 case ARoot _ -> new PRoot();
-                case AReference a -> new PReference(a.name);
-                case AStrictOp1 a -> new PStrictOp1(a.op);
-                case AStrictOp2 a -> new PStrictOp2(a.op);
+                case AReference ref -> new PReference(ref.name);
+                case AStrictOp1 op1 -> new PStrictOp1(op1.op);
+                case AStrictOp2 op2 -> new PStrictOp2(op2.op);
                 case AIfThenElse _ -> new PIfThenElse();
-                case AExpansion a -> new PExpansion(a.inner.build());
+                case AExpansion exp -> new PExpansion(exp.inner.build());
                 case ANot _ -> new PNot();
                 case AAnd _ -> new PAnd();
                 case AOr _ -> new POr();
-                case ADoRange a -> new PDoRange(a.inclusive);
+                case ADoRange doRng -> new PDoRange(doRng.inclusive);
                 case ADoRangeFrom _ -> new PDoRangeFrom();
-                case ADoRangeTo a -> new PDoRangeTo(a.inclusive);
+                case ADoRangeTo doRng -> new PDoRangeTo(doRng.inclusive);
                 case AApplicator _ -> new PApplicator();
                 case AStrictApplicator _ -> new PStrictApplicator();
                 case AResolver _ -> new PResolver();
                 case ACapture _ -> new PCapture();
-                case AMatch a -> new PMatch(a.names);
-                case AConstructorResolver a -> new PConstructorResolver(a.name, a.arguments.length);
-                case ASelect a -> new PSelect(a.name, a.index);
+                case AMatch match -> new PMatch(match.names);
+                case AConstructorResolver res ->
+                    new PConstructorResolver(res.name, res.arguments.length);
+                case ASelect sel -> new PSelect(sel.name, sel.index);
                 case ADuplicator _ -> new PDuplicator();
                 case ALambda _ -> new PLambda();
                 case AEndOfList _ -> new PEndOfList();
                 case ANull _ -> new PNull();
                 case ATrue _ -> new PTrue();
                 case AFalse _ -> new PFalse();
-                case AInteger a -> new PInteger(a.value);
-                case ABigInteger a -> new PBigInteger(a.value);
-                case AString a -> new PString(a.value);
+                case AInteger i -> new PInteger(i.value);
+                case ABigInteger i -> new PBigInteger(i.value);
+                case AString s -> new PString(s.value);
                 case ARangeFull _ -> new PRangeFull();
                 case AIdentity _ -> new PIdentity();
-                case AConstructor a -> new PConstructor(a.name, a.arguments.length);
+                case AConstructor ctr -> new PConstructor(ctr.name, ctr.arguments.length);
             };
         }
 
