@@ -1,0 +1,139 @@
+-- Full sharing, low parallelisme; ported from `spectral/lcss/Main.hs`.
+
+#ifndef A
+#define A 1i64
+#endif
+
+#ifndef B
+#define B 2i64
+#endif
+
+#ifndef C
+#define C 1000i64
+#endif
+
+#ifndef D
+#define D 500i64
+#endif
+
+#ifndef E
+#define E 501i64
+#endif
+
+#ifndef F
+#define F 1500i64
+#endif
+
+Nil : 0;
+Cons : 2;
+Pair : 2;
+
+main =
+    renderList (lcss (enumFromThenTo A B C) (enumFromThenTo D E F));
+
+lcss xs ys =
+    algc (length xs) (length ys) xs ys Nil;
+
+algc m n xs ys =
+    case ys of {
+        Nil -> id;
+        Cons _ _ ->
+            let Cons x rest = xs in
+            case rest of {
+                Nil -> if elem x ys then Cons x else id;
+                Cons _ _ ->
+                    let m2 = m / 2i64 in
+                    let xs1 = take m2 xs in
+                    let xs2 = drop m2 xs in
+                    let l1 = algb xs1 ys in
+                    let l2 = reverse (algb (reverse xs2) (reverse ys)) in
+                    let k = findk 0i64 0i64 (-1i64) (zip l1 l2) in
+                    algc m2 k xs1 (take k ys) . algc (m - m2) (n - k) xs2 (drop k ys)
+            }
+    };
+
+findk k km m xys =
+    case xys of {
+        Nil -> km;
+        Cons xy xys -> case xy of {
+            Pair x y | x + y >= m -> findk (k + 1i64) k (x + y) xys;
+            Pair _ _ -> findk (k + 1i64) km m xys
+        }
+    };
+
+algb xs ys =
+    Cons 0i64 (algb1 xs (map (\y -> Pair y 0i64) ys));
+
+algb1 xs ys' =
+    case xs of {
+        Nil -> map snd ys';
+        Cons x xs -> algb1 xs (algb2 x 0i64 0i64 ys')
+    };
+
+algb2 x k0j1 k1j1 yks =
+    case yks of {
+        Nil -> Nil;
+        Cons yk ys ->
+            let Pair y k0j = yk in
+            let kjcurr = if x == y then k0j1 + 1i64 else $max k1j1 k0j in
+            Cons (Pair y kjcurr) (algb2 x k0j kjcurr ys)
+    };
+
+renderList xs =
+    case xs of {
+        Nil -> "";
+        Cons x xs -> $show x ++ " " ++ renderList xs
+    };
+
+map f xs =
+    case xs of { Nil -> Nil; Cons x xs -> Cons (f x) (map f xs) };
+
+elem x ys =
+    case ys of { Nil -> false; Cons y ys -> x == y || elem x ys };
+
+reverse xs =
+    reverseAux Nil xs;
+
+reverseAux acc xs =
+    case xs of { Nil -> acc; Cons x xs -> reverseAux (Cons x acc) xs };
+
+zip xs ys =
+    case xs of {
+        Nil -> Nil;
+        Cons x xs -> case ys of {
+            Nil -> Nil;
+            Cons y ys -> Cons (Pair x y) (zip xs ys)
+        }
+    };
+
+take n xs =
+    if n <= 0i64
+    then Nil
+    else case xs of {
+        Nil -> Nil;
+        Cons x xs -> Cons x (take (n - 1i64) xs)
+    };
+
+drop n xs =
+    if n <= 0i64
+    then xs
+    else case xs of {
+        Nil -> Nil;
+        Cons _ xs -> drop (n - 1i64) xs
+    };
+
+length xs =
+    case xs of { Nil -> 0i64; Cons _ xs -> 1i64 + length xs };
+
+enumFromThenTo n n' m =
+    let step = n' - n in
+    if (step < 0i64 && n < m) || (step >= 0i64 && n > m)
+    then Nil
+    else Cons n (enumFromThenTo n' (n' + step) m);
+
+snd p =
+    let Pair _ y = p in
+    y;
+
+id x =
+    x;
