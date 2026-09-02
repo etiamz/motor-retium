@@ -97,6 +97,8 @@ public final class OperatorSaturator {
                 new Term.Match(saturate(s), cases.stream().map(this::saturateCase).toList());
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(saturate(t1), saturate(t2), saturate(t3));
+            case Term.Select(var name, var index, var t) ->
+                new Term.Select(name, index, saturate(t));
             case Term.Not(var t) -> new Term.Not(saturate(t));
             case Term.And(var t1, var t2) -> new Term.And(saturate(t1), saturate(t2));
             case Term.Or(var t1, var t2) -> new Term.Or(saturate(t1), saturate(t2));

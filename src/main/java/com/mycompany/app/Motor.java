@@ -286,6 +286,10 @@ public final class Motor {
                 final var rator = (AConstructorResolver) agent;
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
+            case K_SELECT -> {
+                final var rator = (ASelect) agent;
+                yield simplex(rator.a, rator::interact, p, thunk, heart);
+            }
             case K_DUPLICATOR -> {
                 yield sync((ADuplicator) agent, p, thunk, heart);
             }
@@ -417,18 +421,18 @@ public final class Motor {
     K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_EXPANSION = 4,
             K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_RANGE = 8, K_DO_RANGE_FROM = 9, K_DO_RANGE_TO = 10,
             K_APPLICATOR = 11, K_STRICT_APPLICATOR = 12, K_RESOLVER = 13, K_CAPTURE = 14,
-            K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_DUPLICATOR = 17,
+            K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_SELECT = 17, K_DUPLICATOR = 18,
             // Data.
-            K_LAMBDA = 18, K_END_OF_LIST = 19, K_NULL = 20, K_TRUE = 21, K_FALSE = 22,
-            K_INTEGER = 23, K_BIG_INTEGER = 24, K_STRING = 25, K_RANGE = 26, K_RANGE_FROM = 27,
-            K_RANGE_TO = 28, K_RANGE_FULL = 29, K_IDENTITY = 30, K_CONSTRUCTOR = 31,
-            K_SUPERPOSITION = 32;
+            K_LAMBDA = 19, K_END_OF_LIST = 20, K_NULL = 21, K_TRUE = 22, K_FALSE = 23,
+            K_INTEGER = 24, K_BIG_INTEGER = 25, K_STRING = 26, K_RANGE = 27, K_RANGE_FROM = 28,
+            K_RANGE_TO = 29, K_RANGE_FULL = 30, K_IDENTITY = 31, K_CONSTRUCTOR = 32,
+            K_SUPERPOSITION = 33;
 
     public abstract static sealed class Agent permits
             // Operators.
             AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoRange,
             ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch,
-            AConstructorResolver, ADuplicator,
+            AConstructorResolver, ASelect, ADuplicator,
             // Data.
             ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange,
             ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
@@ -2217,6 +2221,60 @@ public final class Motor {
         }
     }
 
+    // For a constructor `name`, forwards the output port to its field at position `index`, checking
+    // that the constructor is named as expected.
+    public static final class ASelect extends Agent {
+        public final String name; // interned
+        public final int index;
+        public final Consumer a;
+        public final Producer b;
+
+        public ASelect(final String name, final int index) {
+            super(K_SELECT);
+            assert name == name.intern() : String.format("Selector name not interned: `%s`", name);
+            this.name = name;
+            this.index = index;
+            this.a = new Consumer(null);
+            this.b = new Producer(this);
+        }
+
+        private void interact() {
+            final ASelect sel = this;
+            final Agent data = sel.a.chase();
+            switch (data) {
+                case AConstructor ctr -> {
+                    if (ctr.name != sel.name) { // both strings are interned
+                        panic("No matching case for the constructor `%s`", ctr.name);
+                    }
+                    sel.b.forward(ctr.arguments[sel.index].producer());
+                }
+                case ASuperposition sup -> {
+                    final var selx = new ASelect(sel.name, sel.index);
+                    final var selxx = new ASelect(sel.name, sel.index);
+                    final var supx = sup; // reuse
+                    sel.b.forward(supx.a);
+                    selx.a.setProducer(sup.b.producer());
+                    selxx.a.setProducer(sup.c.producer());
+                    supx.b.setProducer(selx.b);
+                    supx.c.setProducer(selxx.b);
+                }
+                default -> {
+                    if (isMachineData(data)) {
+                        crash("Operand not welcome: %s", describe(data));
+                    } else if (data instanceof ANull) {
+                        panic("Null operand: %s", describe(sel));
+                    } else if (isUserData(data)) {
+                        typeError(describe(sel), data);
+                    } else if (isOperator(data)) {
+                        crash("Operand unresolved: %s", describe(data));
+                    } else {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+    }
+
     public static final class ADuplicator extends Agent {
         private final AtomicReference<CompletableFuture<Duplicand>> sync = new AtomicReference<>();
         public final Label label;
@@ -2557,7 +2615,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2568,7 +2626,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2644,6 +2702,8 @@ public final class Motor {
             case AMatch _ -> "a match expression";
             case AConstructorResolver res ->
                 "a variable-list constructor resolver for `" + res.name + "`";
+            case ASelect sel ->
+                String.format("a field selector for `%s` at %d", sel.name, sel.index);
             case ADuplicator _ -> "a duplicator";
             case ALambda _ -> "a lambda function";
             case AEndOfList _ -> "an end-of-variables marker";

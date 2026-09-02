@@ -57,6 +57,9 @@ public sealed interface Term {
     public record Case(String name, List<String> xs, List<Term> guards, Term t) {
     }
 
+    public record Select(String name, int index, Term t) implements Term {
+    }
+
     public record Not(Term t) implements Term {
     }
 
@@ -136,6 +139,7 @@ public sealed interface Term {
                 }
                 yield fvSet;
             }
+            case Select(var _, var _, var t) -> t.freeVariables();
             case Not(var t) -> t.freeVariables();
             case And(var t1, var t2) -> union(t1, t2);
             case Or(var t1, var t2) -> union(t1, t2);
@@ -173,6 +177,7 @@ public sealed interface Term {
                 }
                 yield refs;
             }
+            case Select(var _, var _, var t) -> t.references();
             case Not(var t) -> t.references();
             case And(var t1, var t2) -> unionReferences(t1, t2);
             case Or(var t1, var t2) -> unionReferences(t1, t2);

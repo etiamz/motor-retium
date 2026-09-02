@@ -52,6 +52,8 @@ public final class GuardEliminator {
             }
             case Term.IfThenElse(var t1, var t2, var t3) ->
                 new Term.IfThenElse(eliminate(t1), eliminate(t2), eliminate(t3));
+            case Term.Select(var name, var index, var t) ->
+                new Term.Select(name, index, eliminate(t));
             case Term.Not(var t) -> new Term.Not(eliminate(t));
             case Term.And(var t1, var t2) -> new Term.And(eliminate(t1), eliminate(t2));
             case Term.Or(var t1, var t2) -> new Term.Or(eliminate(t1), eliminate(t2));

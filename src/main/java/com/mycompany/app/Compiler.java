@@ -147,6 +147,11 @@ public final class Compiler {
                 merge(fvSet, expand(builder, t3, agent.c()));
                 yield fvSet;
             }
+            case Term.Select(var name, var index, var t) -> {
+                final var agent = builder.mkSelect(name, index);
+                output.setProducer(agent.b());
+                yield compile(builder, t, agent.a());
+            }
             case Term.Not(var t) -> {
                 final var agent = builder.mkNot();
                 output.setProducer(agent.b());

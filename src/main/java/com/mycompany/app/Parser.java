@@ -426,12 +426,6 @@ public final class Parser {
             return new Term.Let(x, t1, t2);
         }
 
-        // `let C x1 ... xN = E in M` desugars to `let v = E in let x1 = case v of { C x1 ... xN ->
-        // x1 } in ... let xN = case v of { C x1 ... xN -> xN } in M`, where `v` is fresh with
-        // respect to `x1`-`xN` & the free variables of `M`.
-        // Unlike a more direct `case E of { C x1 ... xN -> M }` desugaring, our desugaring mirrors
-        // Haskell in lazinesse: `E` is not forced unlesse one of the pattern variables `x1`-`xN` is
-        // forced somewhere in `M`.
         @Override
         public Term visitCaseLetTerm(final MotorParser.CaseLetTermContext ctx) {
             final var name = ctx.CONSTRUCTOR().getText();
@@ -456,11 +450,11 @@ public final class Parser {
             banlist.addAll(xs);
             final var v = Term.freshen("v", banlist);
             Term result = continuation;
-            for (final var x : xs.reversed()) {
-                final var selector = new Term.Match(
-                        new Term.Variable(v),
-                        List.of(new Term.Case(name, xs, List.of(), new Term.Variable(x))));
-                result = new Term.Let(x, selector, result);
+            for (int i = xs.size() - 1; i >= 0; i--) {
+                result = new Term.Let(
+                        xs.get(i),
+                        new Term.Select(name, i, new Term.Variable(v)),
+                        result);
             }
             return new Term.Let(v, s, result);
         }

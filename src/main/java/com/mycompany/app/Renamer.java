@@ -48,6 +48,7 @@ public final class Renamer {
                 new IfThenElse(rename(t1), rename(t2), rename(t3));
             case Match(var s, var cases) ->
                 new Match(rename(s), cases.stream().map(this::renameCase).toList());
+            case Select(var name, var index, var t) -> new Select(name, index, rename(t));
             case Not(var t) -> new Not(rename(t));
             case And(var t1, var t2) -> new And(rename(t1), rename(t2));
             case Or(var t1, var t2) -> new Or(rename(t1), rename(t2));

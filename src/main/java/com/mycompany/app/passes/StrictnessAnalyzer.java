@@ -121,6 +121,7 @@ public final class StrictnessAnalyzer {
                     result.addAll(common);
                     yield result;
                 }
+                case Term.Select(var _, var _, var t) -> demand(t);
                 case Term.Not(var t) -> demand(t);
                 case Term.And(var t1, var _) -> demand(t1);
                 case Term.Or(var t1, var _) -> demand(t1);
@@ -191,6 +192,8 @@ public final class StrictnessAnalyzer {
                     new Term.Match(annotate(s), cases.stream().map(this::annotateCase).toList());
                 case Term.IfThenElse(var t1, var t2, var t3) ->
                     new Term.IfThenElse(annotate(t1), annotate(t2), annotate(t3));
+                case Term.Select(var name, var index, var t) ->
+                    new Term.Select(name, index, annotate(t));
                 case Term.Not(var t) -> new Term.Not(annotate(t));
                 case Term.And(var t1, var t2) -> new Term.And(annotate(t1), annotate(t2));
                 case Term.Or(var t1, var t2) -> new Term.Or(annotate(t1), annotate(t2));
