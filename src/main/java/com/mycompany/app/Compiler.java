@@ -22,20 +22,22 @@ public final class Compiler {
     }
 
     public static Compilation compile(final Program program) {
-        final var main = compile(program.main());
+        final var main = compile(program.main(), "main");
         final var book = new HashMap<String, Template>();
-        for (final var entry : program.definitions().entrySet()) {
-            book.put(entry.getKey(), compile(entry.getValue()));
-        }
+        program.definitions().forEach((name, t) -> book.put(name, compile(t, name)));
         return new Compilation(main, book);
     }
 
-    private static Template compile(final Term term) {
+    private static Template compile(final Term term, final String where) {
         final var builder = new Template.Builder();
         final var root = builder.mkRoot().a();
         final var fvSet = compile(builder, term, root);
         if (!fvSet.isEmpty()) {
-            throw new IllegalStateException("Cannot resolve these variable(s): " + fvSet.keySet());
+            throw new IllegalStateException(
+                    String.format(
+                            "Cannot resolve these variable(s) in `%s`: %s",
+                            where,
+                            fvSet.keySet()));
         }
         return builder.build();
     }
