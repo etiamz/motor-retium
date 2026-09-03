@@ -39,7 +39,7 @@ public final class Template {
     private record PStrictOp2(StrictOp2 op) implements Payload {
     }
 
-    private record PIfThenElse() implements Payload {
+    private record PIfThenElse(int nshared) implements Payload {
     }
 
     private record PExpansion(Template template) implements Payload {
@@ -75,7 +75,7 @@ public final class Template {
     private record PCapture() implements Payload {
     }
 
-    private record PMatch(String[] names /* interned */) implements Payload {
+    private record PMatch(String[] names /* interned */, int nshared) implements Payload {
     }
 
     private record PConstructorResolver(String name /* interned */, int arity) implements Payload {
@@ -167,12 +167,20 @@ public final class Template {
                     producers[j++] = agent.b;
                     consumers[i++] = agent.c;
                 }
-                case PIfThenElse _ -> {
-                    final var agent = new Motor.AIfThenElse();
+                case PIfThenElse p -> {
+                    final var agent = new Motor.AIfThenElse(p.nshared);
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                     consumers[i++] = agent.c;
                     consumers[i++] = agent.d;
+                    for (final var port : agent.values) {
+                        consumers[i++] = port;
+                    }
+                    for (final var row : agent.binders) {
+                        for (final var port : row) {
+                            producers[j++] = port;
+                        }
+                    }
                 }
                 case PExpansion p -> {
                     final var agent = new Motor.AExpansion(p.template);
@@ -241,11 +249,19 @@ public final class Template {
                     consumers[i++] = agent.d;
                 }
                 case PMatch p -> {
-                    final var agent = new Motor.AMatch(p.names);
+                    final var agent = new Motor.AMatch(p.names, p.nshared);
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                     for (final var port : agent.handlers) {
                         consumers[i++] = port;
+                    }
+                    for (final var port : agent.values) {
+                        consumers[i++] = port;
+                    }
+                    for (final var row : agent.binders) {
+                        for (final var port : row) {
+                            producers[j++] = port;
+                        }
                     }
                 }
                 case PConstructorResolver p -> {
@@ -353,6 +369,25 @@ public final class Template {
         public sealed interface Callable permits ALambda, AIdentity {
         }
 
+        // if-then-else & case-of. Our rationale here is to elide duplicators for same-variable
+        // occurrences in mutually exclusive branches; in order to accomplish it, in each
+        // `Branching` agent we keep an array of consumers for the shared variables & a per-branch
+        // array of producers, which behave like binders. When a `Branching` agent fires, it
+        // forwards the producers of the corresponding branch to where the consumers point; on a
+        // superposition, the shared variables are duplicated & the binders superposed. For the
+        // exact wiring semantics, see `Motor.java`.
+        // One nasty consequence of _not_ performing this optimization is that some programs change
+        // their asymptotic complexity. For instance, `append xs ys` on cons-lists would take
+        // _O(|xs| * |ys|)_ time instead of _O(|xs|)_, because of the `ys` variable that occurs in
+        // both branches of the case-of.
+        public sealed interface Branching permits AIfThenElse, AMatch {
+            // The consumer pointing to the value shared among the branches.
+            Consumer value(int slot);
+
+            // The producer of the value requested by this `branch`.
+            Producer binder(int slot, int branch);
+        }
+
         public static final class ARoot implements Agent {
             private final Consumer a;
 
@@ -425,17 +460,26 @@ public final class Template {
             }
         }
 
-        public static final class AIfThenElse implements Agent {
+        public static final class AIfThenElse implements Agent, Branching {
             private final Consumer a;
             private final Producer b;
             private final Consumer c;
             private final Consumer d;
+            private final Consumer[] values;
+            private final Producer[][] binders;
 
-            private AIfThenElse() {
+            private AIfThenElse(final int nshared) {
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
                 this.c = new Consumer(null);
                 this.d = new Consumer(null);
+                this.values = new Consumer[nshared];
+                this.binders = new Producer[nshared][2];
+                for (int i = 0; i < nshared; i++) {
+                    this.values[i] = new Consumer(null);
+                    this.binders[i][0] = new Producer(this);
+                    this.binders[i][1] = new Producer(this);
+                }
             }
 
             public Consumer a() {
@@ -452,6 +496,16 @@ public final class Template {
 
             public Consumer d() {
                 return d;
+            }
+
+            @Override
+            public Consumer value(final int slot) {
+                return values[slot];
+            }
+
+            @Override
+            public Producer binder(final int slot, final int branch) {
+                return binders[slot][branch];
             }
         }
 
@@ -718,19 +772,29 @@ public final class Template {
             }
         }
 
-        public static final class AMatch implements Agent {
+        public static final class AMatch implements Agent, Branching {
             private final String[] names;
             private final Consumer a;
             private final Producer b;
             private final Consumer[] handlers;
+            private final Consumer[] values;
+            private final Producer[][] binders;
 
-            private AMatch(final String[] names) {
+            private AMatch(final String[] names, final int nshared) {
                 this.names = Arrays.stream(names).map(String::intern).toArray(String[]::new);
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
                 this.handlers = new Consumer[names.length];
                 for (int i = 0; i < names.length; i++) {
                     this.handlers[i] = new Consumer(null);
+                }
+                this.values = new Consumer[nshared];
+                this.binders = new Producer[nshared][names.length];
+                for (int i = 0; i < nshared; i++) {
+                    this.values[i] = new Consumer(null);
+                    for (int j = 0; j < names.length; j++) {
+                        this.binders[i][j] = new Producer(this);
+                    }
                 }
             }
 
@@ -744,6 +808,16 @@ public final class Template {
 
             public Consumer handler(final int i) {
                 return handlers[i];
+            }
+
+            @Override
+            public Consumer value(final int slot) {
+                return values[slot];
+            }
+
+            @Override
+            public Producer binder(final int slot, final int branch) {
+                return binders[slot][branch];
             }
         }
 
@@ -1010,8 +1084,8 @@ public final class Template {
             return new AStrictOp2(op);
         }
 
-        public AIfThenElse mkIfThenElse() {
-            return new AIfThenElse();
+        public AIfThenElse mkIfThenElse(final int nshared) {
+            return new AIfThenElse(nshared);
         }
 
         public AExpansion mkExpansion(final Builder inner) {
@@ -1058,8 +1132,8 @@ public final class Template {
             return new ACapture();
         }
 
-        public AMatch mkMatch(final String[] names) {
-            return new AMatch(names);
+        public AMatch mkMatch(final String[] names, final int nshared) {
+            return new AMatch(names, nshared);
         }
 
         public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
@@ -1127,7 +1201,14 @@ public final class Template {
                 case ARoot root -> List.of(root.a);
                 case AStrictOp1 op1 -> List.of(op1.a);
                 case AStrictOp2 op2 -> List.of(op2.a, op2.c);
-                case AIfThenElse ite -> List.of(ite.a, ite.c, ite.d);
+                case AIfThenElse ite -> {
+                    final var result = new ArrayList<Consumer>();
+                    result.add(ite.a);
+                    result.add(ite.c);
+                    result.add(ite.d);
+                    result.addAll(List.of(ite.values));
+                    yield result;
+                }
                 case AExpansion exp -> List.copyOf(exp.imports.values());
                 case ANot not -> List.of(not.a);
                 case AAnd and -> List.of(and.a, and.c);
@@ -1143,6 +1224,7 @@ public final class Template {
                     final var result = new ArrayList<Consumer>();
                     result.add(match.a);
                     result.addAll(List.of(match.handlers));
+                    result.addAll(List.of(match.values));
                     yield result;
                 }
                 case AConstructorResolver res -> {
@@ -1166,7 +1248,14 @@ public final class Template {
                 case AReference ref -> List.of(ref.a);
                 case AStrictOp1 op1 -> List.of(op1.b);
                 case AStrictOp2 op2 -> List.of(op2.b);
-                case AIfThenElse ite -> List.of(ite.b);
+                case AIfThenElse ite -> {
+                    final var result = new ArrayList<Producer>();
+                    result.add(ite.b);
+                    for (final var row : ite.binders) {
+                        result.addAll(List.of(row));
+                    }
+                    yield result;
+                }
                 case AExpansion exp -> List.of(exp.a);
                 case ANot not -> List.of(not.b);
                 case AAnd and -> List.of(and.b);
@@ -1178,7 +1267,14 @@ public final class Template {
                 case AStrictApplicator sapp -> List.of(sapp.b);
                 case AResolver res -> List.of(res.b, res.c);
                 case ACapture cap -> List.of(cap.b, cap.c);
-                case AMatch match -> List.of(match.b);
+                case AMatch match -> {
+                    final var result = new ArrayList<Producer>();
+                    result.add(match.b);
+                    for (final var row : match.binders) {
+                        result.addAll(List.of(row));
+                    }
+                    yield result;
+                }
                 case AConstructorResolver res -> List.of(res.b);
                 case ASelect sel -> List.of(sel.b);
                 case ADuplicator dup -> List.of(dup.b, dup.c);
@@ -1202,7 +1298,7 @@ public final class Template {
                 case AReference ref -> new PReference(ref.name);
                 case AStrictOp1 op1 -> new PStrictOp1(op1.op);
                 case AStrictOp2 op2 -> new PStrictOp2(op2.op);
-                case AIfThenElse _ -> new PIfThenElse();
+                case AIfThenElse ite -> new PIfThenElse(ite.values.length);
                 case AExpansion exp -> new PExpansion(exp.inner.build());
                 case ANot _ -> new PNot();
                 case AAnd _ -> new PAnd();
@@ -1214,7 +1310,7 @@ public final class Template {
                 case AStrictApplicator _ -> new PStrictApplicator();
                 case AResolver _ -> new PResolver();
                 case ACapture _ -> new PCapture();
-                case AMatch match -> new PMatch(match.names);
+                case AMatch match -> new PMatch(match.names, match.values.length);
                 case AConstructorResolver res ->
                     new PConstructorResolver(res.name, res.arguments.length);
                 case ASelect sel -> new PSelect(sel.name, sel.index);
@@ -1297,6 +1393,9 @@ public final class Template {
                         collapseCaptures(ite.a, visitedSet);
                         collapseCaptures(ite.c, visitedSet);
                         collapseCaptures(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            collapseCaptures(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1351,6 +1450,9 @@ public final class Template {
                         for (final Consumer handler : match.handlers) {
                             collapseCaptures(handler, visitedSet);
                         }
+                        for (final Consumer value : match.values) {
+                            collapseCaptures(value, visitedSet);
+                        }
                     }
                     case AConstructorResolver res -> {
                         collapseCaptures(res.a, visitedSet);
@@ -1396,6 +1498,9 @@ public final class Template {
                         resolveCaptures(ite.a, visitedSet);
                         resolveCaptures(ite.c, visitedSet);
                         resolveCaptures(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            resolveCaptures(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1464,6 +1569,9 @@ public final class Template {
                         for (final Consumer handler : match.handlers) {
                             resolveCaptures(handler, visitedSet);
                         }
+                        for (final Consumer value : match.values) {
+                            resolveCaptures(value, visitedSet);
+                        }
                     }
                     case AConstructorResolver res -> {
                         resolveCaptures(res.a, visitedSet);
@@ -1510,6 +1618,9 @@ public final class Template {
                         resolveLambdas(ite.a, visitedSet);
                         resolveLambdas(ite.c, visitedSet);
                         resolveLambdas(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            resolveLambdas(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1565,6 +1676,9 @@ public final class Template {
                         for (final Consumer handler : match.handlers) {
                             resolveLambdas(handler, visitedSet);
                         }
+                        for (final Consumer value : match.values) {
+                            resolveLambdas(value, visitedSet);
+                        }
                     }
                     case AConstructorResolver res -> {
                         resolveLambdas(res.a, visitedSet);
@@ -1611,6 +1725,9 @@ public final class Template {
                         resolveConstructors(ite.a, visitedSet);
                         resolveConstructors(ite.c, visitedSet);
                         resolveConstructors(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            resolveConstructors(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1658,6 +1775,9 @@ public final class Template {
                         resolveConstructors(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             resolveConstructors(handler, visitedSet);
+                        }
+                        for (final Consumer value : match.values) {
+                            resolveConstructors(value, visitedSet);
                         }
                     }
                     case AConstructorResolver res -> {
@@ -1713,6 +1833,9 @@ public final class Template {
                         duplicateAtoms(ite.a, visitedSet);
                         duplicateAtoms(ite.c, visitedSet);
                         duplicateAtoms(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            duplicateAtoms(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1760,6 +1883,9 @@ public final class Template {
                         duplicateAtoms(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             duplicateAtoms(handler, visitedSet);
+                        }
+                        for (final Consumer value : match.values) {
+                            duplicateAtoms(value, visitedSet);
                         }
                     }
                     case AConstructorResolver res -> {
@@ -1829,6 +1955,9 @@ public final class Template {
                         betaReduce(ite.a, visitedSet);
                         betaReduce(ite.c, visitedSet);
                         betaReduce(ite.d, visitedSet);
+                        for (final Consumer value : ite.values) {
+                            betaReduce(value, visitedSet);
+                        }
                     }
                     case AExpansion exp -> {
                         for (final Consumer imported : exp.imports.values()) {
@@ -1882,6 +2011,9 @@ public final class Template {
                         betaReduce(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             betaReduce(handler, visitedSet);
+                        }
+                        for (final Consumer value : match.values) {
+                            betaReduce(value, visitedSet);
                         }
                     }
                     case AConstructorResolver res -> {

@@ -1442,24 +1442,43 @@ public final class Motor {
         public final Producer b;
         public final Consumer c;
         public final Consumer d;
+        public final Consumer[] values;
+        public final Producer[][] binders;
 
-        public AIfThenElse() {
+        public AIfThenElse(final int nshared) {
             super(K_IF_THEN_ELSE);
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.c = new Consumer(null);
             this.d = new Consumer(null);
+            this.values = new Consumer[nshared];
+            this.binders = new Producer[nshared][2];
+            for (int i = 0; i < nshared; i++) {
+                this.values[i] = new Consumer(null);
+                this.binders[i][0] = new Producer(this);
+                this.binders[i][1] = new Producer(this);
+            }
         }
 
         private void interact() {
             final AIfThenElse ite = this;
             final Agent data = ite.a.chase();
             switch (data) {
-                case ATrue _ -> ite.b.forward(ite.d.producer());
-                case AFalse _ -> ite.b.forward(ite.c.producer());
+                case ATrue _ -> {
+                    for (int i = 0; i < ite.values.length; i++) {
+                        ite.binders[i][0].forward(ite.values[i].producer());
+                    }
+                    ite.b.forward(ite.d.producer());
+                }
+                case AFalse _ -> {
+                    for (int i = 0; i < ite.values.length; i++) {
+                        ite.binders[i][1].forward(ite.values[i].producer());
+                    }
+                    ite.b.forward(ite.c.producer());
+                }
                 case ASuperposition sup -> {
-                    final var itex = new AIfThenElse();
-                    final var itexx = new AIfThenElse();
+                    final var itex = new AIfThenElse(ite.values.length);
+                    final var itexx = new AIfThenElse(ite.values.length);
                     final var supx = sup; // reuse
                     final var dup = new ADuplicator(sup.label);
                     final var dupx = new ADuplicator(sup.label);
@@ -1474,6 +1493,18 @@ public final class Motor {
                     itexx.c.setProducer(dup.c);
                     itex.d.setProducer(dupx.b);
                     itexx.d.setProducer(dupx.c);
+                    for (int i = 0; i < ite.values.length; i++) {
+                        final var dupv = new ADuplicator(sup.label);
+                        dupv.a.setProducer(ite.values[i].producer());
+                        itex.values[i].setProducer(dupv.b);
+                        itexx.values[i].setProducer(dupv.c);
+                        for (int k = 0; k < 2; k++) {
+                            final var supv = new ASuperposition(sup.label);
+                            ite.binders[i][k].forward(supv.a);
+                            supv.b.setProducer(itex.binders[i][k]);
+                            supv.c.setProducer(itexx.binders[i][k]);
+                        }
+                    }
                 }
                 default -> {
                     if (isMachineData(data)) {
@@ -2089,8 +2120,10 @@ public final class Motor {
         public final Consumer a;
         public final Producer b;
         public final Consumer[] handlers;
+        public final Consumer[] values;
+        public final Producer[][] binders;
 
-        public AMatch(final String[] names) {
+        public AMatch(final String[] names, final int nshared) {
             super(K_MATCH);
             this.names = names;
             this.a = new Consumer(null);
@@ -2100,6 +2133,14 @@ public final class Motor {
                 assert names[i] == names[i].intern()
                         : String.format("Match case name not interned: `%s`", names[i]);
                 handlers[i] = new Consumer(null);
+            }
+            this.values = new Consumer[nshared];
+            this.binders = new Producer[nshared][names.length];
+            for (int i = 0; i < nshared; i++) {
+                this.values[i] = new Consumer(null);
+                for (int j = 0; j < names.length; j++) {
+                    this.binders[i][j] = new Producer(this);
+                }
             }
         }
 
@@ -2118,6 +2159,9 @@ public final class Motor {
                     if (index == -1) {
                         panic("No matching case for the constructor `%s`", ctr.name);
                     }
+                    for (int i = 0; i < match.values.length; i++) {
+                        match.binders[i][index].forward(match.values[i].producer());
+                    }
                     Producer result = match.handlers[index].producer();
                     for (final Consumer argument : ctr.arguments) {
                         final var app = new AApplicator();
@@ -2128,8 +2172,8 @@ public final class Motor {
                     match.b.forward(result);
                 }
                 case ASuperposition sup -> {
-                    final var matchx = new AMatch(match.names);
-                    final var matchxx = new AMatch(match.names);
+                    final var matchx = new AMatch(match.names, match.values.length);
+                    final var matchxx = new AMatch(match.names, match.values.length);
                     final var supx = sup; // reuse
                     match.b.forward(supx.a);
                     matchx.a.setProducer(sup.b.producer());
@@ -2141,6 +2185,18 @@ public final class Motor {
                         dup.a.setProducer(match.handlers[i].producer());
                         matchx.handlers[i].setProducer(dup.b);
                         matchxx.handlers[i].setProducer(dup.c);
+                    }
+                    for (int i = 0; i < match.values.length; i++) {
+                        final var dupv = new ADuplicator(sup.label);
+                        dupv.a.setProducer(match.values[i].producer());
+                        matchx.values[i].setProducer(dupv.b);
+                        matchxx.values[i].setProducer(dupv.c);
+                        for (int j = 0; j < match.names.length; j++) {
+                            final var supv = new ASuperposition(sup.label);
+                            match.binders[i][j].forward(supv.a);
+                            supv.b.setProducer(matchx.binders[i][j]);
+                            supv.c.setProducer(matchxx.binders[i][j]);
+                        }
                     }
                 }
                 default -> {

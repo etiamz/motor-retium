@@ -5,6 +5,7 @@ import com.mycompany.app.Template.Builder.Producer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,9 +119,8 @@ public final class Compiler {
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
-                final var agent = builder.mkMatch(names);
-                output.setProducer(agent.b());
-                final var fvSet = compile(builder, s, agent.a());
+                final var results = new Consumer[cases.size()];
+                final var branches = new ArrayList<TermInterface>();
                 for (int i = 0; i < cases.size(); i++) {
                     final var myCase = cases.get(i);
                     final var name = myCase.name();
@@ -135,16 +135,31 @@ public final class Compiler {
                     for (final var x : xs.reversed()) {
                         handler = new Term.Lambda(x, handler);
                     }
-                    merge(fvSet, expand(builder, handler, agent.handler(i)));
+                    results[i] = new Consumer(null);
+                    branches.add(expand(builder, handler, results[i]));
                 }
+                final var shared = sharedSlots(branches);
+                final var agent = builder.mkMatch(names, shared.size());
+                output.setProducer(agent.b());
+                for (int i = 0; i < results.length; i++) {
+                    agent.handler(i).setProducer(results[i].producer());
+                }
+                final var fvSet = compile(builder, s, agent.a());
+                merge(fvSet, mergeBranches(builder, agent, shared, branches));
                 yield fvSet;
             }
             case Term.IfThenElse(var t1, var t2, var t3) -> {
-                final var agent = builder.mkIfThenElse();
+                final var thenResult = new Consumer(null);
+                final var elseResult = new Consumer(null);
+                final var branches = List
+                        .of(expand(builder, t2, thenResult), expand(builder, t3, elseResult));
+                final var shared = sharedSlots(branches);
+                final var agent = builder.mkIfThenElse(shared.size());
                 output.setProducer(agent.b());
+                agent.d().setProducer(thenResult.producer());
+                agent.c().setProducer(elseResult.producer());
                 final var fvSet = compile(builder, t1, agent.a());
-                merge(fvSet, expand(builder, t2, agent.d()));
-                merge(fvSet, expand(builder, t3, agent.c()));
+                merge(fvSet, mergeBranches(builder, agent, shared, branches));
                 yield fvSet;
             }
             case Term.Select(var name, var index, var t) -> {
@@ -245,6 +260,49 @@ public final class Compiler {
             imports.put(x, new ArrayList<>(List.of(agent.imported(x))));
         }
         return imports;
+    }
+
+    // Takes the interfaces of mutually exclusive branches, returnes a map from the shared variable
+    // names to their slot indices.
+    private static Map<String, Integer> sharedSlots(final List<TermInterface> branches) {
+        final var seen = new HashSet<String>();
+        final var slots = new LinkedHashMap<String, Integer>();
+        for (final var branch : branches) {
+            for (final var x : branch.keySet()) {
+                if (!seen.add(x)) {
+                    slots.computeIfAbsent(x, _ -> slots.size());
+                }
+            }
+        }
+        return slots;
+    }
+
+    // Routes every variable shared among the branches through its corresponding binder slot in
+    // `selector`, thus eliding redundant duplicators.
+    private static TermInterface mergeBranches(
+            final Template.Builder builder,
+            final Template.Builder.Branching selector,
+            final Map<String, Integer> sharedSlots,
+            final List<TermInterface> branches) {
+        final var result = new TermInterface();
+        for (int i = 0; i < branches.size(); i++) {
+            for (final var entry : branches.get(i).entrySet()) {
+                final var x = entry.getKey();
+                final var usages = entry.getValue();
+                final var slot = sharedSlots.get(x);
+                if (slot == null) {
+                    // `x` is used in exactly one branch, so its usages remain unchanged.
+                    result.put(x, new ArrayList<>(usages));
+                } else {
+                    // `x` is used in two or more branches: route through the binder.
+                    final var binder = selector.binder(slot, i);
+                    final var value = selector.value(slot);
+                    result.computeIfAbsent(x, _ -> new ArrayList<>(List.of(value)));
+                    bind(builder, binder, usages);
+                }
+            }
+        }
+        return result;
     }
 
     private static TermInterface capture(
