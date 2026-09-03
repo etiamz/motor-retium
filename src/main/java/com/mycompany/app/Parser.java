@@ -419,7 +419,7 @@ public final class Parser {
         @Override
         public Term visitLetTerm(final MotorParser.LetTermContext ctx) {
             final var x = bindingNames(ctx, List.of(ctx.SYMBOL())).getFirst();
-            final var t1 = visit(ctx.term(0));
+            final var t1 = visitNonRecursiveRhs(ctx, List.of(x), ctx.term(0));
             push(x);
             final var t2 = visit(ctx.term(1));
             pop(x);
@@ -442,7 +442,7 @@ public final class Parser {
                 }
             }
             checkArity(ctx, name, parameters.size());
-            final var s = visit(ctx.term(0));
+            final var s = visitNonRecursiveRhs(ctx, xs, ctx.term(0));
             xs.forEach(this::push);
             final var continuation = visit(ctx.term(1));
             xs.forEach(this::pop);
@@ -636,6 +636,26 @@ public final class Parser {
                 return new Term.Reference(x);
             }
             throw error(filename, ctx, "Variable not in scope: `%s`", x);
+        }
+
+        private Term visitNonRecursiveRhs(
+                final ParserRuleContext site,
+                final List<String> xs,
+                final MotorParser.TermContext ctx) {
+            xs.forEach(this::push);
+            final var e = visit(ctx);
+            xs.forEach(this::pop);
+            final var occurring = e.freeVariables();
+            for (final var x : xs) {
+                if (occurring.contains(x)) {
+                    throw error(
+                            filename,
+                            site,
+                            "Recursive `let` is not supported: `%s` occurs in its own definition",
+                            x);
+                }
+            }
+            return e;
         }
 
         private void checkNotRange(final MotorParser.TermContext ctx) {
