@@ -10,7 +10,7 @@ Pair : 2;
 Triple : 3;
 
 main =
-    maxGcdE D;
+    $show (maxGcdE D);
 
 maxGcdE d =
     let n = 5000bigint in

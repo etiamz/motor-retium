@@ -16,7 +16,7 @@ main = do
     let n = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (int (pow (nat 3) (nat n)))
+    print (show (int (pow (nat 3) (nat n))))
 
 nat :: Word64 -> Nat
 nat n =

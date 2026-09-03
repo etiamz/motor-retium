@@ -18,7 +18,7 @@ main = do
     let n = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (nsoln n)
+    print (show (nsoln n))
 
 nsoln :: Int64 -> Word64
 nsoln nq =

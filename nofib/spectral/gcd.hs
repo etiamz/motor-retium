@@ -20,7 +20,7 @@ main = do
     let d = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (maxGcdE d)
+    print (show (maxGcdE d))
 
 maxGcdE :: Integer -> Integer
 maxGcdE d =

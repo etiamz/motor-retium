@@ -21,7 +21,7 @@ main = do
     let sz = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (life sz)
+    print (show (life sz))
 
 life :: Word64 -> Word64
 life sz =

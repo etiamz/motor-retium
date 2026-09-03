@@ -10,7 +10,7 @@ Pair : 2;
 Triple : 3;
 
 main =
-    life N;
+    $show (life N);
 
 life sz =
     let generations =

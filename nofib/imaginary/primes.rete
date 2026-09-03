@@ -8,7 +8,7 @@ Nil : 0;
 Cons : 2;
 
 main =
-    prime N;
+    $show (prime N);
 
 prime n =
     index (map head (iterate theFilter (enumFromTo 2u64 (n * n)))) n;

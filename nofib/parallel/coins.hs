@@ -19,15 +19,23 @@ main = do
             [] -> defaultInput
             (input : _) -> read input
     print
-        ( payN
-            n
-            ( Cons
-                (Pair 250 55)
+        ( show
+            ( payN
+                n
                 ( Cons
-                    (Pair 100 88)
+                    (Pair 250 55)
                     ( Cons
-                        (Pair 25 88)
-                        (Cons (Pair 10 99) (Cons (Pair 5 122) (Cons (Pair 1 177) Nil)))
+                        (Pair 100 88)
+                        ( Cons
+                            (Pair 25 88)
+                            ( Cons
+                                (Pair 10 99)
+                                ( Cons
+                                    (Pair 5 122)
+                                    (Cons (Pair 1 177) Nil)
+                                )
+                            )
+                        )
                     )
                 )
             )

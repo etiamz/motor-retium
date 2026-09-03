@@ -8,7 +8,7 @@ Nil : 0;
 Cons : 2;
 
 main =
-    nsoln N;
+    $show (nsoln N);
 
 nsoln nq =
     length (gen nq nq);

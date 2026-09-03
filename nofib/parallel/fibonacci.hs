@@ -14,7 +14,7 @@ main = do
     let n = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (nfib n)
+    print (show (nfib n))
 
 nfib :: Word64 -> Word64
 nfib x =

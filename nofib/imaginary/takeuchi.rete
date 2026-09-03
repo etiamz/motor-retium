@@ -13,7 +13,7 @@
 #endif
 
 main =
-    tak X Y Z;
+    $show (tak X Y Z);
 
 tak x y z =
     if not (y < x)

@@ -17,7 +17,7 @@ main = do
     let n = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (prime n)
+    print (show (prime n))
 
 prime :: Word64 -> Word64
 prime n =

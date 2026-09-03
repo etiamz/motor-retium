@@ -8,7 +8,7 @@ Z : 0;
 S : 1;
 
 main =
-    int (pow (nat 3u64) (nat N));
+    $show (int (pow (nat 3u64) (nat N)));
 
 nat n =
     if n < 1u64 then Z else S (nat (n - 1u64));

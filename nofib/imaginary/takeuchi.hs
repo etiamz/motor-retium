@@ -20,7 +20,7 @@ main = do
     let (x, y, z) = case args of
             (a : b : c : _) -> (read a, read b, read c)
             _ -> (defaultX, defaultY, defaultZ)
-    print (tak x y z)
+    print (show (tak x y z))
 
 tak :: Int64 -> Int64 -> Int64 -> Int64
 tak x y z =
