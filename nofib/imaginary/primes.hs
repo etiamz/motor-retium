@@ -9,7 +9,7 @@ import Prelude hiding (enumFromTo, filter, head, iterate, map)
 data List a = Nil | Cons a (List a)
 
 defaultInput :: Word64
-defaultInput = 200
+defaultInput = 1000
 
 main :: IO ()
 main = do

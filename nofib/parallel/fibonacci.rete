@@ -1,7 +1,7 @@
 -- No sharing, maximal parallelisme; ported from `parallel/parfib/Main.hs`.
 
 #ifndef N
-#define N 37u64
+#define N 41u64
 #endif
 
 main =

@@ -10,7 +10,7 @@ data List a = Nil | Cons a (List a)
 data Pair a b = Pair a b
 
 defaultInput :: Word64
-defaultInput = 350
+defaultInput = 950
 
 main :: IO ()
 main = do

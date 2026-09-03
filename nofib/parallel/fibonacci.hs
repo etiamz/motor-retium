@@ -6,7 +6,7 @@ import Data.Word (Word64)
 import System.Environment (getArgs)
 
 defaultInput :: Word64
-defaultInput = 37
+defaultInput = 41
 
 main :: IO ()
 main = do

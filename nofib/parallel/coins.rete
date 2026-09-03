@@ -1,7 +1,7 @@
 -- No sharing, high parallelisme; ported from `parallel/coins/coins.hs`.
 
 #ifndef N
-#define N 350u64
+#define N 950u64
 #endif
 
 Nil : 0;

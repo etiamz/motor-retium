@@ -1,7 +1,7 @@
 -- Full sharing, substantial parallelisme; ported from `imaginary/queens/Main.hs`.
 
 #ifndef N
-#define N 8i64
+#define N 10i64
 #endif
 
 Nil : 0;

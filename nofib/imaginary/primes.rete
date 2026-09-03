@@ -1,7 +1,7 @@
 -- Full sharing, low parallelisme; ported from `imaginary/primes/Main.hs`.
 
 #ifndef N
-#define N 200u64
+#define N 1000u64
 #endif
 
 Nil : 0;

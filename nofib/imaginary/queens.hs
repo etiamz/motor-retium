@@ -10,7 +10,7 @@ import Prelude hiding (concatMap, enumFromTo, length)
 data List a = Nil | Cons a (List a)
 
 defaultInput :: Int64
-defaultInput = 8
+defaultInput = 10
 
 main :: IO ()
 main = do

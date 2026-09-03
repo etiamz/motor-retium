@@ -6,13 +6,13 @@ import Data.Int (Int64)
 import System.Environment (getArgs)
 
 defaultX :: Int64
-defaultX = 31
+defaultX = 35
 
 defaultY :: Int64
-defaultY = 16
+defaultY = 18
 
 defaultZ :: Int64
-defaultZ = 8
+defaultZ = 9
 
 main :: IO ()
 main = do
