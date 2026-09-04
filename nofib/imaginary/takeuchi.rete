@@ -1,19 +1,19 @@
 -- No sharing, maximal parallelisme; ported from `imaginary/tak/Main.hs`.
 
 #ifndef X
-#define X 35i64
+#define X 35
 #endif
 
 #ifndef Y
-#define Y 18i64
+#define Y 18
 #endif
 
 #ifndef Z
-#define Z 9i64
+#define Z 9
 #endif
 
 main =
-    $show (tak X Y Z);
+    $show (tak X/**/i64 Y/**/i64 Z/**/i64);
 
 tak x y z =
     if not (y < x)

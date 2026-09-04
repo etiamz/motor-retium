@@ -1,27 +1,27 @@
 -- Full sharing, low parallelisme; ported from `spectral/lcss/Main.hs`.
 
 #ifndef A
-#define A 1i64
+#define A 1
 #endif
 
 #ifndef B
-#define B 2i64
+#define B 2
 #endif
 
 #ifndef C
-#define C 1000i64
+#define C 1000
 #endif
 
 #ifndef D
-#define D 500i64
+#define D 500
 #endif
 
 #ifndef E
-#define E 501i64
+#define E 501
 #endif
 
 #ifndef F
-#define F 1500i64
+#define F 1500
 #endif
 
 Nil : 0;
@@ -29,7 +29,10 @@ Cons : 2;
 Pair : 2;
 
 main =
-    renderList (lcss (enumFromThenTo A B C) (enumFromThenTo D E F));
+    renderList
+    (lcss
+     (enumFromThenTo A/**/i64 B/**/i64 C/**/i64)
+     (enumFromThenTo D/**/i64 E/**/i64 F/**/i64));
 
 lcss xs ys =
     algc (length xs) (length ys) xs ys Nil;

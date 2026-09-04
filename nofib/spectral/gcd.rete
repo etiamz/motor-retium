@@ -1,7 +1,7 @@
 -- Full sharing, low parallelisme; ported from `spectral/gcd/Main.hs`.
 
 #ifndef D
-#define D 100bigint
+#define D 100
 #endif
 
 Nil : 0;
@@ -10,7 +10,7 @@ Pair : 2;
 Triple : 3;
 
 main =
-    $show (maxGcdE D);
+    $show (maxGcdE D/**/bigint);
 
 maxGcdE d =
     let n = 5000bigint in

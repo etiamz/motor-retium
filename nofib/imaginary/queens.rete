@@ -1,14 +1,14 @@
 -- Full sharing, substantial parallelisme; ported from `imaginary/queens/Main.hs`.
 
 #ifndef N
-#define N 10i64
+#define N 10
 #endif
 
 Nil : 0;
 Cons : 2;
 
 main =
-    $show (nsoln N);
+    $show (nsoln N/**/i64);
 
 nsoln nq =
     length (gen nq nq);

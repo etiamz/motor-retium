@@ -1,7 +1,7 @@
 -- Full sharing, low parallelisme; ported from `spectral/life/Main.hs`.
 
 #ifndef N
-#define N 27u64
+#define N 27
 #endif
 
 Nil : 0;
@@ -10,7 +10,7 @@ Pair : 2;
 Triple : 3;
 
 main =
-    $show (life N);
+    $show (life N/**/u64);
 
 life sz =
     let generations =

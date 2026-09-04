@@ -1,14 +1,14 @@
 -- Low sharing, no parallelisme; ported from `imaginary/exp3_8/Main.hs`.
 
 #ifndef N
-#define N 8u64
+#define N 8
 #endif
 
 Z : 0;
 S : 1;
 
 main =
-    $show (int (pow (nat 3u64) (nat N)));
+    $show (int (pow (nat 3u64) (nat N/**/u64)));
 
 nat n =
     if n < 1u64 then Z else S (nat (n - 1u64));

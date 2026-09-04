@@ -1,14 +1,14 @@
 -- Full sharing, low parallelisme; ported from `imaginary/primes/Main.hs`.
 
 #ifndef N
-#define N 1000u64
+#define N 1000
 #endif
 
 Nil : 0;
 Cons : 2;
 
 main =
-    $show (prime N);
+    $show (prime N/**/u64);
 
 prime n =
     index (map head (iterate theFilter (enumFromTo 2u64 (n * n)))) n;

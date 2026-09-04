@@ -1,7 +1,7 @@
 -- No sharing, high parallelisme; ported from `parallel/coins/coins.hs`.
 
 #ifndef N
-#define N 950u64
+#define N 950
 #endif
 
 Nil : 0;
@@ -11,7 +11,7 @@ Pair : 2;
 main =
     $show
     (payN
-     N
+     N/**/u64
      (
          Cons (Pair 250u64 55u64)
              (Cons (Pair 100u64 88u64)
