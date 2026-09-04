@@ -2,6 +2,7 @@
 
 # $ black -l 80 command/test_nofib.py
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,9 @@ NOFIB = _ROOT / "nofib"
 JAR = _ROOT / "target" / "motor-retium.jar"
 
 _ELLIPSIS = 240  # characters
+
+# For skipping the default inputs on GitHub CI to avoid prohibitively long runs.
+_ON_CI = os.environ.get("GITHUB_ACTIONS") == "true"
 
 _INPUTS: dict[str, list[_Input]] = {
     "imaginary/peano-exponentiation": [{}, {"N": "1"}, {"N": "2"}, {"N": "5"}],
@@ -59,6 +63,12 @@ def main() -> None:
         rete = (NOFIB / test).with_suffix(".rete")
         haskell = (NOFIB / test).with_suffix(".hs")
         for input in inputs:
+            if _ON_CI and not input:
+                print(
+                    f"GitHub CI: skipping `{test}` on the default input(s).",
+                    file=sys.stderr,
+                )
+                continue
             print(f"Testing `{test}` on `{input}`...", file=sys.stderr)
             expected = _run_ghc(haskell, input)
             got = _run_motor(rete, input)
