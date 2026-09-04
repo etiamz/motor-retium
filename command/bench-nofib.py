@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# $ black -l 80 command/bench.py
+# $ black -l 80 command/bench-nofib.py
 
 import json
 import os
