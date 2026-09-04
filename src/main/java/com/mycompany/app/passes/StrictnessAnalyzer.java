@@ -152,11 +152,7 @@ public final class StrictnessAnalyzer {
         }
 
         private Set<String> caseDemand(final Term.Case myCase) {
-            // If there are no pattern variables, demand is recursive; otherwise, the branch is
-            // wrapped in lambdas, which demand the free variables.
-            final var result = myCase.xs().isEmpty()
-                    ? demand(myCase.t())
-                    : myCase.t().freeVariables();
+            final var result = demand(myCase.t());
             myCase.xs().forEach(result::remove);
             return result;
         }

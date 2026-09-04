@@ -75,7 +75,8 @@ public final class Template {
     private record PCapture() implements Payload {
     }
 
-    private record PMatch(String[] names /* interned */, int nshared) implements Payload {
+    private record PMatch(String[] names /* interned */, int[] arities,
+            int nshared) implements Payload {
     }
 
     private record PConstructorResolver(String name /* interned */, int arity) implements Payload {
@@ -249,11 +250,16 @@ public final class Template {
                     consumers[i++] = agent.d;
                 }
                 case PMatch p -> {
-                    final var agent = new Motor.AMatch(p.names, p.nshared);
+                    final var agent = new Motor.AMatch(p.names, p.arities, p.nshared);
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                     for (final var port : agent.handlers) {
                         consumers[i++] = port;
+                    }
+                    for (final var row : agent.parameters) {
+                        for (final var port : row) {
+                            producers[j++] = port;
+                        }
                     }
                     for (final var port : agent.values) {
                         consumers[i++] = port;
@@ -777,16 +783,24 @@ public final class Template {
             private final Consumer a;
             private final Producer b;
             private final Consumer[] handlers;
+            private final int[] arities;
+            private final Producer[][] parameters;
             private final Consumer[] values;
             private final Producer[][] binders;
 
-            private AMatch(final String[] names, final int nshared) {
+            private AMatch(final String[] names, final int[] arities, final int nshared) {
                 this.names = Arrays.stream(names).map(String::intern).toArray(String[]::new);
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
                 this.handlers = new Consumer[names.length];
+                this.arities = arities;
+                this.parameters = new Producer[names.length][];
                 for (int i = 0; i < names.length; i++) {
                     this.handlers[i] = new Consumer(null);
+                    this.parameters[i] = new Producer[arities[i]];
+                    for (int j = 0; j < arities[i]; j++) {
+                        this.parameters[i][j] = new Producer(this);
+                    }
                 }
                 this.values = new Consumer[nshared];
                 this.binders = new Producer[nshared][names.length];
@@ -808,6 +822,10 @@ public final class Template {
 
             public Consumer handler(final int i) {
                 return handlers[i];
+            }
+
+            public Producer parameter(final int i, final int j) {
+                return parameters[i][j];
             }
 
             @Override
@@ -1132,8 +1150,8 @@ public final class Template {
             return new ACapture();
         }
 
-        public AMatch mkMatch(final String[] names, final int nshared) {
-            return new AMatch(names, nshared);
+        public AMatch mkMatch(final String[] names, final int[] arities, final int nshared) {
+            return new AMatch(names, arities, nshared);
         }
 
         public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
@@ -1270,6 +1288,9 @@ public final class Template {
                 case AMatch match -> {
                     final var result = new ArrayList<Producer>();
                     result.add(match.b);
+                    for (final var row : match.parameters) {
+                        result.addAll(List.of(row));
+                    }
                     for (final var row : match.binders) {
                         result.addAll(List.of(row));
                     }
@@ -1310,7 +1331,7 @@ public final class Template {
                 case AStrictApplicator _ -> new PStrictApplicator();
                 case AResolver _ -> new PResolver();
                 case ACapture _ -> new PCapture();
-                case AMatch match -> new PMatch(match.names, match.values.length);
+                case AMatch match -> new PMatch(match.names, match.arities, match.values.length);
                 case AConstructorResolver res ->
                     new PConstructorResolver(res.name, res.arguments.length);
                 case ASelect sel -> new PSelect(sel.name, sel.index);

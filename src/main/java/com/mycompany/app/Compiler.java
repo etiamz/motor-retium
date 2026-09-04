@@ -121,8 +121,12 @@ public final class Compiler {
             }
             case Term.Match(var s, var cases) -> {
                 final var names = cases.stream().map(Term.Case::name).toArray(String[]::new);
+                final var arities = cases.stream().mapToInt(myCase -> myCase.xs().size()).toArray();
                 final var results = new Consumer[cases.size()];
                 final var branches = new ArrayList<TermInterface>();
+                // `parameters.get(i).get(j)` holds the usages of the `j`th pattern variable of the
+                // `i`th case.
+                final var parameters = new ArrayList<List<List<Consumer>>>();
                 for (int i = 0; i < cases.size(); i++) {
                     final var myCase = cases.get(i);
                     final var name = myCase.name();
@@ -133,18 +137,25 @@ public final class Compiler {
                         throw new IllegalStateException(
                                 String.format("Uneliminated `|`-guard for `%s`", name));
                     }
-                    Term handler = t;
-                    for (final var x : xs.reversed()) {
-                        handler = new Term.Lambda(x, handler);
-                    }
                     results[i] = new Consumer(null);
-                    branches.add(expand(builder, handler, results[i]));
+                    final var branch = expand(builder, t, results[i]);
+                    final var myParameters = new ArrayList<List<Consumer>>();
+                    for (final var x : xs) {
+                        final var usages = branch.remove(x);
+                        myParameters.add(usages == null ? List.of() : usages);
+                    }
+                    parameters.add(myParameters);
+                    branches.add(branch);
                 }
                 final var shared = sharedSlots(branches);
-                final var agent = builder.mkMatch(names, shared.size());
+                final var agent = builder.mkMatch(names, arities, shared.size());
                 output.setProducer(agent.b());
-                for (int i = 0; i < results.length; i++) {
+                for (int i = 0; i < cases.size(); i++) {
                     agent.handler(i).setProducer(results[i].producer());
+                    final var myParameters = parameters.get(i);
+                    for (int j = 0; j < myParameters.size(); j++) {
+                        bind(builder, agent.parameter(i, j), myParameters.get(j));
+                    }
                 }
                 final var fvSet = compile(builder, s, agent.a());
                 merge(fvSet, mergeBranches(builder, agent, shared, branches));

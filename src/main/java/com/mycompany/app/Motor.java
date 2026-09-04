@@ -2120,19 +2120,27 @@ public final class Motor {
         public final Consumer a;
         public final Producer b;
         public final Consumer[] handlers;
+        public final int[] arities;
+        public final Producer[][] parameters;
         public final Consumer[] values;
         public final Producer[][] binders;
 
-        public AMatch(final String[] names, final int nshared) {
+        public AMatch(final String[] names, final int[] arities, final int nshared) {
             super(K_MATCH);
             this.names = names;
             this.a = new Consumer(null);
             this.b = new Producer(this);
             this.handlers = new Consumer[names.length];
+            this.arities = arities;
+            this.parameters = new Producer[names.length][];
             for (int i = 0; i < names.length; i++) {
                 assert names[i] == names[i].intern()
                         : String.format("Match case name not interned: `%s`", names[i]);
                 handlers[i] = new Consumer(null);
+                parameters[i] = new Producer[arities[i]];
+                for (int j = 0; j < arities[i]; j++) {
+                    parameters[i][j] = new Producer(this);
+                }
             }
             this.values = new Consumer[nshared];
             this.binders = new Producer[nshared][names.length];
@@ -2159,21 +2167,21 @@ public final class Motor {
                     if (index == -1) {
                         panic("No matching case for the constructor `%s`", ctr.name);
                     }
+                    final Producer[] myParameters = match.parameters[index];
+                    if (myParameters.length != ctr.arity()) {
+                        crash("Arity mismatch for the constructor `%s`", ctr.name);
+                    }
+                    for (int i = 0; i < myParameters.length; i++) {
+                        myParameters[i].forward(ctr.arguments[i].producer());
+                    }
                     for (int i = 0; i < match.values.length; i++) {
                         match.binders[i][index].forward(match.values[i].producer());
                     }
-                    Producer result = match.handlers[index].producer();
-                    for (final Consumer argument : ctr.arguments) {
-                        final var app = new AApplicator();
-                        app.a.setProducer(result);
-                        app.c.setProducer(argument.producer());
-                        result = app.b;
-                    }
-                    match.b.forward(result);
+                    match.b.forward(match.handlers[index].producer());
                 }
                 case ASuperposition sup -> {
-                    final var matchx = new AMatch(match.names, match.values.length);
-                    final var matchxx = new AMatch(match.names, match.values.length);
+                    final var matchx = new AMatch(match.names, match.arities, match.values.length);
+                    final var matchxx = new AMatch(match.names, match.arities, match.values.length);
                     final var supx = sup; // reuse
                     match.b.forward(supx.a);
                     matchx.a.setProducer(sup.b.producer());
@@ -2185,6 +2193,12 @@ public final class Motor {
                         dup.a.setProducer(match.handlers[i].producer());
                         matchx.handlers[i].setProducer(dup.b);
                         matchxx.handlers[i].setProducer(dup.c);
+                        for (int j = 0; j < match.parameters[i].length; j++) {
+                            final var supp = new ASuperposition(sup.label);
+                            match.parameters[i][j].forward(supp.a);
+                            supp.b.setProducer(matchx.parameters[i][j]);
+                            supp.c.setProducer(matchxx.parameters[i][j]);
+                        }
                     }
                     for (int i = 0; i < match.values.length; i++) {
                         final var dupv = new ADuplicator(sup.label);
