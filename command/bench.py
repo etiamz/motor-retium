@@ -4,13 +4,18 @@
 
 import json
 import os
+import platform
 import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
 
-type Timings = dict[str, float]  # seconds
+import cpuinfo
+
+type Seconds = float
+
+type Timings = dict[str, Seconds]
 
 type Benchmarks = dict[str, Timings]
 
@@ -39,11 +44,47 @@ def java(home: str) -> str:
 
 
 def main() -> None:
-    benchmarks: Benchmarks = {
+    json.dump(
+        {
+            "platform": platform.platform(),
+            "cpu": cpu(),
+            "cpus": os.cpu_count(),
+            "memory": memory(),
+            "openjdk": jvm_version(openjdk()),
+            "graalvm": jvm_version(graalvm()),
+            "ghc": ghc_version(),
+            "data": benchmarks(),
+        },
+        sys.stdout,
+        indent=4,
+    )
+    print()
+
+
+def cpu() -> str:
+    return cpuinfo.get_cpu_info()["brand_raw"]
+
+
+def memory() -> str:
+    # `sysconf` covers macOS and Linux, but is absent on Windows.
+    if not hasattr(os, "sysconf"):
+        return "unknown"
+    total = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+    return f"{total / 2**30:.1f} GiB"
+
+
+def jvm_version(binary: str) -> str:
+    return run([binary, "--version"]).splitlines()[2]
+
+
+def ghc_version() -> str:
+    return run(["ghc", "--version"]).splitlines()[0]
+
+
+def benchmarks() -> Benchmarks:
+    return {
         name(rete): timings(rete) for rete in sorted(NOFIB.glob("*/*.rete"))
     }
-    json.dump(benchmarks, sys.stdout, indent=4)
-    print()
 
 
 def timings(rete: Path) -> Timings:
@@ -63,36 +104,36 @@ def name(benchmark: Path) -> str:
     return str(benchmark.relative_to(NOFIB).with_suffix(""))
 
 
-def motor_openjdk_g1_gc(rete: Path) -> float:
+def motor_openjdk_g1_gc(rete: Path) -> Seconds:
     return motor(rete, openjdk(), "-XX:+UseG1GC")
 
 
-def motor_openjdk_parallel_gc(rete: Path) -> float:
+def motor_openjdk_parallel_gc(rete: Path) -> Seconds:
     return motor(rete, openjdk(), "-XX:+UseParallelGC")
 
 
-def motor_graalvm_g1_gc(rete: Path) -> float:
+def motor_graalvm_g1_gc(rete: Path) -> Seconds:
     return motor(rete, graalvm(), "-XX:+UseG1GC")
 
 
-def motor_graalvm_parallel_gc(rete: Path) -> float:
+def motor_graalvm_parallel_gc(rete: Path) -> Seconds:
     return motor(rete, graalvm(), "-XX:+UseParallelGC")
 
 
-def motor(rete: Path, jvm: str, gc: str) -> float:
+def motor(rete: Path, jvm: str, gc: str) -> Seconds:
     source = run(["cpp", "-traditional-cpp", "-P", rete])
     return measure([jvm, gc, "-jar", JAR], input=source)
 
 
-def ghc_o0(haskell: Path) -> float:
+def ghc_o0(haskell: Path) -> Seconds:
     return ghc(haskell, "-O0")
 
 
-def ghc_o2(haskell: Path) -> float:
+def ghc_o2(haskell: Path) -> Seconds:
     return ghc(haskell, "-O2")
 
 
-def ghc(haskell: Path, level: str) -> float:
+def ghc(haskell: Path, level: str) -> Seconds:
     with tempfile.TemporaryDirectory() as directory:
         binary = Path(directory) / "benchmark"
         flags = [level, "-outputdir", directory, "-o", binary]
@@ -100,11 +141,11 @@ def ghc(haskell: Path, level: str) -> float:
         return measure([binary])
 
 
-def ghc_bytecode(haskell: Path) -> float:
+def ghc_bytecode(haskell: Path) -> Seconds:
     return measure(["runghc", "--", haskell])
 
 
-def measure(command: Command, **kwargs) -> float:
+def measure(command: Command, **kwargs) -> Seconds:
     print(f"Measuring `{show(command)}`...", file=sys.stderr)
     start = time.perf_counter()
     run(command, **kwargs)
