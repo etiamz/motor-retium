@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # $ black -l 80 command/bench_nofib.py
 

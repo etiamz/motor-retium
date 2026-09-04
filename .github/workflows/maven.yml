@@ -1,0 +1,37 @@
+name: Maven
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 26
+        uses: actions/setup-java@v4
+        with:
+          java-version: "26"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Set up GHC
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.10.3"
+          cabal-update: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Test nofib
+        run: ./command/test_nofib.py

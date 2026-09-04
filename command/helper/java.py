@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # $ black -l 80 command/helper/java.py
 
 import os
