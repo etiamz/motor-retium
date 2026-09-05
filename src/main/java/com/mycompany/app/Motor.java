@@ -2153,13 +2153,13 @@ public final class Motor {
         }
 
         private void interact() {
-            final AMatcher match = this;
-            final Agent data = match.a.chase();
+            final AMatcher mat = this;
+            final Agent data = mat.a.chase();
             switch (data) {
                 case AConstructor ctr -> {
                     int index = -1;
-                    for (int i = 0; i < match.names.length; i++) {
-                        if (match.names[i] == ctr.name) { // both strings are interned
+                    for (int i = 0; i < mat.names.length; i++) {
+                        if (mat.names[i] == ctr.name) { // both strings are interned
                             index = i;
                             break;
                         }
@@ -2167,55 +2167,49 @@ public final class Motor {
                     if (index == -1) {
                         panic("No matching case for the constructor `%s`", ctr.name);
                     }
-                    final Producer[] myParameters = match.parameters[index];
+                    final Producer[] myParameters = mat.parameters[index];
                     if (myParameters.length != ctr.arity()) {
                         crash("Arity mismatch for the constructor `%s`", ctr.name);
                     }
                     for (int i = 0; i < myParameters.length; i++) {
                         myParameters[i].forward(ctr.arguments[i].producer());
                     }
-                    for (int i = 0; i < match.values.length; i++) {
-                        match.binders[i][index].forward(match.values[i].producer());
+                    for (int i = 0; i < mat.values.length; i++) {
+                        mat.binders[i][index].forward(mat.values[i].producer());
                     }
-                    match.b.forward(match.handlers[index].producer());
+                    mat.b.forward(mat.handlers[index].producer());
                 }
                 case ASuperposition sup -> {
-                    final var matchx = new AMatcher(
-                            match.names,
-                            match.arities,
-                            match.values.length);
-                    final var matchxx = new AMatcher(
-                            match.names,
-                            match.arities,
-                            match.values.length);
+                    final var matx = new AMatcher(mat.names, mat.arities, mat.values.length);
+                    final var matxx = new AMatcher(mat.names, mat.arities, mat.values.length);
                     final var supx = sup; // reuse
-                    match.b.forward(supx.a);
-                    matchx.a.setProducer(sup.b.producer());
-                    matchxx.a.setProducer(sup.c.producer());
-                    supx.b.setProducer(matchx.b);
-                    supx.c.setProducer(matchxx.b);
-                    for (int i = 0; i < match.names.length; i++) {
+                    mat.b.forward(supx.a);
+                    matx.a.setProducer(sup.b.producer());
+                    matxx.a.setProducer(sup.c.producer());
+                    supx.b.setProducer(matx.b);
+                    supx.c.setProducer(matxx.b);
+                    for (int i = 0; i < mat.names.length; i++) {
                         final var dup = new ADuplicator(Label.DELTA);
-                        dup.a.setProducer(match.handlers[i].producer());
-                        matchx.handlers[i].setProducer(dup.b);
-                        matchxx.handlers[i].setProducer(dup.c);
-                        for (int j = 0; j < match.parameters[i].length; j++) {
+                        dup.a.setProducer(mat.handlers[i].producer());
+                        matx.handlers[i].setProducer(dup.b);
+                        matxx.handlers[i].setProducer(dup.c);
+                        for (int j = 0; j < mat.parameters[i].length; j++) {
                             final var supp = new ASuperposition();
-                            match.parameters[i][j].forward(supp.a);
-                            supp.b.setProducer(matchx.parameters[i][j]);
-                            supp.c.setProducer(matchxx.parameters[i][j]);
+                            mat.parameters[i][j].forward(supp.a);
+                            supp.b.setProducer(matx.parameters[i][j]);
+                            supp.c.setProducer(matxx.parameters[i][j]);
                         }
                     }
-                    for (int i = 0; i < match.values.length; i++) {
+                    for (int i = 0; i < mat.values.length; i++) {
                         final var dupv = new ADuplicator(Label.DELTA);
-                        dupv.a.setProducer(match.values[i].producer());
-                        matchx.values[i].setProducer(dupv.b);
-                        matchxx.values[i].setProducer(dupv.c);
-                        for (int j = 0; j < match.names.length; j++) {
+                        dupv.a.setProducer(mat.values[i].producer());
+                        matx.values[i].setProducer(dupv.b);
+                        matxx.values[i].setProducer(dupv.c);
+                        for (int j = 0; j < mat.names.length; j++) {
                             final var supv = new ASuperposition();
-                            match.binders[i][j].forward(supv.a);
-                            supv.b.setProducer(matchx.binders[i][j]);
-                            supv.c.setProducer(matchxx.binders[i][j]);
+                            mat.binders[i][j].forward(supv.a);
+                            supv.b.setProducer(matx.binders[i][j]);
+                            supv.c.setProducer(matxx.binders[i][j]);
                         }
                     }
                 }
@@ -2223,9 +2217,9 @@ public final class Motor {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
                     } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(match));
+                        panic("Null operand: %s", describe(mat));
                     } else if (isUserData(data)) {
-                        typeError(describe(match), data);
+                        typeError(describe(mat), data);
                     } else if (isOperator(data)) {
                         crash("Operand unresolved: %s", describe(data));
                     } else {

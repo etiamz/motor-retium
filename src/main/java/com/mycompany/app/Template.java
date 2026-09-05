@@ -1238,11 +1238,11 @@ public final class Template {
                 case AStrictApplicator sapp -> List.of(sapp.a, sapp.c);
                 case AResolver res -> List.of(res.a, res.d);
                 case ACapture cap -> List.of(cap.a, cap.d);
-                case AMatcher match -> {
+                case AMatcher mat -> {
                     final var result = new ArrayList<Consumer>();
-                    result.add(match.a);
-                    result.addAll(List.of(match.handlers));
-                    result.addAll(List.of(match.values));
+                    result.add(mat.a);
+                    result.addAll(List.of(mat.handlers));
+                    result.addAll(List.of(mat.values));
                     yield result;
                 }
                 case AConstructorResolver res -> {
@@ -1285,13 +1285,13 @@ public final class Template {
                 case AStrictApplicator sapp -> List.of(sapp.b);
                 case AResolver res -> List.of(res.b, res.c);
                 case ACapture cap -> List.of(cap.b, cap.c);
-                case AMatcher match -> {
+                case AMatcher mat -> {
                     final var result = new ArrayList<Producer>();
-                    result.add(match.b);
-                    for (final var row : match.parameters) {
+                    result.add(mat.b);
+                    for (final var row : mat.parameters) {
                         result.addAll(List.of(row));
                     }
-                    for (final var row : match.binders) {
+                    for (final var row : mat.binders) {
                         result.addAll(List.of(row));
                     }
                     yield result;
@@ -1331,7 +1331,7 @@ public final class Template {
                 case AStrictApplicator _ -> new PStrictApplicator();
                 case AResolver _ -> new PResolver();
                 case ACapture _ -> new PCapture();
-                case AMatcher match -> new PMatch(match.names, match.arities, match.values.length);
+                case AMatcher mat -> new PMatch(mat.names, mat.arities, mat.values.length);
                 case AConstructorResolver res ->
                     new PConstructorResolver(res.name, res.arguments.length);
                 case ASelector sel -> new PSelect(sel.name, sel.index);
@@ -1466,12 +1466,12 @@ public final class Template {
                             proceed = true;
                         }
                     }
-                    case AMatcher match -> {
-                        collapseCaptures(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        collapseCaptures(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             collapseCaptures(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             collapseCaptures(value, visitedSet);
                         }
                     }
@@ -1585,12 +1585,12 @@ public final class Template {
                             proceed = true;
                         }
                     }
-                    case AMatcher match -> {
-                        resolveCaptures(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        resolveCaptures(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             resolveCaptures(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             resolveCaptures(value, visitedSet);
                         }
                     }
@@ -1692,12 +1692,12 @@ public final class Template {
                         resolveLambdas(cap.a, visitedSet);
                         resolveLambdas(cap.d, visitedSet);
                     }
-                    case AMatcher match -> {
-                        resolveLambdas(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        resolveLambdas(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             resolveLambdas(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             resolveLambdas(value, visitedSet);
                         }
                     }
@@ -1792,12 +1792,12 @@ public final class Template {
                         resolveConstructors(cap.a, visitedSet);
                         resolveConstructors(cap.d, visitedSet);
                     }
-                    case AMatcher match -> {
-                        resolveConstructors(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        resolveConstructors(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             resolveConstructors(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             resolveConstructors(value, visitedSet);
                         }
                     }
@@ -1900,12 +1900,12 @@ public final class Template {
                         duplicateAtoms(cap.a, visitedSet);
                         duplicateAtoms(cap.d, visitedSet);
                     }
-                    case AMatcher match -> {
-                        duplicateAtoms(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        duplicateAtoms(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             duplicateAtoms(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             duplicateAtoms(value, visitedSet);
                         }
                     }
@@ -2028,12 +2028,12 @@ public final class Template {
                         betaReduce(cap.a, visitedSet);
                         betaReduce(cap.d, visitedSet);
                     }
-                    case AMatcher match -> {
-                        betaReduce(match.a, visitedSet);
-                        for (final Consumer handler : match.handlers) {
+                    case AMatcher mat -> {
+                        betaReduce(mat.a, visitedSet);
+                        for (final Consumer handler : mat.handlers) {
                             betaReduce(handler, visitedSet);
                         }
-                        for (final Consumer value : match.values) {
+                        for (final Consumer value : mat.values) {
                             betaReduce(value, visitedSet);
                         }
                     }
