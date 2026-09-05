@@ -1,0 +1,120 @@
+-- An automatically parallel search for minimal-length addition chains (MLACs).
+
+#ifndef TARGET
+#define TARGET 46444543
+#endif
+
+#ifndef LEVEL
+#define LEVEL 27
+#endif
+
+data List a = Nil | Cons a (List a);
+
+data State =
+    State
+    (List "an unsigned 64-bit chain element")
+    "an unsigned 64-bit remaining depth";
+
+data Exhausted = Exhausted;
+
+main =
+    case search (State (Cons 1u64 Nil) LEVEL/**/u64) of {
+        Exhausted -> "No solution"
+    };
+
+search st =
+    let State elems nremaining = st in
+    let Cons top _ = elems in
+    if top == TARGET/**/u64
+    then $panic (render elems)
+    -- Test that _top * 2^nremaining_ is below `TARGET`, i.e., even doubling the
+    -- largest element each time would not be able to reach the target. If
+    -- `nremaining` is 64 or more, even starting from 1 would exceed any 64-bit
+    -- target, so this bound cannot prune.
+    else if nremaining < 64u64 && top <= ((TARGET/**/u64 - 1u64) >> nremaining)
+    then Exhausted
+    -- There is at least one shortest addition chain for a given target that has
+    -- four terminal star steps [1].
+    else if nremaining <= 4u64
+    then stars st top elems
+    else pairs st top elems Nil;
+
+pairs st top elems memo =
+    case elems of {
+        Nil -> Exhausted;
+        -- Since the `elems` list is descending, the largest sum for this _x_ is
+        -- _x + x_; if it does not exceed _top_, prune.
+        Cons x _ | x + x <= top -> Exhausted;
+        Cons x xs ->
+            -- Try all partners in `elems` for `x`, then continue enumerating
+            -- pairs with `xs`.
+            sums st top x elems xs memo
+    };
+
+sums st top x elems pending memo =
+    case elems of {
+        Nil -> pairs st top pending memo;
+        Cons y ys ->
+            let candidate = x + y in
+            -- Same prune as in `pairs`, but _y_ is established now: if _x + y_
+            -- does not exceed _top_, neither will _x + y'_, where _y'_ is a
+            -- smaller number, so stop searching for partners for this _x_.
+            if candidate <= top
+            then pairs st top pending memo
+            else if candidate > TARGET/**/u64 || contains candidate memo
+            then sums st top x ys pending memo
+            else
+                join
+                (proceed st candidate)
+                (sums st top x ys pending (Cons candidate memo))
+    };
+
+-- Same as `sums`, except specialized to the four terminal star steps [1].
+stars st top elems =
+    case elems of {
+        Nil -> Exhausted;
+        Cons y ys ->
+            let candidate = top + y in
+            if candidate <= top
+            then Exhausted
+            else if candidate > TARGET/**/u64
+            then stars st top ys
+            else join (proceed st candidate) (stars st top ys)
+    };
+
+-- Different pairs may produce the same next element. E.g., for the chain _1, 2,
+-- 3, 4_, both _4 + 2_ and _3 + 3_ produce _6_, giving the same child chain. In
+-- order to explore the same prefix onely once, we record tried frontier
+-- candidates in `memo` & allow `contains candidate memo` to deduplicate equal
+-- candidates during search.
+contains candidate memo =
+    case memo of {
+        Nil -> false;
+        Cons x xs -> candidate == x || contains candidate xs
+    };
+
+-- `join a b` is strict in both `a` & `b`, which lets the engine parallelize
+-- their evaluation at call sites.
+join a b =
+    case a of { Exhausted -> b };
+
+proceed st candidate =
+    let State elems nremaining = st in
+    search (State (Cons candidate elems) (nremaining - 1u64));
+
+render elems =
+    case elems of {
+        Nil -> $panic "Empty addition chain impossible";
+        Cons x xs -> case xs of {
+            Nil -> $show x;
+            Cons _ _ -> renderAux xs ++ $show x
+        }
+    };
+
+renderAux elems =
+    case elems of {
+        Nil -> "";
+        Cons x xs -> renderAux xs ++ $show x ++ " "
+    };
+
+-- [1] Bahig, Hatem M. "Star reduction among minimal length addition chains." Computing 91.4 (2011): 335-352.
