@@ -230,6 +230,8 @@ public final class Parser {
                 if (!datatypes.add(dName)) {
                     throw error(filename, d, "Found a duplicate `data` declaration: `%s`", dName);
                 }
+            }
+            for (final var d : declarations) {
                 final var parameters = new LinkedHashSet<String>();
                 for (final var p : d.SYMBOL()) {
                     final String pName = p.getText();
@@ -255,6 +257,12 @@ public final class Parser {
                         }
                         if (!parameters.contains(v)) {
                             throw error(filename, c, "Type variable not declared: `%s`", v);
+                        }
+                    }
+                    for (final var node : Trees.findAllTokenNodes(c, MotorLexer.CONSTRUCTOR)) {
+                        final String tyName = node.getText();
+                        if (node != c.CONSTRUCTOR() && !datatypes.contains(tyName)) {
+                            throw error(filename, c, "Datatype not declared: `%s`", tyName);
                         }
                     }
                     arities.put(cName, c.typeAtom().size());
