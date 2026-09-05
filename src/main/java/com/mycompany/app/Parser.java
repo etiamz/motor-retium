@@ -399,6 +399,16 @@ public final class Parser {
         public Term visitLambdaTerm(final MotorParser.LambdaTermContext ctx) {
             final var parameters = ctx.SYMBOL();
             final var parameterNames = bindingNames(ctx, parameters);
+            final var seen = new LinkedHashSet<String>();
+            for (final var x : parameterNames) {
+                if (!seen.add(x)) {
+                    throw error(
+                            filename,
+                            ctx,
+                            "Found a duplicate parameter in the lambda function: `%s`",
+                            x);
+                }
+            }
             parameterNames.forEach(this::push);
             Term result = visit(ctx.term());
             parameterNames.forEach(this::pop);
