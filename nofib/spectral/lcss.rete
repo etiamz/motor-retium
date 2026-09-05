@@ -24,9 +24,9 @@
 #define F 1500
 #endif
 
-Nil : 0;
-Cons : 2;
-Pair : 2;
+data List a = Nil | Cons a (List a);
+
+data Pair a b = Pair a b;
 
 main =
     renderList

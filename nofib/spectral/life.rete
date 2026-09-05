@@ -4,10 +4,11 @@
 #define N 27
 #endif
 
-Nil : 0;
-Cons : 2;
-Pair : 2;
-Triple : 3;
+data List a = Nil | Cons a (List a);
+
+data Pair a b = Pair a b;
+
+data Triple a b c = Triple a b c;
 
 main =
     $show (life N/**/u64);

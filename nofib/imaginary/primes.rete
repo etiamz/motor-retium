@@ -4,8 +4,7 @@
 #define N 1000
 #endif
 
-Nil : 0;
-Cons : 2;
+data List a = Nil | Cons a (List a);
 
 main =
     $show (prime N/**/u64);
