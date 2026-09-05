@@ -1,4 +1,12 @@
--- Shortest addition chain search with global `$hsearch` memoization.
+-- Shortest (optimal) addition chain search with global `$hsearch` memoization.
+
+#ifndef TARGET
+#define TARGET 46444543
+#endif
+
+#ifndef LEVEL
+#define LEVEL 27
+#endif
 
 Nil : 0;
 Cons : 2;
@@ -8,16 +16,18 @@ State : 3;
 
 main =
     let seed = 1u64 in
-    case search (State (Cons seed Nil) ($hash seed) level) of {
+    case search (State (Cons seed Nil) ($hash seed) LEVEL/**/u64) of {
         Exhausted -> "No solution"
     };
 
 search st =
     let State elems _key nremaining = st in
     let Cons top _rest = elems in
-    if top == target
+    if top == TARGET/**/u64
     then $panic (render elems)
-    else if top << nremaining < target
+    -- This shift panics when `nremaining` is 64 or more, which is practically
+    -- intractable anyway.
+    else if top << nremaining < TARGET/**/u64
     then Exhausted
     else pairs st top elems;
 
@@ -35,7 +45,7 @@ sums st top x elems =
             let candidate = x + y in
             if candidate <= top
             then Exhausted
-            else if candidate > target
+            else if candidate > TARGET/**/u64
             then sums st top x ys
             else join (proceed st candidate) (sums st top x ys)
     };

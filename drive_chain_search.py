@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-# $ black -l 80 drive.py
+# $ black -l 80 drive_chain_search.py
 
-import math
 import os
 import subprocess
 import sys
@@ -12,9 +11,10 @@ HERE = Path(__file__).parent
 
 PANIC_PREFIX = "Panic: User panic: "
 
-JAVA_FLAGS = ["-XX:+UseParallelGC", "-Xmn8g"]
+JAVA_FLAGS = ["-XX:+UseParallelGC"]
 
 
+# Prefer GraalVM for speed; if absent, use the default JVM.
 def java() -> str:
     home = os.environ.get("GRAALVM_HOME") or os.environ.get("JAVA_HOME")
     if home is None:
@@ -24,7 +24,9 @@ def java() -> str:
 
 def main() -> None:
     target = int(sys.argv[1])
-    level = math.ceil(math.log2(target))
+    if target < 1:
+        sys.exit(f"Expected a positive target, got {target}")
+    level = (target - 1).bit_length()  # the initial level
     while (message := run(target, level)) is None:
         print(f"Level {level} exhausted.", file=sys.stderr)
         level += 1
@@ -37,9 +39,9 @@ def run(target: int, level: int) -> str | None:
             "cpp",
             "-traditional-cpp",
             "-P",
-            f"-Dtarget={target}u64",
-            f"-Dlevel={level}u64",
-            HERE / "search.rete",
+            f"-DTARGET={target}",
+            f"-DLEVEL={level}",
+            HERE / "chain-search.rete",
         ],
         check=True,
         capture_output=True,
