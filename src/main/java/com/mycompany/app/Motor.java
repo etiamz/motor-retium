@@ -279,7 +279,7 @@ public final class Motor {
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
             case K_MATCH -> {
-                final var rator = (AMatch) agent;
+                final var rator = (AMatcher) agent;
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
             case K_CONSTRUCTOR_RESOLVER -> {
@@ -287,7 +287,7 @@ public final class Motor {
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
             case K_SELECT -> {
-                final var rator = (ASelect) agent;
+                final var rator = (ASelector) agent;
                 yield simplex(rator.a, rator::interact, p, thunk, heart);
             }
             case K_DUPLICATOR -> {
@@ -431,8 +431,8 @@ public final class Motor {
     public abstract static sealed class Agent permits
             // Operators.
             AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoRange,
-            ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatch,
-            AConstructorResolver, ASelect, ADuplicator,
+            ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatcher,
+            AConstructorResolver, ASelector, ADuplicator,
             // Data.
             ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange,
             ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
@@ -2115,7 +2115,7 @@ public final class Motor {
         }
     }
 
-    public static final class AMatch extends Agent {
+    public static final class AMatcher extends Agent {
         public final String[] names; // interned
         public final Consumer a;
         public final Producer b;
@@ -2125,7 +2125,7 @@ public final class Motor {
         public final Consumer[] values;
         public final Producer[][] binders;
 
-        public AMatch(final String[] names, final int[] arities, final int nshared) {
+        public AMatcher(final String[] names, final int[] arities, final int nshared) {
             super(K_MATCH);
             this.names = names;
             this.a = new Consumer(null);
@@ -2153,7 +2153,7 @@ public final class Motor {
         }
 
         private void interact() {
-            final AMatch match = this;
+            final AMatcher match = this;
             final Agent data = match.a.chase();
             switch (data) {
                 case AConstructor ctr -> {
@@ -2180,8 +2180,14 @@ public final class Motor {
                     match.b.forward(match.handlers[index].producer());
                 }
                 case ASuperposition sup -> {
-                    final var matchx = new AMatch(match.names, match.arities, match.values.length);
-                    final var matchxx = new AMatch(match.names, match.arities, match.values.length);
+                    final var matchx = new AMatcher(
+                            match.names,
+                            match.arities,
+                            match.values.length);
+                    final var matchxx = new AMatcher(
+                            match.names,
+                            match.arities,
+                            match.values.length);
                     final var supx = sup; // reuse
                     match.b.forward(supx.a);
                     matchx.a.setProducer(sup.b.producer());
@@ -2293,13 +2299,13 @@ public final class Motor {
 
     // For a constructor `name`, forwards the output port to its field at position `index`, checking
     // that the constructor is named as expected.
-    public static final class ASelect extends Agent {
+    public static final class ASelector extends Agent {
         public final String name; // interned
         public final int index;
         public final Consumer a;
         public final Producer b;
 
-        public ASelect(final String name, final int index) {
+        public ASelector(final String name, final int index) {
             super(K_SELECT);
             assert name == name.intern() : String.format("Selector name not interned: `%s`", name);
             this.name = name;
@@ -2309,7 +2315,7 @@ public final class Motor {
         }
 
         private void interact() {
-            final ASelect sel = this;
+            final ASelector sel = this;
             final Agent data = sel.a.chase();
             switch (data) {
                 case AConstructor ctr -> {
@@ -2319,8 +2325,8 @@ public final class Motor {
                     sel.b.forward(ctr.arguments[sel.index].producer());
                 }
                 case ASuperposition sup -> {
-                    final var selx = new ASelect(sel.name, sel.index);
-                    final var selxx = new ASelect(sel.name, sel.index);
+                    final var selx = new ASelector(sel.name, sel.index);
+                    final var selxx = new ASelector(sel.name, sel.index);
                     final var supx = sup; // reuse
                     sel.b.forward(supx.a);
                     selx.a.setProducer(sup.b.producer());
@@ -2685,7 +2691,7 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _ ->
                 true;
             case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
@@ -2696,7 +2702,7 @@ public final class Motor {
         return switch (agent) {
             case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2769,10 +2775,10 @@ public final class Motor {
             case AStrictApplicator _ -> "a strict applicator";
             case AResolver _ -> "a variable-list resolver";
             case ACapture _ -> "a captured variable";
-            case AMatch _ -> "a match expression";
+            case AMatcher _ -> "a case-of expression";
             case AConstructorResolver res ->
                 "a variable-list constructor resolver for `" + res.name + "`";
-            case ASelect sel ->
+            case ASelector sel ->
                 String.format("a field selector for `%s` at %d", sel.name, sel.index);
             case ADuplicator _ -> "a duplicator";
             case ALambda _ -> "a lambda function";

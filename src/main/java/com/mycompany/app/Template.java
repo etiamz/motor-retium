@@ -250,7 +250,7 @@ public final class Template {
                     consumers[i++] = agent.d;
                 }
                 case PMatch p -> {
-                    final var agent = new Motor.AMatch(p.names, p.arities, p.nshared);
+                    final var agent = new Motor.AMatcher(p.names, p.arities, p.nshared);
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                     for (final var port : agent.handlers) {
@@ -279,7 +279,7 @@ public final class Template {
                     }
                 }
                 case PSelect p -> {
-                    final var agent = new Motor.ASelect(p.name, p.index);
+                    final var agent = new Motor.ASelector(p.name, p.index);
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                 }
@@ -365,7 +365,7 @@ public final class Template {
                 // Operators.
                 AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr,
                 ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver,
-                ACapture, AMatch, AConstructorResolver, ASelect, ADuplicator,
+                ACapture, AMatcher, AConstructorResolver, ASelector, ADuplicator,
                 // Data.
                 ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString,
                 ARangeFull, AIdentity, AConstructor {
@@ -386,7 +386,7 @@ public final class Template {
         // their asymptotic complexity. For instance, `append xs ys` on cons-lists would take
         // _O(|xs| * |ys|)_ time instead of _O(|xs|)_, because of the `ys` variable that occurs in
         // both branches of the case-of.
-        public sealed interface Branching permits AIfThenElse, AMatch {
+        public sealed interface Branching permits AIfThenElse, AMatcher {
             // The consumer pointing to the value shared among the branches.
             Consumer value(int slot);
 
@@ -778,7 +778,7 @@ public final class Template {
             }
         }
 
-        public static final class AMatch implements Agent, Branching {
+        public static final class AMatcher implements Agent, Branching {
             private final String[] names;
             private final Consumer a;
             private final Producer b;
@@ -788,7 +788,7 @@ public final class Template {
             private final Consumer[] values;
             private final Producer[][] binders;
 
-            private AMatch(final String[] names, final int[] arities, final int nshared) {
+            private AMatcher(final String[] names, final int[] arities, final int nshared) {
                 this.names = Arrays.stream(names).map(String::intern).toArray(String[]::new);
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
@@ -868,13 +868,13 @@ public final class Template {
             }
         }
 
-        public static final class ASelect implements Agent {
+        public static final class ASelector implements Agent {
             private final String name;
             private final int index;
             private final Consumer a;
             private final Producer b;
 
-            private ASelect(final String name, final int index) {
+            private ASelector(final String name, final int index) {
                 this.name = name.intern();
                 this.index = index;
                 this.a = new Consumer(null);
@@ -1150,16 +1150,16 @@ public final class Template {
             return new ACapture();
         }
 
-        public AMatch mkMatch(final String[] names, final int[] arities, final int nshared) {
-            return new AMatch(names, arities, nshared);
+        public AMatcher mkMatcher(final String[] names, final int[] arities, final int nshared) {
+            return new AMatcher(names, arities, nshared);
         }
 
         public AConstructorResolver mkConstructorResolver(final String name, final int arity) {
             return new AConstructorResolver(name, arity);
         }
 
-        public ASelect mkSelect(final String name, final int index) {
-            return new ASelect(name, index);
+        public ASelector mkSelector(final String name, final int index) {
+            return new ASelector(name, index);
         }
 
         public ADuplicator mkDuplicator() {
@@ -1238,7 +1238,7 @@ public final class Template {
                 case AStrictApplicator sapp -> List.of(sapp.a, sapp.c);
                 case AResolver res -> List.of(res.a, res.d);
                 case ACapture cap -> List.of(cap.a, cap.d);
-                case AMatch match -> {
+                case AMatcher match -> {
                     final var result = new ArrayList<Consumer>();
                     result.add(match.a);
                     result.addAll(List.of(match.handlers));
@@ -1251,7 +1251,7 @@ public final class Template {
                     result.addAll(List.of(res.arguments));
                     yield result;
                 }
-                case ASelect sel -> List.of(sel.a);
+                case ASelector sel -> List.of(sel.a);
                 case ADuplicator dup -> List.of(dup.a);
                 case ALambda lam -> List.of(lam.c);
                 case AConstructor ctr -> List.of(ctr.arguments);
@@ -1285,7 +1285,7 @@ public final class Template {
                 case AStrictApplicator sapp -> List.of(sapp.b);
                 case AResolver res -> List.of(res.b, res.c);
                 case ACapture cap -> List.of(cap.b, cap.c);
-                case AMatch match -> {
+                case AMatcher match -> {
                     final var result = new ArrayList<Producer>();
                     result.add(match.b);
                     for (final var row : match.parameters) {
@@ -1297,7 +1297,7 @@ public final class Template {
                     yield result;
                 }
                 case AConstructorResolver res -> List.of(res.b);
-                case ASelect sel -> List.of(sel.b);
+                case ASelector sel -> List.of(sel.b);
                 case ADuplicator dup -> List.of(dup.b, dup.c);
                 case ALambda lam -> List.of(lam.a, lam.b);
                 case AEndOfList end -> List.of(end.a);
@@ -1331,10 +1331,10 @@ public final class Template {
                 case AStrictApplicator _ -> new PStrictApplicator();
                 case AResolver _ -> new PResolver();
                 case ACapture _ -> new PCapture();
-                case AMatch match -> new PMatch(match.names, match.arities, match.values.length);
+                case AMatcher match -> new PMatch(match.names, match.arities, match.values.length);
                 case AConstructorResolver res ->
                     new PConstructorResolver(res.name, res.arguments.length);
-                case ASelect sel -> new PSelect(sel.name, sel.index);
+                case ASelector sel -> new PSelect(sel.name, sel.index);
                 case ADuplicator _ -> new PDuplicator();
                 case ALambda _ -> new PLambda();
                 case AEndOfList _ -> new PEndOfList();
@@ -1466,7 +1466,7 @@ public final class Template {
                             proceed = true;
                         }
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         collapseCaptures(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             collapseCaptures(handler, visitedSet);
@@ -1481,7 +1481,7 @@ public final class Template {
                             collapseCaptures(argument, visitedSet);
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         collapseCaptures(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {
@@ -1575,7 +1575,7 @@ public final class Template {
                             case ARangeFull _ -> true;
                             case AIdentity _ -> true;
                             case AConstructor _ -> true;
-                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _,ALambda _,AEndOfList _ ->
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AEndOfList _ ->
                                 false;
                             case null -> false;
                         };
@@ -1585,7 +1585,7 @@ public final class Template {
                             proceed = true;
                         }
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         resolveCaptures(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             resolveCaptures(handler, visitedSet);
@@ -1600,7 +1600,7 @@ public final class Template {
                             resolveCaptures(argument, visitedSet);
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         resolveCaptures(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {
@@ -1692,7 +1692,7 @@ public final class Template {
                         resolveLambdas(cap.a, visitedSet);
                         resolveLambdas(cap.d, visitedSet);
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         resolveLambdas(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             resolveLambdas(handler, visitedSet);
@@ -1707,7 +1707,7 @@ public final class Template {
                             resolveLambdas(argument, visitedSet);
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         resolveLambdas(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {
@@ -1792,7 +1792,7 @@ public final class Template {
                         resolveConstructors(cap.a, visitedSet);
                         resolveConstructors(cap.d, visitedSet);
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         resolveConstructors(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             resolveConstructors(handler, visitedSet);
@@ -1815,7 +1815,7 @@ public final class Template {
                             proceed = true;
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         resolveConstructors(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {
@@ -1900,7 +1900,7 @@ public final class Template {
                         duplicateAtoms(cap.a, visitedSet);
                         duplicateAtoms(cap.d, visitedSet);
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         duplicateAtoms(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             duplicateAtoms(handler, visitedSet);
@@ -1915,7 +1915,7 @@ public final class Template {
                             duplicateAtoms(argument, visitedSet);
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         duplicateAtoms(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {
@@ -1932,7 +1932,7 @@ public final class Template {
                             case AIdentity _ -> new AIdentity().a;
                             case AConstructor ctr when ctr.isNullary() ->
                                 new AConstructor(ctr.name, 0).a;
-                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatch _,AConstructorResolver _,ASelect _,ADuplicator _,ALambda _,AConstructor _ ->
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AConstructor _ ->
                                 null;
                             case null -> null;
                         };
@@ -2028,7 +2028,7 @@ public final class Template {
                         betaReduce(cap.a, visitedSet);
                         betaReduce(cap.d, visitedSet);
                     }
-                    case AMatch match -> {
+                    case AMatcher match -> {
                         betaReduce(match.a, visitedSet);
                         for (final Consumer handler : match.handlers) {
                             betaReduce(handler, visitedSet);
@@ -2043,7 +2043,7 @@ public final class Template {
                             betaReduce(argument, visitedSet);
                         }
                     }
-                    case ASelect sel -> {
+                    case ASelector sel -> {
                         betaReduce(sel.a, visitedSet);
                     }
                     case ADuplicator dup -> {

@@ -148,7 +148,7 @@ public final class Compiler {
                     branches.add(branch);
                 }
                 final var shared = sharedSlots(branches);
-                final var agent = builder.mkMatch(names, arities, shared.size());
+                final var agent = builder.mkMatcher(names, arities, shared.size());
                 output.setProducer(agent.b());
                 for (int i = 0; i < cases.size(); i++) {
                     agent.handler(i).setProducer(results[i].producer());
@@ -176,7 +176,7 @@ public final class Compiler {
                 yield fvSet;
             }
             case Term.Select(var name, var index, var t) -> {
-                final var agent = builder.mkSelect(name, index);
+                final var agent = builder.mkSelector(name, index);
                 output.setProducer(agent.b());
                 yield compile(builder, t, agent.a());
             }
