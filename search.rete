@@ -8,8 +8,9 @@ State : 3;
 
 main =
     let seed = 1u64 in
-    let Exhausted = search (State (Cons seed Nil) ($hash seed) level) in
-    "No solution";
+    case search (State (Cons seed Nil) ($hash seed) level) of {
+        Exhausted -> "No solution"
+    };
 
 search st =
     let State elems _key nremaining = st in
@@ -40,8 +41,7 @@ sums st top x elems =
     };
 
 join a b =
-    let Exhausted = a in
-    b;
+    case a of { Exhausted -> b };
 
 proceed st candidate =
     let State elems key nremaining = st in
