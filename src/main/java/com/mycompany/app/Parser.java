@@ -184,32 +184,20 @@ public final class Parser {
 
         @Override
         public Term visitProgram(final MotorParser.ProgramContext ctx) {
-            for (final var d : ctx.dataDeclaration()) {
-                for (final var c : d.constructorDeclaration()) {
-                    final var name = c.CONSTRUCTOR().getText();
-                    if (arities.containsKey(name)) {
-                        throw error(
-                                filename,
-                                c,
-                                "Found a duplicate constructor declaration: `%s`",
-                                name);
-                    }
-                    arities.put(name, c.typeAtom().size());
+            checkDataDeclarations(ctx.dataDeclaration());
+            for (final var d : ctx.definition()) {
+                final String dName = d.SYMBOL(0).getText();
+                if (dName.equals("_")) {
+                    throw error(filename, d, "`_` cannot be a definition name");
+                }
+                if (!globals.add(dName)) {
+                    throw error(filename, d, "Found a duplicate definition: `%s`", dName);
                 }
             }
             for (final var d : ctx.definition()) {
-                final var name = d.SYMBOL(0).getText();
-                if (name.equals("_")) {
-                    throw error(filename, d, "`_` cannot be a top-level definition name");
-                }
-                if (!globals.add(name)) {
-                    throw error(filename, d, "Found a duplicate top-level definition: `%s`", name);
-                }
-            }
-            for (final var d : ctx.definition()) {
-                final var name = d.SYMBOL(0).getText();
+                final String dName = d.SYMBOL(0).getText();
                 final var parameters = d.SYMBOL().subList(1, d.SYMBOL().size());
-                final var parameterNames = bindingNames(d, parameters);
+                final List<String> parameterNames = bindingNames(d, parameters);
                 final var seen = new LinkedHashSet<String>();
                 for (final var x : parameterNames) {
                     if (!seen.add(x)) {
@@ -226,12 +214,52 @@ public final class Parser {
                 for (final var x : parameterNames.reversed()) {
                     body = new Term.Lambda(x, body);
                 }
-                definitions.put(name, body);
+                definitions.put(dName, body);
             }
             if (!globals.contains("main")) {
                 throw new SyntaxError("No `main` top-level definition");
             }
             return new Term.Reference("main");
+        }
+
+        private void checkDataDeclarations(
+                final List<MotorParser.DataDeclarationContext> declarations) {
+            final var datatypes = new LinkedHashSet<String>();
+            for (final var d : declarations) {
+                final String dName = d.CONSTRUCTOR().getText();
+                if (!datatypes.add(dName)) {
+                    throw error(filename, d, "Found a duplicate `data` declaration: `%s`", dName);
+                }
+                final var parameters = new LinkedHashSet<String>();
+                for (final var p : d.SYMBOL()) {
+                    final String pName = p.getText();
+                    if (pName.equals("_")) {
+                        throw error(filename, d, "`_` cannot be a type variable");
+                    }
+                    if (!parameters.add(pName)) {
+                        throw error(filename, d, "Found a duplicate `data` parameter: `%s`", pName);
+                    }
+                }
+                for (final var c : d.constructorDeclaration()) {
+                    final String cName = c.CONSTRUCTOR().getText();
+                    if (arities.containsKey(cName)) {
+                        throw error(
+                                filename,
+                                c,
+                                "Found a duplicate constructor declaration: `%s`",
+                                cName);
+                    }
+                    for (final var v : freeVariables(c)) {
+                        if (v.equals("_")) {
+                            throw error(filename, c, "`_` cannot be a type variable");
+                        }
+                        if (!parameters.contains(v)) {
+                            throw error(filename, c, "Type variable not declared: `%s`", v);
+                        }
+                    }
+                    arities.put(cName, c.typeAtom().size());
+                }
+            }
         }
 
         @Override
