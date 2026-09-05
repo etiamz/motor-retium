@@ -169,7 +169,7 @@ public final class StrictnessAnalyzer {
             return switch (term) {
                 case Term.Lambda(var x, var t) -> new Term.Lambda(x, annotate(t));
                 case Term.Let(var x, var e, var t) -> new Term.Let(x, annotate(e), annotate(t));
-                case Term.Destructure(var name, var xs, var e, var t) -> destructure(term);
+                case Term.Destructure myTerm -> destructure(myTerm);
                 case Term.StrictApplication(var t1, var t2, var source) ->
                     new Term.StrictApplication(annotate(t1), annotate(t2), source);
                 case Term.Application _ -> {
