@@ -446,17 +446,7 @@ public final class Parser {
             xs.forEach(this::push);
             final var continuation = visit(ctx.term(1));
             xs.forEach(this::pop);
-            final var banlist = new LinkedHashSet<>(continuation.freeVariables());
-            banlist.addAll(xs);
-            final var v = Term.freshen("v", banlist);
-            Term result = continuation;
-            for (int i = xs.size() - 1; i >= 0; i--) {
-                result = new Term.Let(
-                        xs.get(i),
-                        new Term.Select(name, i, new Term.Variable(v)),
-                        result);
-            }
-            return new Term.Let(v, s, result);
+            return new Term.Destructure(name, xs, s, continuation);
         }
 
         @Override

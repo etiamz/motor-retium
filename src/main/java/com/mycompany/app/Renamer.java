@@ -39,6 +39,14 @@ public final class Renamer {
                 final var inner = bind(List.of(x));
                 yield new Let(inner.renaming.get(x), rename(e), inner.rename(t));
             }
+            case Destructure(var name, var xs, var e, var t) -> {
+                final var inner = bind(xs);
+                yield new Destructure(
+                        name,
+                        xs.stream().map(inner.renaming::get).toList(),
+                        rename(e),
+                        inner.rename(t));
+            }
             case Application(var t1, var t2) -> new Application(rename(t1), rename(t2));
             case StrictApplication(var t1, var t2, var source) ->
                 new StrictApplication(rename(t1), rename(t2), source);

@@ -89,6 +89,14 @@ public final class StrictnessAnalyzer {
                     }
                     yield result;
                 }
+                case Term.Destructure(var _, var xs, var e, var t) -> {
+                    final var result = demand(t);
+                    if (xs.stream().anyMatch(result::contains)) {
+                        result.addAll(demand(e));
+                    }
+                    xs.forEach(result::remove);
+                    yield result;
+                }
                 case Term.StrictApplication(var t1, var t2, var _) -> {
                     final var result = demand(t1);
                     result.addAll(demand(t2));
@@ -161,6 +169,7 @@ public final class StrictnessAnalyzer {
             return switch (term) {
                 case Term.Lambda(var x, var t) -> new Term.Lambda(x, annotate(t));
                 case Term.Let(var x, var e, var t) -> new Term.Let(x, annotate(e), annotate(t));
+                case Term.Destructure(var name, var xs, var e, var t) -> destructure(term);
                 case Term.StrictApplication(var t1, var t2, var source) ->
                     new Term.StrictApplication(annotate(t1), annotate(t2), source);
                 case Term.Application _ -> {
@@ -210,6 +219,47 @@ public final class StrictnessAnalyzer {
                 throw new IllegalStateException("`|`-guards must be already eliminated");
             }
             return new Term.Case(myCase.name(), myCase.xs(), List.of(), annotate(myCase.t()));
+        }
+
+        // If the demand of `t` conteyns at least one variable from `xs`, use the cheaper lowering
+        // `Term.Match`; otherwise, use Haskell's lazy lowering.
+        private Term destructure(final Term.Destructure term) {
+            final var myDemand = demand(term.t());
+            if (term.xs().stream().anyMatch(myDemand::contains)) {
+                return strictDestructure(term);
+            }
+            return lazyDestructure(term);
+        }
+
+        private Term strictDestructure(final Term.Destructure term) {
+            final var name = term.name();
+            final var xs = term.xs();
+            final var e = term.e();
+            final var t = term.t();
+            final List<Term> guards = List.of();
+            return new Term.Match(
+                    annotate(e),
+                    List.of(new Term.Case(name, xs, guards, annotate(t))));
+        }
+
+        private Term lazyDestructure(final Term.Destructure term) {
+            final var name = term.name();
+            final var xs = term.xs();
+            final var e = term.e();
+            final var t = term.t();
+            final var scrutinee = annotate(e);
+            final var continuation = annotate(t);
+            final var banlist = new LinkedHashSet<>(t.freeVariables());
+            banlist.addAll(xs);
+            final var v = Term.freshen("v", banlist);
+            Term result = continuation;
+            for (int i = xs.size() - 1; i >= 0; i--) {
+                result = new Term.Let(
+                        xs.get(i),
+                        new Term.Select(name, i, new Term.Variable(v)),
+                        result);
+            }
+            return new Term.Let(v, scrutinee, result);
         }
     }
 }

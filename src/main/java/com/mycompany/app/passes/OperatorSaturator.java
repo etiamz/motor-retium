@@ -93,6 +93,8 @@ public final class OperatorSaturator {
             case Term.Lambda(var x, var t) -> new Term.Lambda(x, bind(List.of(x)).saturate(t));
             case Term.Let(var x, var e, var t) ->
                 new Term.Let(x, saturate(e), bind(List.of(x)).saturate(t));
+            case Term.Destructure(var name, var xs, var e, var t) ->
+                new Term.Destructure(name, xs, saturate(e), bind(xs).saturate(t));
             case Term.Match(var s, var cases) ->
                 new Term.Match(saturate(s), cases.stream().map(this::saturateCase).toList());
             case Term.IfThenElse(var t1, var t2, var t3) ->

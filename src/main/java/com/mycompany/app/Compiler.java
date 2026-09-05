@@ -83,6 +83,8 @@ public final class Compiler {
                 merge(fvSet, compile(builder, e, share(builder, usages)));
                 yield fvSet;
             }
+            case Term.Destructure(var name, var _, var _, var _) ->
+                throw new IllegalStateException("Unlowered `let`-pattern for `" + name + "`");
             case Term.StrictApplication(var t1, var t2, var source) -> {
                 final var agent = builder.mkStrictApplicator(source);
                 output.setProducer(agent.b());

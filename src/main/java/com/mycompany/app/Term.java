@@ -21,6 +21,9 @@ public sealed interface Term {
     public record Let(String x, Term e, Term t) implements Term {
     }
 
+    public record Destructure(String name, List<String> xs, Term e, Term t) implements Term {
+    }
+
     public record Application(Term t1, Term t2) implements Term {
     }
 
@@ -125,6 +128,12 @@ public sealed interface Term {
                 fvSet.addAll(e.freeVariables());
                 yield fvSet;
             }
+            case Destructure(var _, var xs, var e, var t) -> {
+                final var fvSet = t.freeVariables();
+                xs.forEach(fvSet::remove);
+                fvSet.addAll(e.freeVariables());
+                yield fvSet;
+            }
             case Application(var t1, var t2) -> union(t1, t2);
             case StrictApplication(var t1, var t2, var _) -> union(t1, t2);
             case Constructor(var _, var ts, var _) -> union(ts.toArray(Term[]::new));
@@ -165,6 +174,7 @@ public sealed interface Term {
             case Reference(var name) -> new LinkedHashSet<>(List.of(name));
             case Lambda(var _, var t) -> t.references();
             case Let(var _, var e, var t) -> unionReferences(e, t);
+            case Destructure(var _, var _, var e, var t) -> unionReferences(e, t);
             case Application(var t1, var t2) -> unionReferences(t1, t2);
             case StrictApplication(var t1, var t2, var _) -> unionReferences(t1, t2);
             case Constructor(var _, var ts, var _) -> unionReferences(ts.toArray(Term[]::new));
