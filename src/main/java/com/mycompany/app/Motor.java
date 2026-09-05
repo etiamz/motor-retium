@@ -1040,7 +1040,7 @@ public final class Motor {
                     final var op2x = new AStrictOp2(op2.op);
                     final var op2xx = new AStrictOp2(op2.op);
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     op2.b.forward(supx.a);
                     dup.a.setProducer(op2.c.producer());
                     op2x.a.setProducer(sup.b.producer());
@@ -1480,8 +1480,8 @@ public final class Motor {
                     final var itex = new AIfThenElse(ite.values.length);
                     final var itexx = new AIfThenElse(ite.values.length);
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
-                    final var dupx = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
+                    final var dupx = new ADuplicator(Label.DELTA);
                     ite.b.forward(supx.a);
                     dup.a.setProducer(ite.c.producer());
                     dupx.a.setProducer(ite.d.producer());
@@ -1494,12 +1494,12 @@ public final class Motor {
                     itex.d.setProducer(dupx.b);
                     itexx.d.setProducer(dupx.c);
                     for (int i = 0; i < ite.values.length; i++) {
-                        final var dupv = new ADuplicator(sup.label);
+                        final var dupv = new ADuplicator(Label.DELTA);
                         dupv.a.setProducer(ite.values[i].producer());
                         itex.values[i].setProducer(dupv.b);
                         itexx.values[i].setProducer(dupv.c);
                         for (int k = 0; k < 2; k++) {
-                            final var supv = new ASuperposition(sup.label);
+                            final var supv = new ASuperposition();
                             ite.binders[i][k].forward(supv.a);
                             supv.b.setProducer(itex.binders[i][k]);
                             supv.c.setProducer(itexx.binders[i][k]);
@@ -1614,7 +1614,7 @@ public final class Motor {
                     final var andx = new AAnd();
                     final var andxx = new AAnd();
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     and.b.forward(supx.a);
                     dup.a.setProducer(and.c.producer());
                     andx.a.setProducer(sup.b.producer());
@@ -1663,7 +1663,7 @@ public final class Motor {
                     final var orx = new AOr();
                     final var orxx = new AOr();
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     or.b.forward(supx.a);
                     dup.a.setProducer(or.c.producer());
                     orx.a.setProducer(sup.b.producer());
@@ -1716,7 +1716,7 @@ public final class Motor {
                     final var doRngx = new ADoRange(doRng.inclusive);
                     final var doRngxx = new ADoRange(doRng.inclusive);
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     doRng.b.forward(supx.a);
                     dup.a.setProducer(doRng.c.producer());
                     doRngx.a.setProducer(sup.b.producer());
@@ -1880,7 +1880,7 @@ public final class Motor {
                     final var appx = new AApplicator();
                     final var appxx = new AApplicator();
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     app.b.forward(supx.a);
                     dup.a.setProducer(app.c.producer());
                     appx.a.setProducer(sup.b.producer());
@@ -1934,7 +1934,7 @@ public final class Motor {
                     final var sappx = new AStrictApplicator();
                     final var sappxx = new AStrictApplicator();
                     final var supx = sup; // reuse
-                    final var dup = new ADuplicator(sup.label);
+                    final var dup = new ADuplicator(Label.DELTA);
                     sapp.b.forward(supx.a);
                     dup.a.setProducer(sapp.c.producer());
                     sappx.a.setProducer(sup.b.producer());
@@ -1989,8 +1989,8 @@ public final class Motor {
                     final var resx = new AResolver();
                     final var resxx = new AResolver();
                     final var supx = sup; // reuse
-                    final var supxx = new ASuperposition(sup.label);
-                    final var dup = new ADuplicator(sup.label);
+                    final var supxx = new ASuperposition();
+                    final var dup = new ADuplicator(Label.DELTA);
                     res.b.forward(supx.a);
                     res.c.forward(supxx.a);
                     dup.a.setProducer(res.d.producer());
@@ -2090,8 +2090,8 @@ public final class Motor {
                     final var capx = new ACapture();
                     final var capxx = new ACapture();
                     final var supx = sup; // reuse
-                    final var supxx = new ASuperposition(sup.label);
-                    final var dup = new ADuplicator(sup.label);
+                    final var supxx = new ASuperposition();
+                    final var dup = new ADuplicator(Label.DELTA);
                     cap.b.forward(supx.a);
                     cap.c.forward(supxx.a);
                     dup.a.setProducer(cap.d.producer());
@@ -2195,24 +2195,24 @@ public final class Motor {
                     supx.b.setProducer(matchx.b);
                     supx.c.setProducer(matchxx.b);
                     for (int i = 0; i < match.names.length; i++) {
-                        final var dup = new ADuplicator(sup.label);
+                        final var dup = new ADuplicator(Label.DELTA);
                         dup.a.setProducer(match.handlers[i].producer());
                         matchx.handlers[i].setProducer(dup.b);
                         matchxx.handlers[i].setProducer(dup.c);
                         for (int j = 0; j < match.parameters[i].length; j++) {
-                            final var supp = new ASuperposition(sup.label);
+                            final var supp = new ASuperposition();
                             match.parameters[i][j].forward(supp.a);
                             supp.b.setProducer(matchx.parameters[i][j]);
                             supp.c.setProducer(matchxx.parameters[i][j]);
                         }
                     }
                     for (int i = 0; i < match.values.length; i++) {
-                        final var dupv = new ADuplicator(sup.label);
+                        final var dupv = new ADuplicator(Label.DELTA);
                         dupv.a.setProducer(match.values[i].producer());
                         matchx.values[i].setProducer(dupv.b);
                         matchxx.values[i].setProducer(dupv.c);
                         for (int j = 0; j < match.names.length; j++) {
-                            final var supv = new ASuperposition(sup.label);
+                            final var supv = new ASuperposition();
                             match.binders[i][j].forward(supv.a);
                             supv.b.setProducer(matchx.binders[i][j]);
                             supv.c.setProducer(matchxx.binders[i][j]);
@@ -2280,7 +2280,7 @@ public final class Motor {
                     supx.b.setProducer(resx.b);
                     supx.c.setProducer(resxx.b);
                     for (int i = 0; i < res.arity(); i++) {
-                        final var dup = new ADuplicator(sup.label);
+                        final var dup = new ADuplicator(Label.DELTA);
                         dup.a.setProducer(res.arguments[i].producer());
                         resx.arguments[i].setProducer(dup.b);
                         resxx.arguments[i].setProducer(dup.c);
@@ -2381,12 +2381,12 @@ public final class Motor {
                     }
                     yield new Commute(ctrx.a, ctrxx.a);
                 }
-                case ASuperposition sup when dup.label == sup.label -> {
+                case ASuperposition sup when dup.label == Label.DELTA -> {
                     yield new Annihilate(sup.b, sup.c);
                 }
                 case ASuperposition sup -> {
                     final var supx = sup; // reuse
-                    final var supxx = new ASuperposition(sup.label);
+                    final var supxx = new ASuperposition();
                     final var dupx = new ADuplicator(dup.label);
                     final var dupxx = new ADuplicator(dup.label);
                     dupx.a.setProducer(sup.b.producer());
@@ -2400,7 +2400,7 @@ public final class Motor {
                 case ALambda lam -> {
                     final var lamx = new ALambda();
                     final var lamxx = new ALambda();
-                    final var sup = new ASuperposition(Label.DELTA);
+                    final var sup = new ASuperposition();
                     final var dupx = new ADuplicator(Label.DELTA);
                     lam.b.forward(sup.a);
                     dupx.a.setProducer(lam.c.producer());
@@ -2619,14 +2619,15 @@ public final class Motor {
     }
 
     private static final class ASuperposition extends Agent {
-        public final Label label;
+        // Conceptually, every superposition has label `Label.DELTA`, so there is no technical
+        // reason to have this object field.
+        // public final Label label;
         public final Producer a;
         public final Consumer b;
         public final Consumer c;
 
-        private ASuperposition(final Label label) {
+        private ASuperposition() {
             super(K_SUPERPOSITION);
-            this.label = label;
             this.a = new Producer(this);
             this.b = new Consumer(null);
             this.c = new Consumer(null);
