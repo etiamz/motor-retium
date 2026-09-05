@@ -4,8 +4,7 @@
 #define N 10
 #endif
 
-Nil : 0;
-Cons : 2;
+data List a = Nil | Cons a (List a);
 
 main =
     $show (nsoln N/**/i64);

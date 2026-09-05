@@ -184,26 +184,18 @@ public final class Parser {
 
         @Override
         public Term visitProgram(final MotorParser.ProgramContext ctx) {
-            for (final var c : ctx.constructorDeclaration()) {
-                final var name = c.CONSTRUCTOR().getText();
-                if (arities.containsKey(name)) {
-                    throw error(
-                            filename,
-                            c,
-                            "Found a duplicate constructor declaration: `%s`",
-                            name);
+            for (final var d : ctx.dataDeclaration()) {
+                for (final var c : d.constructorDeclaration()) {
+                    final var name = c.CONSTRUCTOR().getText();
+                    if (arities.containsKey(name)) {
+                        throw error(
+                                filename,
+                                c,
+                                "Found a duplicate constructor declaration: `%s`",
+                                name);
+                    }
+                    arities.put(name, c.typeAtom().size());
                 }
-                final var text = c.INTEGER().getText();
-                final int arity;
-                try {
-                    arity = Integer.parseInt(text);
-                } catch (final NumberFormatException _) {
-                    throw error(filename, c, "Not a valid arity: `%s`", text);
-                }
-                if (arity < 0) {
-                    throw error(filename, c, "Expected a non-negative arity: `%s`", text);
-                }
-                arities.put(name, arity);
             }
             for (final var d : ctx.definition()) {
                 final var name = d.SYMBOL(0).getText();

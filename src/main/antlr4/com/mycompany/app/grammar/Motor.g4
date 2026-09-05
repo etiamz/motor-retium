@@ -1,11 +1,29 @@
 grammar Motor;
 
 program
-    : constructorDeclaration* definition+ EOF
+    : dataDeclaration* definition+ EOF
+    ;
+
+dataDeclaration
+    : 'data' CONSTRUCTOR SYMBOL* '=' constructorDeclaration ('|' constructorDeclaration)* ';'
     ;
 
 constructorDeclaration
-    : CONSTRUCTOR ':' INTEGER ';'
+    : CONSTRUCTOR typeAtom*
+    ;
+
+typeExpression
+    : typeApplication ('->' typeExpression)?
+    ;
+
+typeApplication
+    : typeAtom+
+    ;
+
+typeAtom
+    : CONSTRUCTOR
+    | SYMBOL
+    | '(' typeExpression ')'
     ;
 
 definition

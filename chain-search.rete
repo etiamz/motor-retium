@@ -8,11 +8,13 @@
 #define LEVEL 27
 #endif
 
-Nil : 0;
-Cons : 2;
-Exhausted : 0;
-Occupied : 0;
-State : 3;
+data List a = Nil | Cons a (List a);
+
+data State = State (List Word64) Word64 Word64;
+
+data Exhausted = Exhausted;
+
+data Occupied = Occupied;
 
 main =
     let seed = 1u64 in

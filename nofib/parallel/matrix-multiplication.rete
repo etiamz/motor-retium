@@ -4,8 +4,7 @@
 #define N 150
 #endif
 
-Nil : 0;
-Cons : 2;
+data List a = Nil | Cons a (List a);
 
 main =
     renderMatrix (multMatricesTr (m1 N/**/i64) (transpose (m1 N/**/i64)));

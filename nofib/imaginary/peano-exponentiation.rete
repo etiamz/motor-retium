@@ -4,8 +4,7 @@
 #define N 8
 #endif
 
-Z : 0;
-S : 1;
+data Nat = Z | S Nat;
 
 main =
     $show (int (pow (nat 3u64) (nat N/**/u64)));
