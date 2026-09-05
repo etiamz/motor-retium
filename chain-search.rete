@@ -10,7 +10,11 @@
 
 data List a = Nil | Cons a (List a);
 
-data State = State (List Word64) Word64 Word64;
+data State =
+    State
+    (List "an unsigned 64-bit chain element")
+    "an unsigned 64-bit hash key"
+    "an unsigned 64-bit remaining depth";
 
 data Exhausted = Exhausted;
 

@@ -23,6 +23,7 @@ typeApplication
 typeAtom
     : CONSTRUCTOR
     | SYMBOL
+    | STRING
     | '(' typeExpression ')'
     ;
 
