@@ -78,8 +78,7 @@ public final class Parser {
             Map.entry("$strcspn", Primitives.StrictOp2.STRCSPN),
             Map.entry("$strpbrk", Primitives.StrictOp2.STRPBRK),
             Map.entry("$startswith", Primitives.StrictOp2.STARTSWITH),
-            Map.entry("$endswith", Primitives.StrictOp2.ENDSWITH),
-            Map.entry("$hsearch", Primitives.StrictOp2.HSEARCH));
+            Map.entry("$endswith", Primitives.StrictOp2.ENDSWITH));
 
     private static final Set<Class<?>> RANGE_CONTEXTS = Set.of(
             MotorParser.RangeTermContext.class,

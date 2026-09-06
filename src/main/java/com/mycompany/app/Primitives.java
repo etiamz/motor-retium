@@ -107,8 +107,7 @@ public final class Primitives {
         STRCSPN("byte-set complement span"),
         STRPBRK("byte-set search"),
         STARTSWITH("prefix check"),
-        ENDSWITH("suffix check"),
-        HSEARCH("hash table search");
+        ENDSWITH("suffix check");
         // @formatter:on
 
         private final String description;
@@ -132,7 +131,7 @@ public final class Primitives {
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS,
                         STRCMP, STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH,
-                        ENDSWITH, HSEARCH ->
+                        ENDSWITH ->
                     false;
             };
         }

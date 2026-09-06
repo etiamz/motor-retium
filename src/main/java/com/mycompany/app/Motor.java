@@ -12,7 +12,6 @@ import com.mycompany.app.Primitives.StrictOp2;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -40,7 +39,6 @@ public final class Motor {
 
     private static final Producer[] NO_IMPORTS = new Producer[0];
 
-    private static ConcurrentHashMap<Object, Object> HSEARCH_TABLE;
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
     // Statistical counters.
@@ -80,7 +78,6 @@ public final class Motor {
         if (BOOK != null) {
             throw new IllegalStateException("The machine is already initialized");
         }
-        HSEARCH_TABLE = new ConcurrentHashMap<>();
         POOL = new ForkJoinPool();
         BOOK = book;
         if (STATS) {
@@ -662,7 +659,6 @@ public final class Motor {
                                 case STRICT_XOR -> op2.b.forward(new AFalse().a);
                                 case MIN -> op2.b.forward(b1.a);
                                 case MAX -> op2.b.forward(b1.a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
@@ -679,13 +675,6 @@ public final class Motor {
                                 case STRICT_XOR -> op2.b.forward(b1.a);
                                 case MIN -> op2.b.forward(b2.a);
                                 case MAX -> op2.b.forward(b1.a);
-                                case HSEARCH -> hsearch(left, right);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case Agent _ when isHsearchData(right) -> {
-                            switch (op2.op) {
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
@@ -728,7 +717,6 @@ public final class Motor {
                                 case STRICT_XOR -> op2.b.forward(b2.a);
                                 case MIN -> op2.b.forward(b1.a);
                                 case MAX -> op2.b.forward(b2.a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
@@ -745,13 +733,6 @@ public final class Motor {
                                 case STRICT_XOR -> op2.b.forward(b1.a);
                                 case MIN -> op2.b.forward(b1.a);
                                 case MAX -> op2.b.forward(b1.a);
-                                case HSEARCH -> hsearch(left, right);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case Agent _ when isHsearchData(right) -> {
-                            switch (op2.op) {
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
@@ -784,25 +765,17 @@ public final class Motor {
                         case ATrue _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(AInteger.one(i1.ty()).a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
                         case AFalse _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(AInteger.zero(i1.ty()).a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
                         case AInteger i2 -> interact(i1, i2);
                         case ABigInteger i2 -> interact(i1, i2);
-                        case Agent _ when isHsearchData(right) -> {
-                            switch (op2.op) {
-                                case HSEARCH -> hsearch(left, right);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -832,25 +805,17 @@ public final class Motor {
                         case ATrue _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(ABigInteger.one().a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
                         case AFalse _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(ABigInteger.zero().a);
-                                case HSEARCH -> hsearch(left, right);
                                 default -> reject(left, right);
                             }
                         }
                         case AInteger i2 -> interact(i1, i2);
                         case ABigInteger i2 -> interact(i1, i2);
-                        case Agent _ when isHsearchData(right) -> {
-                            switch (op2.op) {
-                                case HSEARCH -> hsearch(left, right);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -883,12 +848,6 @@ public final class Motor {
                         case ARangeFrom rng -> interact(s1, rng);
                         case ARangeTo rng -> interact(s1, rng);
                         case ARangeFull rng -> interact(s1, rng);
-                        case Agent _ when isHsearchData(right) -> {
-                            switch (op2.op) {
-                                case HSEARCH -> hsearch(left, right);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -1016,8 +975,6 @@ public final class Motor {
                             op2.b.forward(new AFalse().a);
                         } else if (op2.op == NOT_EQUALS && right instanceof ANull) {
                             op2.b.forward(new ATrue().a);
-                        } else if (op2.op == HSEARCH && isHsearchData(right)) {
-                            hsearch(left, right);
                         } else if (right instanceof ASuperposition sup) {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -1129,9 +1086,6 @@ public final class Motor {
                         op2.b.forward(i2.a);
                     }
                 }
-                case HSEARCH -> {
-                    hsearch(i1, i2);
-                }
                 default -> {
                     reject(i1, i2);
                 }
@@ -1144,9 +1098,6 @@ public final class Motor {
                 case OFTYPE -> {
                     op2.b.forward(new AInteger(i2.data.toCheckedInteger(i1.ty())).a);
                 }
-                case HSEARCH -> {
-                    hsearch(i1, i2);
-                }
                 default -> {
                     reject(i1, i2);
                 }
@@ -1158,9 +1109,6 @@ public final class Motor {
             switch (op2.op) {
                 case OFTYPE -> {
                     op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
-                }
-                case HSEARCH -> {
-                    hsearch(i1, i2);
                 }
                 default -> {
                     reject(i1, i2);
@@ -1223,9 +1171,6 @@ public final class Motor {
                 case OFTYPE -> {
                     op2.b.forward(i2.a);
                 }
-                case HSEARCH -> {
-                    hsearch(i1, i2);
-                }
                 default -> {
                     reject(i1, i2);
                 }
@@ -1263,9 +1208,6 @@ public final class Motor {
                     }
                     final int c = i.data.toInt();
                     op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrchr(c))).a);
-                }
-                case HSEARCH -> {
-                    hsearch(s1, i);
                 }
                 default -> {
                     reject(s1, i);
@@ -1341,9 +1283,6 @@ public final class Motor {
                         op2.b.forward(new AFalse().a);
                     }
                 }
-                case HSEARCH -> {
-                    hsearch(s1, s2);
-                }
                 default -> {
                     reject(s1, s2);
                 }
@@ -1396,22 +1335,6 @@ public final class Motor {
                 default -> {
                     reject(s1, rng);
                 }
-            }
-        }
-
-        private void hsearch(final Agent left, final Agent right) {
-            final AStrictOp2 op2 = this;
-            assert isHsearchData(left)
-                    : String.format("First operand not welcome: %s", describe(left));
-            assert isHsearchData(right)
-                    : String.format("Second operand not welcome: %s", describe(right));
-            final var key = hsearchData(left);
-            final var value = hsearchData(right);
-            final var data = HSEARCH_TABLE.putIfAbsent(key, value);
-            if (data == null) {
-                op2.b.forward(new ANull().a);
-            } else {
-                op2.b.forward(hsearchAgent(data));
             }
         }
 
@@ -2715,42 +2638,8 @@ public final class Motor {
         };
     }
 
-    private static boolean isHsearchData(final Agent agent) {
-        return switch (agent) {
-            case ATrue _,AFalse _,AInteger _,ABigInteger _,AString _ -> true;
-            case AConstructor ctr -> ctr.isNullary();
-            default -> false;
-        };
-    }
-
     private static boolean isWhnf(final Consumer p) {
         return p.chase().kind >= K_LAMBDA;
-    }
-
-    private record HsearchConstructor(String name) {
-    }
-
-    private static Object hsearchData(final Agent agent) {
-        return switch (agent) {
-            case ATrue _ -> Boolean.TRUE;
-            case AFalse _ -> Boolean.FALSE;
-            case AInteger i -> i.data;
-            case ABigInteger i -> i.data;
-            case AString s -> s.data;
-            case AConstructor ctr when ctr.isNullary() -> new HsearchConstructor(ctr.name);
-            default -> throw new IllegalStateException();
-        };
-    }
-
-    private static Producer hsearchAgent(final Object data) {
-        return switch (data) {
-            case Boolean b -> b ? new ATrue().a : new AFalse().a;
-            case Value v -> new AInteger(v).a;
-            case MyBigInteger i -> new ABigInteger(i).a;
-            case MyString s -> new AString(s).a;
-            case HsearchConstructor(var name) -> new AConstructor(name, 0).a;
-            default -> throw new IllegalStateException();
-        };
     }
 
     private static String describe(final Agent agent) {
