@@ -5,21 +5,7 @@ program
     ;
 
 dataDeclaration
-    : 'data' CONSTRUCTOR typeParameter* '=' constructorDeclaration ('|' constructorDeclaration)* ';'
-    ;
-
-typeParameter
-    : SYMBOL
-    | '(' SYMBOL '::' kindExpression ')'
-    ;
-
-kindExpression
-    : kindAtom ('->' kindExpression)?
-    ;
-
-kindAtom
-    : '*'
-    | '(' kindExpression ')'
+    : 'data' CONSTRUCTOR SYMBOL* '=' constructorDeclaration ('|' constructorDeclaration)* ';'
     ;
 
 constructorDeclaration
@@ -38,7 +24,7 @@ typeAtom
     : CONSTRUCTOR
     | SYMBOL
     | STRING
-    | '(' typeExpression ('::' kindExpression)? ')'
+    | '(' typeExpression ')'
     ;
 
 definition
