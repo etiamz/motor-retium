@@ -232,8 +232,8 @@ public final class Parser {
             }
             for (final var d : declarations) {
                 final var parameters = new LinkedHashSet<String>();
-                for (final var p : d.SYMBOL()) {
-                    final String pName = p.getText();
+                for (final var p : d.typeParameter()) {
+                    final String pName = p.SYMBOL().getText();
                     if (pName.equals("_")) {
                         throw error(filename, d, "`_` cannot be a type variable");
                     }
