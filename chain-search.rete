@@ -22,6 +22,21 @@ main =
         Exhausted -> "No solution"
     };
 
+render elems =
+    case elems of {
+        Nil -> $panic "Empty addition chain impossible";
+        Cons x xs -> case xs of {
+            Nil -> $show x;
+            Cons _ _ -> renderAux xs ++ $show x
+        }
+    };
+
+renderAux elems =
+    case elems of {
+        Nil -> "";
+        Cons x xs -> renderAux xs ++ $show x ++ " "
+    };
+
 search st =
     let State elems nremaining = st in
     let Cons top _ = elems in
@@ -101,20 +116,5 @@ join a b =
 proceed st candidate =
     let State elems nremaining = st in
     search (State (Cons candidate elems) (nremaining - 1u64));
-
-render elems =
-    case elems of {
-        Nil -> $panic "Empty addition chain impossible";
-        Cons x xs -> case xs of {
-            Nil -> $show x;
-            Cons _ _ -> renderAux xs ++ $show x
-        }
-    };
-
-renderAux elems =
-    case elems of {
-        Nil -> "";
-        Cons x xs -> renderAux xs ++ $show x ++ " "
-    };
 
 -- [1] Bahig, Hatem M. "Star reduction among minimal length addition chains." Computing 91.4 (2011): 335-352.
