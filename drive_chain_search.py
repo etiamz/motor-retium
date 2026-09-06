@@ -5,6 +5,7 @@
 import os
 import subprocess
 import sys
+from math import ceil, log2
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -26,7 +27,8 @@ def main() -> None:
     target = int(sys.argv[1])
     if target < 1:
         sys.exit(f"Expected a positive target, got {target}")
-    level = (target - 1).bit_length()  # the initial level
+    # Schönhage's lower bound on addition-chain length, taken from [1].
+    level = ceil(log2(target) + log2(target.bit_count()) - 2.13)
     while (message := run(target, level)) is None:
         print(f"Level {level} exhausted.", file=sys.stderr)
         level += 1
@@ -87,3 +89,5 @@ def render(message: str) -> None:
 
 if __name__ == "__main__":
     main()
+
+# [1] Schönhage, Arnold. "A lower bound for the length of addition chains." Theoretical Computer Science 1.1 (1975): 1-12.

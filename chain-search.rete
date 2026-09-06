@@ -1,11 +1,11 @@
 -- An automatically parallel search for minimal-length addition chains (MLACs).
 
 #ifndef TARGET
-#define TARGET 46444543
+#define TARGET 80000003
 #endif
 
 #ifndef LEVEL
-#define LEVEL 27
+#define LEVEL 28
 #endif
 
 data List a = Nil | Cons a (List a);

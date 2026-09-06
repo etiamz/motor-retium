@@ -20,10 +20,10 @@ data State = State (List Word64) Word64
 data Exhausted = Exhausted
 
 defaultTarget :: Word64
-defaultTarget = 46444543
+defaultTarget = 80000003
 
 defaultLevel :: Word64
-defaultLevel = 27
+defaultLevel = 28
 
 main :: IO ()
 main =
