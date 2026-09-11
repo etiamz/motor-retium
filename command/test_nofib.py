@@ -88,7 +88,7 @@ def main() -> None:
 def _run_motor(rete: Path, input: _Input) -> str:
     defs = [f"-D{name}={value}" for name, value in input.items()]
     source = run(["cpp", "-traditional-cpp", "-P", *defs, rete])
-    return run([openjdk(), "-jar", JAR], input=source)
+    return run([openjdk(), "-ea", "-jar", JAR], input=source)
 
 
 def _run_ghc(haskell: Path, input: _Input) -> str:
