@@ -76,7 +76,7 @@ limit boards =
 
 equalBoard xs ys =
     case xs of {
-        Nil -> isEmpty ys;
+        Nil -> null ys;
         Cons x xs -> case ys of {
             Nil -> false;
             Cons y ys -> equalRow x y && equalBoard xs ys
@@ -85,7 +85,7 @@ equalBoard xs ys =
 
 equalRow xs ys =
     case xs of {
-        Nil -> isEmpty ys;
+        Nil -> null ys;
         Cons x xs -> case ys of {
             Nil -> false;
             Cons y ys -> x == y && equalRow xs ys
@@ -163,5 +163,5 @@ last xs =
     let Cons x rest = xs in
     case rest of { Nil -> x; Cons _ _ -> last rest };
 
-isEmpty xs =
+null xs =
     case xs of { Nil -> true; Cons _ _ -> false };

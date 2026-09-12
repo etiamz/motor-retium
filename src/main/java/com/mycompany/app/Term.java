@@ -36,9 +36,6 @@ public sealed interface Term {
     public record Operator(Primitives.Operator op) implements Term {
     }
 
-    public record NullLiteral() implements Term {
-    }
-
     public record BooleanLiteral(boolean b) implements Term {
     }
 
@@ -156,7 +153,7 @@ public sealed interface Term {
                 union(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) -> t.freeVariables();
             case StrictOp2(var t1, var _, var t2) -> union(t1, t2);
-            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }
@@ -195,7 +192,7 @@ public sealed interface Term {
                 unionReferences(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) -> t.references();
             case StrictOp2(var t1, var _, var t2) -> unionReferences(t1, t2);
-            case Operator _,Variable _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Variable _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
     }

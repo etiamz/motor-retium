@@ -23,7 +23,7 @@ public final class Template {
             PDoRangeFrom, PDoRangeTo, PApplicator, PStrictApplicator, PResolver, PCapture, PMatch,
             PConstructorResolver, PSelect, PDuplicator,
             // Data.
-            PLambda, PEndOfList, PNull, PTrue, PFalse, PInteger, PBigInteger, PString, PRangeFull,
+            PLambda, PEndOfList, PTrue, PFalse, PInteger, PBigInteger, PString, PRangeFull,
             PIdentity, PConstructor {
     }
 
@@ -92,9 +92,6 @@ public final class Template {
     }
 
     private record PEndOfList() implements Payload {
-    }
-
-    private record PNull() implements Payload {
     }
 
     private record PTrue() implements Payload {
@@ -296,7 +293,6 @@ public final class Template {
                     consumers[i++] = agent.c;
                 }
                 case PEndOfList _ -> producers[j++] = new Motor.AEndOfList().a;
-                case PNull _ -> producers[j++] = new Motor.ANull().a;
                 case PTrue _ -> producers[j++] = new Motor.ATrue().a;
                 case PFalse _ -> producers[j++] = new Motor.AFalse().a;
                 case PInteger p -> producers[j++] = new Motor.AInteger(p.value).a;
@@ -367,8 +363,8 @@ public final class Template {
                 ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver,
                 ACapture, AMatcher, AConstructorResolver, ASelector, ADuplicator,
                 // Data.
-                ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString,
-                ARangeFull, AIdentity, AConstructor {
+                ALambda, AEndOfList, ATrue, AFalse, AInteger, ABigInteger, AString, ARangeFull,
+                AIdentity, AConstructor {
         }
 
         // Data agents that can stand in the function position of an application.
@@ -950,18 +946,6 @@ public final class Template {
             }
         }
 
-        public static final class ANull implements Agent {
-            private final Producer a;
-
-            private ANull() {
-                this.a = new Producer(this);
-            }
-
-            public Producer a() {
-                return a;
-            }
-        }
-
         public static final class ATrue implements Agent {
             private final Producer a;
 
@@ -1174,10 +1158,6 @@ public final class Template {
             return new AEndOfList();
         }
 
-        public ANull mkNull() {
-            return new ANull();
-        }
-
         public ATrue mkTrue() {
             return new ATrue();
         }
@@ -1255,7 +1235,7 @@ public final class Template {
                 case ADuplicator dup -> List.of(dup.a);
                 case ALambda lam -> List.of(lam.c);
                 case AConstructor ctr -> List.of(ctr.arguments);
-                case AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                case AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                     List.of();
             };
         }
@@ -1301,7 +1281,6 @@ public final class Template {
                 case ADuplicator dup -> List.of(dup.b, dup.c);
                 case ALambda lam -> List.of(lam.a, lam.b);
                 case AEndOfList end -> List.of(end.a);
-                case ANull myNull -> List.of(myNull.a);
                 case ATrue b -> List.of(b.a);
                 case AFalse b -> List.of(b.a);
                 case AInteger i -> List.of(i.a);
@@ -1338,7 +1317,6 @@ public final class Template {
                 case ADuplicator _ -> new PDuplicator();
                 case ALambda _ -> new PLambda();
                 case AEndOfList _ -> new PEndOfList();
-                case ANull _ -> new PNull();
                 case ATrue _ -> new PTrue();
                 case AFalse _ -> new PFalse();
                 case AInteger i -> new PInteger(i.value);
@@ -1495,7 +1473,7 @@ public final class Template {
                             collapseCaptures(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }
@@ -1566,7 +1544,6 @@ public final class Template {
                         resolveCaptures(cap.d, visitedSet);
                         final boolean whnf = switch (cap.a.chase()) {
                             case ALambda lam when cap.a.producer() == lam.a -> true;
-                            case ANull _ -> true;
                             case ATrue _ -> true;
                             case AFalse _ -> true;
                             case AInteger _ -> true;
@@ -1614,7 +1591,7 @@ public final class Template {
                             resolveCaptures(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }
@@ -1721,7 +1698,7 @@ public final class Template {
                             resolveLambdas(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }
@@ -1829,7 +1806,7 @@ public final class Template {
                             resolveConstructors(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }
@@ -1922,7 +1899,6 @@ public final class Template {
                         duplicateAtoms(dup.a, visitedSet);
                         final Producer copy = switch (dup.a.chase()) {
                             case AEndOfList _ -> new AEndOfList().a;
-                            case ANull _ -> new ANull().a;
                             case ATrue _ -> new ATrue().a;
                             case AFalse _ -> new AFalse().a;
                             case AInteger i -> new AInteger(i.value).a;
@@ -1950,7 +1926,7 @@ public final class Template {
                             duplicateAtoms(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }
@@ -2057,7 +2033,7 @@ public final class Template {
                             betaReduce(argument, visitedSet);
                         }
                     }
-                    case ARoot _,AReference _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
+                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
                         {
                         }
                 }

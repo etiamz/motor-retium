@@ -587,11 +587,6 @@ public final class Parser {
         }
 
         @Override
-        public Term visitNullTerm(final MotorParser.NullTermContext ctx) {
-            return new Term.NullLiteral();
-        }
-
-        @Override
         public Term visitTrueTerm(final MotorParser.TrueTermContext ctx) {
             return new Term.BooleanLiteral(true);
         }

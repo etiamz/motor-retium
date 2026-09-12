@@ -64,7 +64,7 @@ public final class GuardEliminator {
             case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, eliminate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(eliminate(t1), op, eliminate(t2));
-            case Term.Variable _,Term.Operator _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+            case Term.Variable _,Term.Operator _,Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
     }

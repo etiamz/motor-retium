@@ -74,7 +74,6 @@ atom
     | op1 # op1Term
     | intrinsic # intrinsicTerm
     | CONSTRUCTOR # constructorTerm
-    | NULL # nullTerm
     | TRUE # trueTerm
     | FALSE # falseTerm
     | INTEGER_LITERAL # integerTerm
@@ -106,7 +105,6 @@ intrinsic2
     ;
 
 // Literals.
-NULL : 'null' ;
 TRUE : 'true' ;
 FALSE : 'false' ;
 INTEGER_LITERAL : '-'? UnsignedInteger IntegerTy ;

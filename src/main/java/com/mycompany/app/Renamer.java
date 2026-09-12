@@ -64,7 +64,7 @@ public final class Renamer {
                 new Range(t1.map(this::rename), t2.map(this::rename), inclusive);
             case StrictOp1(var op, var t) -> new StrictOp1(op, rename(t));
             case StrictOp2(var t1, var op, var t2) -> new StrictOp2(rename(t1), op, rename(t2));
-            case Operator _,Reference _,NullLiteral _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
+            case Operator _,Reference _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 term;
         };
     }

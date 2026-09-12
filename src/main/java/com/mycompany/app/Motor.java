@@ -420,10 +420,9 @@ public final class Motor {
             K_APPLICATOR = 11, K_STRICT_APPLICATOR = 12, K_RESOLVER = 13, K_CAPTURE = 14,
             K_MATCH = 15, K_CONSTRUCTOR_RESOLVER = 16, K_SELECT = 17, K_DUPLICATOR = 18,
             // Data.
-            K_LAMBDA = 19, K_END_OF_LIST = 20, K_NULL = 21, K_TRUE = 22, K_FALSE = 23,
-            K_INTEGER = 24, K_BIG_INTEGER = 25, K_STRING = 26, K_RANGE = 27, K_RANGE_FROM = 28,
-            K_RANGE_TO = 29, K_RANGE_FULL = 30, K_IDENTITY = 31, K_CONSTRUCTOR = 32,
-            K_SUPERPOSITION = 33;
+            K_LAMBDA = 19, K_END_OF_LIST = 20, K_TRUE = 21, K_FALSE = 22, K_INTEGER = 23,
+            K_BIG_INTEGER = 24, K_STRING = 25, K_RANGE = 26, K_RANGE_FROM = 27, K_RANGE_TO = 28,
+            K_RANGE_FULL = 29, K_IDENTITY = 30, K_CONSTRUCTOR = 31, K_SUPERPOSITION = 32;
 
     public abstract static sealed class Agent permits
             // Operators.
@@ -431,8 +430,8 @@ public final class Motor {
             ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture, AMatcher,
             AConstructorResolver, ASelector, ADuplicator,
             // Data.
-            ALambda, AEndOfList, ANull, ATrue, AFalse, AInteger, ABigInteger, AString, ARange,
-            ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
+            ALambda, AEndOfList, ATrue, AFalse, AInteger, ABigInteger, AString, ARange, ARangeFrom,
+            ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
         // The agent kind for faster dispatch.
         public final byte kind;
 
@@ -564,8 +563,6 @@ public final class Motor {
             final AStrictOp1 op1 = this;
             if (isMachineData(data)) {
                 crash("Operand not welcome: %s", describe(data));
-            } else if (data instanceof ANull) {
-                panic("Null operand: %s", op1.op.describe());
             } else if (isUserData(data)) {
                 typeError(op1.op.describe(), data);
             } else if (isOperator(data)) {
@@ -604,48 +601,8 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final Agent left = op2.a.chase(), right = op2.c.chase();
             switch (left) {
-                case ANull myNull -> {
-                    switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new ATrue().a);
-                                case NOT_EQUALS -> op2.b.forward(new AFalse().a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case Agent _ when isPrimitiveData(right) -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(myNull.a);
-                            op2xx.a.setProducer(new ANull().a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
-                    }
-                }
                 case ATrue b1 -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ATrue _ -> {
                             switch (op2.op) {
                                 case EQUALS -> op2.b.forward(b1.a);
@@ -697,13 +654,6 @@ public final class Motor {
                 }
                 case AFalse b1 -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ATrue b2 -> {
                             switch (op2.op) {
                                 case EQUALS -> op2.b.forward(b1.a);
@@ -755,13 +705,6 @@ public final class Motor {
                 }
                 case AInteger i1 -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ATrue _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(AInteger.one(i1.ty()).a);
@@ -795,13 +738,6 @@ public final class Motor {
                 }
                 case ABigInteger i1 -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ATrue _ -> {
                             switch (op2.op) {
                                 case OFTYPE -> op2.b.forward(ABigInteger.one().a);
@@ -835,13 +771,6 @@ public final class Motor {
                 }
                 case AString s1 -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case AInteger i -> interact(s1, i);
                         case AString s2 -> interact(s1, s2);
                         case ARange rng -> interact(s1, rng);
@@ -867,13 +796,6 @@ public final class Motor {
                 }
                 case ARange rng -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -893,13 +815,6 @@ public final class Motor {
                 }
                 case ARangeFrom rng -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -919,13 +834,6 @@ public final class Motor {
                 }
                 case ARangeTo rng -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -945,13 +853,6 @@ public final class Motor {
                 }
                 case ARangeFull rng -> {
                     switch (right) {
-                        case ANull _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new AFalse().a);
-                                case NOT_EQUALS -> op2.b.forward(new ATrue().a);
-                                default -> reject(left, right);
-                            }
-                        }
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
@@ -971,11 +872,7 @@ public final class Motor {
                 }
                 case AConstructor ctr -> {
                     if (ctr.isNullary()) {
-                        if (op2.op == EQUALS && right instanceof ANull) {
-                            op2.b.forward(new AFalse().a);
-                        } else if (op2.op == NOT_EQUALS && right instanceof ANull) {
-                            op2.b.forward(new ATrue().a);
-                        } else if (right instanceof ASuperposition sup) {
+                        if (right instanceof ASuperposition sup) {
                             final var op2x = new AStrictOp2(op2.op);
                             final var op2xx = new AStrictOp2(op2.op);
                             final var supx = sup; // reuse
@@ -1344,10 +1241,6 @@ public final class Motor {
                 crash("First operand not welcome: %s", describe(left));
             } else if (isMachineData(right) && !(right instanceof ASuperposition)) {
                 crash("Second operand not welcome: %s", describe(right));
-            } else if (left instanceof ANull) {
-                panic("Null first operand: %s", op2.op.describe());
-            } else if (right instanceof ANull) {
-                panic("Null second operand: %s", op2.op.describe());
             } else if (isUserData(left) || isUserData(right)) {
                 typeError(op2.op.describe(), left, right);
             } else if (isOperator(left)) {
@@ -1432,8 +1325,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(ite));
                     } else if (isUserData(data)) {
                         typeError(describe(ite), data);
                     } else if (isOperator(data)) {
@@ -1501,8 +1392,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(not));
                     } else if (isUserData(data)) {
                         typeError(describe(not), data);
                     } else if (isOperator(data)) {
@@ -1550,8 +1439,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(and));
                     } else if (isUserData(data)) {
                         typeError(describe(and), data);
                     } else if (isOperator(data)) {
@@ -1599,8 +1486,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(or));
                     } else if (isUserData(data)) {
                         typeError(describe(or), data);
                     } else if (isOperator(data)) {
@@ -1666,10 +1551,6 @@ public final class Motor {
                         crash("First operand not welcome: %s", describe(left));
                     } else if (isMachineData(right)) {
                         crash("Second operand not welcome: %s", describe(right));
-                    } else if (left instanceof ANull) {
-                        panic("Null first operand: %s", describe(doRng));
-                    } else if (right instanceof ANull) {
-                        panic("Null second operand: %s", describe(doRng));
                     } else if (isUserData(left) || isUserData(right)) {
                         typeError(describe(doRng), left, right);
                     } else if (isOperator(left)) {
@@ -1715,8 +1596,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(doRng));
                     } else if (isUserData(data)) {
                         typeError(describe(doRng), data);
                     } else if (isOperator(data)) {
@@ -1762,8 +1641,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(doRng));
                     } else if (isUserData(data)) {
                         typeError(describe(doRng), data);
                     } else if (isOperator(data)) {
@@ -1816,8 +1693,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(app));
                     } else if (isUserData(data)) {
                         typeError(describe(app), data);
                     } else if (isOperator(data)) {
@@ -1870,8 +1745,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(sapp));
                     } else if (isUserData(data)) {
                         typeError(describe(sapp), data);
                     } else if (isOperator(data)) {
@@ -1959,10 +1832,6 @@ public final class Motor {
             switch (data) {
                 case ALambda lam -> {
                     cap.c.forward(lam.a);
-                    cap.b.forward(cap.d.producer());
-                }
-                case ANull myNull -> {
-                    cap.c.forward(myNull.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case ATrue b -> {
@@ -2139,8 +2008,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(mat));
                     } else if (isUserData(data)) {
                         typeError(describe(mat), data);
                     } else if (isOperator(data)) {
@@ -2254,8 +2121,6 @@ public final class Motor {
                 default -> {
                     if (isMachineData(data)) {
                         crash("Operand not welcome: %s", describe(data));
-                    } else if (data instanceof ANull) {
-                        panic("Null operand: %s", describe(sel));
                     } else if (isUserData(data)) {
                         typeError(describe(sel), data);
                     } else if (isOperator(data)) {
@@ -2328,7 +2193,6 @@ public final class Motor {
                     yield new Commute(lamx.a, lamxx.a);
                 }
                 case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
-                case ANull myNull -> new Commute(myNull.a, new ANull().a);
                 case ATrue b -> new Commute(b.a, new ATrue().a);
                 case AFalse b -> new Commute(b.a, new AFalse().a);
                 case AInteger i -> new Commute(i.a, new AInteger(i.data).a);
@@ -2369,15 +2233,6 @@ public final class Motor {
 
         public AEndOfList() {
             super(K_END_OF_LIST);
-            this.a = new Producer(this);
-        }
-    }
-
-    public static final class ANull extends Agent {
-        public final Producer a;
-
-        public ANull() {
-            super(K_NULL);
             this.a = new Producer(this);
         }
     }
@@ -2611,14 +2466,14 @@ public final class Motor {
         return switch (agent) {
             case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _ ->
                 true;
-            case ALambda _,AEndOfList _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
+            case ALambda _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
         };
     }
 
     private static boolean isUserData(final Agent agent) {
         return switch (agent) {
-            case ALambda _,ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
+            case ALambda _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
             case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
@@ -2627,15 +2482,6 @@ public final class Motor {
 
     private static boolean isMachineData(final Agent agent) {
         return !isOperator(agent) && !isUserData(agent);
-    }
-
-    private static boolean isPrimitiveData(final Agent agent) {
-        return switch (agent) {
-            case ANull _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _ ->
-                true;
-            case AConstructor ctr -> ctr.isNullary();
-            default -> false;
-        };
     }
 
     private static boolean isWhnf(final Consumer p) {
@@ -2667,7 +2513,6 @@ public final class Motor {
             case ADuplicator _ -> "a duplicator";
             case ALambda _ -> "a lambda function";
             case AEndOfList _ -> "an end-of-variables marker";
-            case ANull _ -> "the null value";
             case ATrue _ -> "the true value";
             case AFalse _ -> "the false value";
             case AInteger i -> Primitives.describe(i.ty());

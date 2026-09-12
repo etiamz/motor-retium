@@ -154,7 +154,7 @@ public final class StrictnessAnalyzer {
                 }
                 case Term.Operator _ ->
                     throw new IllegalStateException("Operators must be already saturated");
-                case Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+                case Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                     new LinkedHashSet<>();
             };
         }
@@ -209,7 +209,7 @@ public final class StrictnessAnalyzer {
                     new Term.StrictOp2(annotate(t1), op, annotate(t2));
                 case Term.Operator _ ->
                     throw new IllegalStateException("Operators must be already saturated");
-                case Term.Variable _,Term.Reference _,Term.NullLiteral _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
+                case Term.Variable _,Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                     term;
             };
         }
