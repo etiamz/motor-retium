@@ -86,7 +86,7 @@ public final class Motor {
         }
     }
 
-    // Whether to fork a right operand or reduce it inline depends on whether the work performed by
+    // Whether to forke a right operand or reduce it inline depends on whether the work performed by
     // the right operand will outweigh the cost of scheduling, which we cannot know in advance. As a
     // solution to this problem, we adopt so-called "heartbeat scheduling" [1] for strict binary
     // operators: instead of forking the right operand eagerly, we instead push it to a queue &
@@ -377,7 +377,7 @@ public final class Motor {
                         return reduce(p, thunk, heart);
                     });
                 }
-                // The frame has not been promoted; unlink the frame from the list & reduce the
+                // The frame has not been promoted; unlinke the frame from the list & reduce the
                 // right operand inline.
                 heart.unlink(frame);
                 return reduce(right, () -> {
@@ -640,7 +640,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(b1.a);
-                            op2xx.a.setProducer(new ATrue().a);
+                            op2xx.a.setProducer(b1.a);
                         }
                         default -> {
                             reject(left, right);
@@ -691,7 +691,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(b1.a);
-                            op2xx.a.setProducer(new AFalse().a);
+                            op2xx.a.setProducer(b1.a);
                         }
                         default -> {
                             reject(left, right);
@@ -724,7 +724,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(i1.a);
-                            op2xx.a.setProducer(new AInteger(i1.data).a);
+                            op2xx.a.setProducer(i1.a);
                         }
                         default -> {
                             reject(left, right);
@@ -757,7 +757,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(i1.a);
-                            op2xx.a.setProducer(new ABigInteger(i1.data).a);
+                            op2xx.a.setProducer(i1.a);
                         }
                         default -> {
                             reject(left, right);
@@ -782,7 +782,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(s1.a);
-                            op2xx.a.setProducer(new AString(s1.data).a);
+                            op2xx.a.setProducer(s1.a);
                         }
                         default -> {
                             reject(left, right);
@@ -801,7 +801,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(new ARange(rng.start, rng.end, rng.inclusive).a);
+                            op2xx.a.setProducer(rng.a);
                         }
                         default -> {
                             reject(left, right);
@@ -820,7 +820,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(new ARangeFrom(rng.start).a);
+                            op2xx.a.setProducer(rng.a);
                         }
                         default -> {
                             reject(left, right);
@@ -839,7 +839,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(new ARangeTo(rng.end, rng.inclusive).a);
+                            op2xx.a.setProducer(rng.a);
                         }
                         default -> {
                             reject(left, right);
@@ -858,7 +858,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(new ARangeFull().a);
+                            op2xx.a.setProducer(rng.a);
                         }
                         default -> {
                             reject(left, right);
@@ -877,7 +877,7 @@ public final class Motor {
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
                             op2x.a.setProducer(ctr.a);
-                            op2xx.a.setProducer(new AConstructor(ctr.name, 0).a);
+                            op2xx.a.setProducer(ctr.a);
                         } else {
                             reject(left, right);
                         }
@@ -1539,7 +1539,7 @@ public final class Motor {
                     supx.b.setProducer(doRngx.b);
                     supx.c.setProducer(doRngxx.b);
                     doRngx.a.setProducer(i.a);
-                    doRngxx.a.setProducer(new AInteger(i.data).a);
+                    doRngxx.a.setProducer(i.a);
                 }
                 default -> {
                     if (isMachineData(left)) {
@@ -2146,7 +2146,12 @@ public final class Motor {
         private void interact() {
             final ADuplicator dup = this;
             final Agent data = dup.a.chase();
+            // Atomic agents are immutable, so both outputs can share their producer.
             switch (data) {
+                case AConstructor ctr when ctr.isNullary() -> {
+                    dup.b.forward(ctr.a);
+                    dup.c.forward(ctr.a);
+                }
                 case AConstructor ctr -> {
                     final var ctrx = ctr; // reuse
                     final var ctrxx = new AConstructor(ctr.name, ctr.arity());
@@ -2193,47 +2198,47 @@ public final class Motor {
                 }
                 case AEndOfList end -> {
                     dup.b.forward(end.a);
-                    dup.c.forward(new AEndOfList().a);
+                    dup.c.forward(end.a);
                 }
                 case ATrue b -> {
                     dup.b.forward(b.a);
-                    dup.c.forward(new ATrue().a);
+                    dup.c.forward(b.a);
                 }
                 case AFalse b -> {
                     dup.b.forward(b.a);
-                    dup.c.forward(new AFalse().a);
+                    dup.c.forward(b.a);
                 }
                 case AInteger i -> {
                     dup.b.forward(i.a);
-                    dup.c.forward(new AInteger(i.data).a);
+                    dup.c.forward(i.a);
                 }
                 case ABigInteger i -> {
                     dup.b.forward(i.a);
-                    dup.c.forward(new ABigInteger(i.data).a);
+                    dup.c.forward(i.a);
                 }
                 case AString s -> {
                     dup.b.forward(s.a);
-                    dup.c.forward(new AString(s.data).a);
+                    dup.c.forward(s.a);
                 }
                 case ARange rng -> {
                     dup.b.forward(rng.a);
-                    dup.c.forward(new ARange(rng.start, rng.end, rng.inclusive).a);
+                    dup.c.forward(rng.a);
                 }
                 case ARangeFrom rng -> {
                     dup.b.forward(rng.a);
-                    dup.c.forward(new ARangeFrom(rng.start).a);
+                    dup.c.forward(rng.a);
                 }
                 case ARangeTo rng -> {
                     dup.b.forward(rng.a);
-                    dup.c.forward(new ARangeTo(rng.end, rng.inclusive).a);
+                    dup.c.forward(rng.a);
                 }
                 case ARangeFull rng -> {
                     dup.b.forward(rng.a);
-                    dup.c.forward(new ARangeFull().a);
+                    dup.c.forward(rng.a);
                 }
                 case AIdentity id -> {
                     dup.b.forward(id.a);
-                    dup.c.forward(new AIdentity().a);
+                    dup.c.forward(id.a);
                 }
                 default -> {
                     if (isOperator(data)) {
