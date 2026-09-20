@@ -2156,10 +2156,12 @@ public final class Motor {
                         ctrx.arguments[i].setProducer(dupx.b);
                         ctrxx.arguments[i].setProducer(dupx.c);
                     }
-                    forwardOutputs(ctrx.a, ctrxx.a);
+                    dup.b.forward(ctrx.a);
+                    dup.c.forward(ctrxx.a);
                 }
                 case ASuperposition sup when dup.label == Label.DELTA -> {
-                    forwardOutputs(sup.b.producer(), sup.c.producer());
+                    dup.b.forward(sup.b.producer());
+                    dup.c.forward(sup.c.producer());
                 }
                 case ASuperposition sup -> {
                     final var supx = sup; // reuse
@@ -2172,7 +2174,8 @@ public final class Motor {
                     supxx.b.setProducer(dupx.c);
                     supx.c.setProducer(dupxx.b);
                     supxx.c.setProducer(dupxx.c);
-                    forwardOutputs(supx.a, supxx.a);
+                    dup.b.forward(supx.a);
+                    dup.c.forward(supxx.a);
                 }
                 case ALambda lam -> {
                     final var lamx = new ALambda();
@@ -2185,20 +2188,53 @@ public final class Motor {
                     sup.c.setProducer(lamxx.b);
                     lamx.c.setProducer(dupx.b);
                     lamxx.c.setProducer(dupx.c);
-                    forwardOutputs(lamx.a, lamxx.a);
+                    dup.b.forward(lamx.a);
+                    dup.c.forward(lamxx.a);
                 }
-                case AEndOfList end -> forwardOutputs(end.a, new AEndOfList().a);
-                case ATrue b -> forwardOutputs(b.a, new ATrue().a);
-                case AFalse b -> forwardOutputs(b.a, new AFalse().a);
-                case AInteger i -> forwardOutputs(i.a, new AInteger(i.data).a);
-                case ABigInteger i -> forwardOutputs(i.a, new ABigInteger(i.data).a);
-                case AString s -> forwardOutputs(s.a, new AString(s.data).a);
-                case ARange rng ->
-                    forwardOutputs(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
-                case ARangeFrom rng -> forwardOutputs(rng.a, new ARangeFrom(rng.start).a);
-                case ARangeTo rng -> forwardOutputs(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
-                case ARangeFull rng -> forwardOutputs(rng.a, new ARangeFull().a);
-                case AIdentity id -> forwardOutputs(id.a, new AIdentity().a);
+                case AEndOfList end -> {
+                    dup.b.forward(end.a);
+                    dup.c.forward(new AEndOfList().a);
+                }
+                case ATrue b -> {
+                    dup.b.forward(b.a);
+                    dup.c.forward(new ATrue().a);
+                }
+                case AFalse b -> {
+                    dup.b.forward(b.a);
+                    dup.c.forward(new AFalse().a);
+                }
+                case AInteger i -> {
+                    dup.b.forward(i.a);
+                    dup.c.forward(new AInteger(i.data).a);
+                }
+                case ABigInteger i -> {
+                    dup.b.forward(i.a);
+                    dup.c.forward(new ABigInteger(i.data).a);
+                }
+                case AString s -> {
+                    dup.b.forward(s.a);
+                    dup.c.forward(new AString(s.data).a);
+                }
+                case ARange rng -> {
+                    dup.b.forward(rng.a);
+                    dup.c.forward(new ARange(rng.start, rng.end, rng.inclusive).a);
+                }
+                case ARangeFrom rng -> {
+                    dup.b.forward(rng.a);
+                    dup.c.forward(new ARangeFrom(rng.start).a);
+                }
+                case ARangeTo rng -> {
+                    dup.b.forward(rng.a);
+                    dup.c.forward(new ARangeTo(rng.end, rng.inclusive).a);
+                }
+                case ARangeFull rng -> {
+                    dup.b.forward(rng.a);
+                    dup.c.forward(new ARangeFull().a);
+                }
+                case AIdentity id -> {
+                    dup.b.forward(id.a);
+                    dup.c.forward(new AIdentity().a);
+                }
                 default -> {
                     if (isOperator(data)) {
                         crash("Operand unresolved: %s", describe(data));
@@ -2207,11 +2243,6 @@ public final class Motor {
                     }
                 }
             }
-        }
-
-        private void forwardOutputs(final Producer left, final Producer right) {
-            this.b.forward(left);
-            this.c.forward(right);
         }
     }
 
