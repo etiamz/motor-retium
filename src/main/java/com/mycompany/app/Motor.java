@@ -1291,12 +1291,14 @@ public final class Motor {
                 case ATrue _ -> {
                     for (int i = 0; i < ite.values.length; i++) {
                         ite.binders[i][0].forward(ite.values[i].producer());
+                        ite.binders[i][1].erase();
                     }
                     ite.b.forward(ite.d.producer());
                 }
                 case AFalse _ -> {
                     for (int i = 0; i < ite.values.length; i++) {
                         ite.binders[i][1].forward(ite.values[i].producer());
+                        ite.binders[i][0].erase();
                     }
                     ite.b.forward(ite.c.producer());
                 }
@@ -1978,6 +1980,16 @@ public final class Motor {
                         mat.binders[i][index].forward(mat.values[i].producer());
                     }
                     mat.b.forward(mat.handlers[index].producer());
+                    for (int i = 0; i < mat.names.length; i++) {
+                        if (i != index) {
+                            for (int j = 0; j < mat.parameters[i].length; j++) {
+                                mat.parameters[i][j].erase();
+                            }
+                            for (int j = 0; j < mat.binders.length; j++) {
+                                mat.binders[j][i].erase();
+                            }
+                        }
+                    }
                 }
                 case ASuperposition sup -> {
                     final var matx = new AMatcher(mat.names, mat.arities, mat.values.length);

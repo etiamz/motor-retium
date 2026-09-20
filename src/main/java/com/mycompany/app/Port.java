@@ -28,6 +28,8 @@ public final class Port {
                 final Object meaning = port.meaning;
                 if (meaning instanceof Producer forwarder) {
                     port = forwarder;
+                } else if (meaning == null) {
+                    throw new IllegalStateException("Cannot demand an erased producer");
                 } else {
                     this.producer = port;
                     return (Agent) meaning;
@@ -51,6 +53,12 @@ public final class Port {
         public void forward(final Producer other) {
             // This is a virtual port; follow the chain.
             this.meaning = other;
+        }
+
+        // Make sure that this producer does not point to anything, thereby allowing the memory to
+        // be (automatically) reclaimed.
+        public void erase() {
+            this.meaning = null;
         }
     }
 }
