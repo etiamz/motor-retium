@@ -548,8 +548,7 @@ public final class Motor {
                 case AString s -> {
                     switch (op1.op) {
                         case STRING_OF -> op1.b.forward(s.a);
-                        case STRLEN ->
-                            op1.b.forward(new AInteger(IntegerTy.U64.of(s.data.length())).a);
+                        case STRLEN -> op1.b.forward(new AInteger(U64.of(s.data.length())).a);
                         case PANIC -> panic("User panic: %s", s.data.toString());
                         case HASH -> op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
                         default -> reject(data);
@@ -1092,7 +1091,7 @@ public final class Motor {
                     }
                     CheckedInteger.Value c;
                     try {
-                        c = IntegerTy.U8.of(s1.data.at(i.data.toInt()));
+                        c = U8.of(s1.data.at(i.data.toInt()));
                     } catch (final IndexOutOfBoundsException _) {
                         c = panic("Index out of bounds: %s", op2.op.describe());
                     }
@@ -1104,7 +1103,7 @@ public final class Motor {
                         return;
                     }
                     final int c = i.data.toInt();
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strchr(c))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strchr(c))).a);
                 }
                 case STRRCHR -> {
                     if (i.ty() != U8) {
@@ -1112,7 +1111,7 @@ public final class Motor {
                         return;
                     }
                     final int c = i.data.toInt();
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strrchr(c))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strrchr(c))).a);
                 }
                 default -> {
                     reject(s1, i);
@@ -1158,19 +1157,19 @@ public final class Motor {
                     op2.b.forward(new AString(s1.data.concat(s2.data)).a);
                 }
                 case STRCMP -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.compareTo(s2.data))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.compareTo(s2.data))).a);
                 }
                 case STRSTR -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strstr(s2.data))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strstr(s2.data))).a);
                 }
                 case STRSPN -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strspn(s2.data))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strspn(s2.data))).a);
                 }
                 case STRCSPN -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strcspn(s2.data))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strcspn(s2.data))).a);
                 }
                 case STRPBRK -> {
-                    op2.b.forward(new AInteger(IntegerTy.I64.of(s1.data.strpbrk(s2.data))).a);
+                    op2.b.forward(new AInteger(I64.of(s1.data.strpbrk(s2.data))).a);
                 }
                 case STARTSWITH -> {
                     final boolean answer = s1.data.startswith(s2.data);
