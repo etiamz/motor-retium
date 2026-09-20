@@ -10,6 +10,7 @@ import com.mycompany.app.Port.Producer;
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -41,6 +42,7 @@ public final class Motor {
 
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
+    private static IdentityHashMap<String, AConstructor> NULLARY_CONSTRUCTORS;
     // Statistical counters.
     private static LongAdder NINTERACTIONS, NTRANSITIONS;
 
@@ -71,15 +73,30 @@ public final class Motor {
         }
     }
 
+    // A Java constructor cannot returne an existing instance, so we have this tiny little factory.
+    public static AConstructor makeConstructor(final String name, final int arity) {
+        if (arity != 0) {
+            return new AConstructor(name, arity);
+        }
+        final AConstructor ctr = NULLARY_CONSTRUCTORS.get(name);
+        if (ctr == null) {
+            return crash("Unknown nullary constructor: `%s`", name);
+        }
+        return ctr;
+    }
+
     private Motor() {
     }
 
-    public static void initialize(final Map<String, Template> book) {
+    public static void initialize(
+            final Map<String, Template> book,
+            final IdentityHashMap<String, AConstructor> nullaryConstructors) {
         if (BOOK != null) {
             throw new IllegalStateException("The machine is already initialized");
         }
         POOL = new ForkJoinPool();
         BOOK = book;
+        NULLARY_CONSTRUCTORS = nullaryConstructors;
         if (STATS) {
             NINTERACTIONS = new LongAdder();
             NTRANSITIONS = new LongAdder();
@@ -596,37 +613,37 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final Agent left = op2.a.chase(), right = op2.c.chase();
             switch (left) {
-                case ATrue b1 -> {
+                case ATrue _ -> {
                     switch (right) {
                         case ATrue _ -> {
                             switch (op2.op) {
-                                case EQUALS -> op2.b.forward(b1.a);
-                                case NOT_EQUALS -> op2.b.forward(new AFalse().a);
-                                case LESS -> op2.b.forward(new AFalse().a);
-                                case LESS_OR_EQUALS -> op2.b.forward(b1.a);
-                                case GREATER -> op2.b.forward(new AFalse().a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
-                                case STRICT_OR -> op2.b.forward(b1.a);
-                                case STRICT_AND -> op2.b.forward(b1.a);
-                                case STRICT_XOR -> op2.b.forward(new AFalse().a);
-                                case MIN -> op2.b.forward(b1.a);
-                                case MAX -> op2.b.forward(b1.a);
+                                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_AND -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
+                                case MIN -> op2.b.forward(ATrue.INSTANCE.a);
+                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
                                 default -> reject(left, right);
                             }
                         }
-                        case AFalse b2 -> {
+                        case AFalse _ -> {
                             switch (op2.op) {
-                                case EQUALS -> op2.b.forward(b2.a);
-                                case NOT_EQUALS -> op2.b.forward(b1.a);
-                                case LESS -> op2.b.forward(b2.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(b2.a);
-                                case GREATER -> op2.b.forward(b1.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
-                                case STRICT_OR -> op2.b.forward(b1.a);
-                                case STRICT_AND -> op2.b.forward(b2.a);
-                                case STRICT_XOR -> op2.b.forward(b1.a);
-                                case MIN -> op2.b.forward(b2.a);
-                                case MAX -> op2.b.forward(b1.a);
+                                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case GREATER -> op2.b.forward(ATrue.INSTANCE.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
+                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
                                 default -> reject(left, right);
                             }
                         }
@@ -639,45 +656,45 @@ public final class Motor {
                             op2xx.c.setProducer(sup.c.producer());
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(b1.a);
-                            op2xx.a.setProducer(b1.a);
+                            op2x.a.setProducer(ATrue.INSTANCE.a);
+                            op2xx.a.setProducer(ATrue.INSTANCE.a);
                         }
                         default -> {
                             reject(left, right);
                         }
                     }
                 }
-                case AFalse b1 -> {
+                case AFalse _ -> {
                     switch (right) {
-                        case ATrue b2 -> {
+                        case ATrue _ -> {
                             switch (op2.op) {
-                                case EQUALS -> op2.b.forward(b1.a);
-                                case NOT_EQUALS -> op2.b.forward(b2.a);
-                                case LESS -> op2.b.forward(b2.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(b2.a);
-                                case GREATER -> op2.b.forward(b1.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(b1.a);
-                                case STRICT_OR -> op2.b.forward(b2.a);
-                                case STRICT_AND -> op2.b.forward(b1.a);
-                                case STRICT_XOR -> op2.b.forward(b2.a);
-                                case MIN -> op2.b.forward(b1.a);
-                                case MAX -> op2.b.forward(b2.a);
+                                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case LESS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
+                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
                                 default -> reject(left, right);
                             }
                         }
                         case AFalse _ -> {
                             switch (op2.op) {
-                                case EQUALS -> op2.b.forward(new ATrue().a);
-                                case NOT_EQUALS -> op2.b.forward(b1.a);
-                                case LESS -> op2.b.forward(b1.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(new ATrue().a);
-                                case GREATER -> op2.b.forward(b1.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(new ATrue().a);
-                                case STRICT_OR -> op2.b.forward(b1.a);
-                                case STRICT_AND -> op2.b.forward(b1.a);
-                                case STRICT_XOR -> op2.b.forward(b1.a);
-                                case MIN -> op2.b.forward(b1.a);
-                                case MAX -> op2.b.forward(b1.a);
+                                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                                case STRICT_OR -> op2.b.forward(AFalse.INSTANCE.a);
+                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
+                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                                case MAX -> op2.b.forward(AFalse.INSTANCE.a);
                                 default -> reject(left, right);
                             }
                         }
@@ -690,8 +707,8 @@ public final class Motor {
                             op2xx.c.setProducer(sup.c.producer());
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(b1.a);
-                            op2xx.a.setProducer(b1.a);
+                            op2x.a.setProducer(AFalse.INSTANCE.a);
+                            op2xx.a.setProducer(AFalse.INSTANCE.a);
                         }
                         default -> {
                             reject(left, right);
@@ -846,7 +863,7 @@ public final class Motor {
                         }
                     }
                 }
-                case ARangeFull rng -> {
+                case ARangeFull _ -> {
                     switch (right) {
                         case ASuperposition sup -> {
                             final var op2x = new AStrictOp2(op2.op);
@@ -857,8 +874,8 @@ public final class Motor {
                             op2xx.c.setProducer(sup.c.producer());
                             supx.b.setProducer(op2x.b);
                             supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(rng.a);
+                            op2x.a.setProducer(ARangeFull.INSTANCE.a);
+                            op2xx.a.setProducer(ARangeFull.INSTANCE.a);
                         }
                         default -> {
                             reject(left, right);
@@ -866,21 +883,17 @@ public final class Motor {
                     }
                 }
                 case AConstructor ctr -> {
-                    if (ctr.isNullary()) {
-                        if (right instanceof ASuperposition sup) {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(ctr.a);
-                            op2xx.a.setProducer(ctr.a);
-                        } else {
-                            reject(left, right);
-                        }
+                    if (ctr.isNullary() && right instanceof ASuperposition sup) {
+                        final var op2x = new AStrictOp2(op2.op);
+                        final var op2xx = new AStrictOp2(op2.op);
+                        final var supx = sup; // reuse
+                        op2.b.forward(supx.a);
+                        op2x.c.setProducer(sup.b.producer());
+                        op2xx.c.setProducer(sup.c.producer());
+                        supx.b.setProducer(op2x.b);
+                        supx.c.setProducer(op2xx.b);
+                        op2x.a.setProducer(ctr.a);
+                        op2xx.a.setProducer(ctr.a);
                     } else {
                         reject(left, right);
                     }
@@ -948,9 +961,9 @@ public final class Motor {
                         default -> crash("Unknown operation");
                     };
                     if (answer) {
-                        op2.b.forward(new ATrue().a);
+                        op2.b.forward(ATrue.INSTANCE.a);
                     } else {
-                        op2.b.forward(new AFalse().a);
+                        op2.b.forward(AFalse.INSTANCE.a);
                     }
                 }
                 case MIN -> {
@@ -1041,9 +1054,9 @@ public final class Motor {
                         default -> crash("Unknown operation");
                     };
                     if (answer) {
-                        op2.b.forward(new ATrue().a);
+                        op2.b.forward(ATrue.INSTANCE.a);
                     } else {
-                        op2.b.forward(new AFalse().a);
+                        op2.b.forward(AFalse.INSTANCE.a);
                     }
                 }
                 case MIN -> {
@@ -1122,9 +1135,9 @@ public final class Motor {
                         default -> crash("Unknown operation");
                     };
                     if (answer) {
-                        op2.b.forward(new ATrue().a);
+                        op2.b.forward(ATrue.INSTANCE.a);
                     } else {
-                        op2.b.forward(new AFalse().a);
+                        op2.b.forward(AFalse.INSTANCE.a);
                     }
                 }
                 case MIN -> {
@@ -1162,17 +1175,17 @@ public final class Motor {
                 case STARTSWITH -> {
                     final boolean answer = s1.data.startswith(s2.data);
                     if (answer) {
-                        op2.b.forward(new ATrue().a);
+                        op2.b.forward(ATrue.INSTANCE.a);
                     } else {
-                        op2.b.forward(new AFalse().a);
+                        op2.b.forward(AFalse.INSTANCE.a);
                     }
                 }
                 case ENDSWITH -> {
                     final boolean answer = s1.data.endswith(s2.data);
                     if (answer) {
-                        op2.b.forward(new ATrue().a);
+                        op2.b.forward(ATrue.INSTANCE.a);
                     } else {
-                        op2.b.forward(new AFalse().a);
+                        op2.b.forward(AFalse.INSTANCE.a);
                     }
                 }
                 default -> {
@@ -1225,7 +1238,7 @@ public final class Motor {
                     op2.b.forward(s1.a);
                 }
                 default -> {
-                    reject(s1, rng);
+                    reject(s1, ARangeFull.INSTANCE);
                 }
             }
         }
@@ -1370,8 +1383,8 @@ public final class Motor {
             final ANot not = this;
             final Agent data = not.a.chase();
             switch (data) {
-                case ATrue _ -> not.b.forward(new AFalse().a);
-                case AFalse _ -> not.b.forward(new ATrue().a);
+                case ATrue _ -> not.b.forward(AFalse.INSTANCE.a);
+                case AFalse _ -> not.b.forward(ATrue.INSTANCE.a);
                 case AInteger i -> not.b.forward(new AInteger(i.data.not()).a);
                 case ABigInteger i -> not.b.forward(new ABigInteger(i.data.not()).a);
                 case ASuperposition sup -> {
@@ -1416,7 +1429,7 @@ public final class Motor {
             final Agent data = and.a.chase();
             switch (data) {
                 case ATrue _ -> and.b.forward(and.c.producer());
-                case AFalse b -> and.b.forward(b.a);
+                case AFalse _ -> and.b.forward(AFalse.INSTANCE.a);
                 case ASuperposition sup -> {
                     final var andx = new AAnd();
                     final var andxx = new AAnd();
@@ -1462,7 +1475,7 @@ public final class Motor {
             final AOr or = this;
             final Agent data = or.a.chase();
             switch (data) {
-                case ATrue b -> or.b.forward(b.a);
+                case ATrue _ -> or.b.forward(ATrue.INSTANCE.a);
                 case AFalse _ -> or.b.forward(or.c.producer());
                 case ASuperposition sup -> {
                     final var orx = new AOr();
@@ -1829,12 +1842,12 @@ public final class Motor {
                     cap.c.forward(lam.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case ATrue b -> {
-                    cap.c.forward(b.a);
+                case ATrue _ -> {
+                    cap.c.forward(ATrue.INSTANCE.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case AFalse b -> {
-                    cap.c.forward(b.a);
+                case AFalse _ -> {
+                    cap.c.forward(AFalse.INSTANCE.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case AInteger i -> {
@@ -1861,12 +1874,12 @@ public final class Motor {
                     cap.c.forward(rng.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case ARangeFull rng -> {
-                    cap.c.forward(rng.a);
+                case ARangeFull _ -> {
+                    cap.c.forward(ARangeFull.INSTANCE.a);
                     cap.b.forward(cap.d.producer());
                 }
-                case AIdentity id -> {
-                    cap.c.forward(id.a);
+                case AIdentity _ -> {
+                    cap.c.forward(AIdentity.INSTANCE.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case AConstructor ctr -> {
@@ -2043,7 +2056,7 @@ public final class Motor {
             final Agent data = res.a.chase();
             switch (data) {
                 case AEndOfList _ -> {
-                    final var ctr = new AConstructor(res.name, res.arity());
+                    final var ctr = makeConstructor(res.name, res.arity());
                     for (int i = 0; i < res.arity(); i++) {
                         ctr.arguments[i].setProducer(res.arguments[i].producer());
                     }
@@ -2148,39 +2161,41 @@ public final class Motor {
             final Agent data = dup.a.chase();
             // Atomic agents are immutable, so both outputs can share their producer.
             switch (data) {
-                case AConstructor ctr when ctr.isNullary() -> {
-                    dup.b.forward(ctr.a);
-                    dup.c.forward(ctr.a);
-                }
                 case AConstructor ctr -> {
-                    final var ctrx = ctr; // reuse
-                    final var ctrxx = new AConstructor(ctr.name, ctr.arity());
-                    for (int i = 0; i < ctr.arity(); i++) {
-                        final var dupx = new ADuplicator(dup.label);
-                        dupx.a.setProducer(ctr.arguments[i].producer());
-                        ctrx.arguments[i].setProducer(dupx.b);
-                        ctrxx.arguments[i].setProducer(dupx.c);
+                    if (ctr.isNullary()) {
+                        dup.b.forward(ctr.a);
+                        dup.c.forward(ctr.a);
+                    } else {
+                        final var ctrx = ctr; // reuse
+                        final var ctrxx = new AConstructor(ctr.name, ctr.arity());
+                        for (int i = 0; i < ctr.arity(); i++) {
+                            final var dupx = new ADuplicator(dup.label);
+                            dupx.a.setProducer(ctr.arguments[i].producer());
+                            ctrx.arguments[i].setProducer(dupx.b);
+                            ctrxx.arguments[i].setProducer(dupx.c);
+                        }
+                        dup.b.forward(ctrx.a);
+                        dup.c.forward(ctrxx.a);
                     }
-                    dup.b.forward(ctrx.a);
-                    dup.c.forward(ctrxx.a);
-                }
-                case ASuperposition sup when dup.label == Label.DELTA -> {
-                    dup.b.forward(sup.b.producer());
-                    dup.c.forward(sup.c.producer());
                 }
                 case ASuperposition sup -> {
-                    final var supx = sup; // reuse
-                    final var supxx = new ASuperposition();
-                    final var dupx = new ADuplicator(dup.label);
-                    final var dupxx = new ADuplicator(dup.label);
-                    dupx.a.setProducer(sup.b.producer());
-                    dupxx.a.setProducer(sup.c.producer());
-                    supx.b.setProducer(dupx.b);
-                    supxx.b.setProducer(dupx.c);
-                    supx.c.setProducer(dupxx.b);
-                    supxx.c.setProducer(dupxx.c);
-                    dup.b.forward(supx.a);
-                    dup.c.forward(supxx.a);
+                    if (dup.label == Label.DELTA) {
+                        dup.b.forward(sup.b.producer());
+                        dup.c.forward(sup.c.producer());
+                    } else {
+                        final var supx = sup; // reuse
+                        final var supxx = new ASuperposition();
+                        final var dupx = new ADuplicator(dup.label);
+                        final var dupxx = new ADuplicator(dup.label);
+                        dupx.a.setProducer(sup.b.producer());
+                        dupxx.a.setProducer(sup.c.producer());
+                        supx.b.setProducer(dupx.b);
+                        supxx.b.setProducer(dupx.c);
+                        supx.c.setProducer(dupxx.b);
+                        supxx.c.setProducer(dupxx.c);
+                        dup.b.forward(supx.a);
+                        dup.c.forward(supxx.a);
+                    }
                 }
                 case ALambda lam -> {
                     final var lamx = new ALambda();
@@ -2196,17 +2211,17 @@ public final class Motor {
                     dup.b.forward(lamx.a);
                     dup.c.forward(lamxx.a);
                 }
-                case AEndOfList end -> {
-                    dup.b.forward(end.a);
-                    dup.c.forward(end.a);
+                case AEndOfList _ -> {
+                    dup.b.forward(AEndOfList.INSTANCE.a);
+                    dup.c.forward(AEndOfList.INSTANCE.a);
                 }
-                case ATrue b -> {
-                    dup.b.forward(b.a);
-                    dup.c.forward(b.a);
+                case ATrue _ -> {
+                    dup.b.forward(ATrue.INSTANCE.a);
+                    dup.c.forward(ATrue.INSTANCE.a);
                 }
-                case AFalse b -> {
-                    dup.b.forward(b.a);
-                    dup.c.forward(b.a);
+                case AFalse _ -> {
+                    dup.b.forward(AFalse.INSTANCE.a);
+                    dup.c.forward(AFalse.INSTANCE.a);
                 }
                 case AInteger i -> {
                     dup.b.forward(i.a);
@@ -2232,13 +2247,13 @@ public final class Motor {
                     dup.b.forward(rng.a);
                     dup.c.forward(rng.a);
                 }
-                case ARangeFull rng -> {
-                    dup.b.forward(rng.a);
-                    dup.c.forward(rng.a);
+                case ARangeFull _ -> {
+                    dup.b.forward(ARangeFull.INSTANCE.a);
+                    dup.c.forward(ARangeFull.INSTANCE.a);
                 }
-                case AIdentity id -> {
-                    dup.b.forward(id.a);
-                    dup.c.forward(id.a);
+                case AIdentity _ -> {
+                    dup.b.forward(AIdentity.INSTANCE.a);
+                    dup.c.forward(AIdentity.INSTANCE.a);
                 }
                 default -> {
                     if (isOperator(data)) {
@@ -2265,27 +2280,33 @@ public final class Motor {
     }
 
     public static final class AEndOfList extends Agent {
+        public static final AEndOfList INSTANCE = new AEndOfList();
+
         public final Producer a;
 
-        public AEndOfList() {
+        private AEndOfList() {
             super(K_END_OF_LIST);
             this.a = new Producer(this);
         }
     }
 
     public static final class ATrue extends Agent {
+        public static final ATrue INSTANCE = new ATrue();
+
         public final Producer a;
 
-        public ATrue() {
+        private ATrue() {
             super(K_TRUE);
             this.a = new Producer(this);
         }
     }
 
     public static final class AFalse extends Agent {
+        public static final AFalse INSTANCE = new AFalse();
+
         public final Producer a;
 
-        public AFalse() {
+        private AFalse() {
             super(K_FALSE);
             this.a = new Producer(this);
         }
@@ -2409,18 +2430,22 @@ public final class Motor {
     }
 
     public static final class ARangeFull extends Agent {
+        public static final ARangeFull INSTANCE = new ARangeFull();
+
         public final Producer a;
 
-        public ARangeFull() {
+        private ARangeFull() {
             super(K_RANGE_FULL);
             this.a = new Producer(this);
         }
     }
 
     public static final class AIdentity extends Agent {
+        public static final AIdentity INSTANCE = new AIdentity();
+
         public final Producer a;
 
-        public AIdentity() {
+        private AIdentity() {
             super(K_IDENTITY);
             this.a = new Producer(this);
         }

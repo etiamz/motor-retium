@@ -75,8 +75,9 @@ public final class Template {
     private record PCapture() implements Payload {
     }
 
-    private record PMatch(String[] names /* interned */, int[] arities,
-            int nshared) implements Payload {
+    private record PMatch(String[] names /* interned */, int[] arities, int nshared)
+            implements
+                Payload {
     }
 
     private record PConstructorResolver(String name /* interned */, int arity) implements Payload {
@@ -292,16 +293,16 @@ public final class Template {
                     producers[j++] = agent.b;
                     consumers[i++] = agent.c;
                 }
-                case PEndOfList _ -> producers[j++] = new Motor.AEndOfList().a;
-                case PTrue _ -> producers[j++] = new Motor.ATrue().a;
-                case PFalse _ -> producers[j++] = new Motor.AFalse().a;
+                case PEndOfList _ -> producers[j++] = Motor.AEndOfList.INSTANCE.a;
+                case PTrue _ -> producers[j++] = Motor.ATrue.INSTANCE.a;
+                case PFalse _ -> producers[j++] = Motor.AFalse.INSTANCE.a;
                 case PInteger p -> producers[j++] = new Motor.AInteger(p.value).a;
                 case PBigInteger p -> producers[j++] = new Motor.ABigInteger(p.value).a;
                 case PString p -> producers[j++] = new Motor.AString(p.value).a;
-                case PRangeFull _ -> producers[j++] = new Motor.ARangeFull().a;
-                case PIdentity _ -> producers[j++] = new Motor.AIdentity().a;
+                case PRangeFull _ -> producers[j++] = Motor.ARangeFull.INSTANCE.a;
+                case PIdentity _ -> producers[j++] = Motor.AIdentity.INSTANCE.a;
                 case PConstructor p -> {
-                    final var agent = new Motor.AConstructor(p.name, p.arity);
+                    final var agent = Motor.makeConstructor(p.name, p.arity);
                     producers[j++] = agent.a;
                     for (final var port : agent.arguments) {
                         consumers[i++] = port;

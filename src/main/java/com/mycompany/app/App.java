@@ -27,8 +27,8 @@ public final class App {
             final var program = new StrictnessAnalyzer().analyze(
                     new OperatorSaturator().saturate(
                             new GuardEliminator().eliminate(Parser.parse("<stdin>", source))));
-            final var compilation = Compiler.compile(program);
-            Motor.initialize(compilation.book());
+            final var compilation = new Compiler().compile(program);
+            Motor.initialize(compilation.book(), compilation.nullaryConstructors());
             final var root = new Port.Consumer(null);
             final var start = System.nanoTime();
             compilation.main().materialize(root, new Port.Producer[0]);

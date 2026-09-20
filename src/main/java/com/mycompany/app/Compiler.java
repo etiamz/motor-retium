@@ -6,29 +6,36 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class Compiler {
-    private Compiler() {
+    private final IdentityHashMap<String, Motor.AConstructor> nullaryConstructors;
+
+    public Compiler() {
+        this.nullaryConstructors = new IdentityHashMap<>();
     }
 
-    public record Compilation(Template main, Map<String, Template> book) {
+    public record Compilation(
+            Template main,
+            Map<String, Template> book,
+            IdentityHashMap<String, Motor.AConstructor> nullaryConstructors) {
     }
 
     @SuppressWarnings("serial")
     private static final class TermInterface extends LinkedHashMap<String, List<Consumer>> {
     }
 
-    public static Compilation compile(final Program program) {
+    public Compilation compile(final Program program) {
         final var main = compile(program.main(), "main");
         final var book = new HashMap<String, Template>();
         program.definitions().forEach((name, t) -> book.put(name, compile(t, name)));
-        return new Compilation(main, book);
+        return new Compilation(main, book, nullaryConstructors);
     }
 
-    private static Template compile(final Term term, final String where) {
+    private Template compile(final Term term, final String where) {
         final var builder = new Template.Builder();
         final var root = builder.mkRoot().a();
         final var fvSet = compile(builder, term, root);
@@ -42,7 +49,7 @@ public final class Compiler {
         return builder.build();
     }
 
-    private static TermInterface compile(
+    private TermInterface compile(
             final Template.Builder builder,
             final Term term,
             final Consumer output) {
@@ -106,13 +113,18 @@ public final class Compiler {
                     throw new IllegalStateException("Unsaturated constructor: `" + name + "`");
                 }
                 final int arity = ts.size();
+                final String internedName = name.intern();
+                if (arity == 0) {
+                    nullaryConstructors
+                            .computeIfAbsent(internedName, key -> new Motor.AConstructor(key, 0));
+                }
                 final var results = new Consumer[arity];
                 Arrays.setAll(results, _ -> new Consumer(null));
                 final var fvSet = new TermInterface();
                 for (int i = 0; i < arity; i++) {
                     merge(fvSet, compile(builder, ts.get(i), results[i]));
                 }
-                final var agent = builder.mkConstructorResolver(name, arity);
+                final var agent = builder.mkConstructorResolver(internedName, arity);
                 // See the same line in the lambda case for the ordering constraint.
                 final var captures = capture(builder, agent.a(), fvSet);
                 output.setProducer(agent.b());
@@ -257,7 +269,7 @@ public final class Compiler {
     // Same interface as `compile`, but builds a term into an expansion that materializes on demand
     // at run-time. This is used to avoid allocating possibly uselesse agents, such as untaken
     // branches of an if-then-else or case-of.
-    private static TermInterface expand(
+    private TermInterface expand(
             final Template.Builder builder,
             final Term term,
             final Consumer output) {
