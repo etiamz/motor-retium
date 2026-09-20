@@ -394,23 +394,18 @@ public final class Motor {
             final Consumer p,
             final Thunk thunk,
             final Heart heart) {
-        final var origin = p.producer() == dup.b ? Origin.LEFT : Origin.RIGHT;
-        final var mine = new CompletableFuture<Duplicand>();
+        final var mine = new CompletableFuture<Void>();
         // A compare-and-exchange fast path does not deliver a measurable change in wall time.
         final var owner = dup.sync.compareAndExchange(null, mine);
         if (owner == null) {
             return (Thunk) () -> reduce(dup.a, () -> {
                 countInteraction();
-                final Duplicand duplicand = dup.interact();
-                mine.complete(duplicand);
-                duplicand.connect(p, origin);
+                dup.interact();
+                mine.complete(null);
                 return reduce(p, thunk, heart);
             }, heart);
         }
-        return new Await(owner, () -> {
-            owner.resultNow().connect(p, origin);
-            return reduce(p, thunk, heart);
-        });
+        return new Await(owner, () -> reduce(p, thunk, heart));
     }
 
     private static final byte
@@ -2134,7 +2129,7 @@ public final class Motor {
     }
 
     public static final class ADuplicator extends Agent {
-        private final AtomicReference<CompletableFuture<Duplicand>> sync = new AtomicReference<>();
+        private final AtomicReference<CompletableFuture<Void>> sync = new AtomicReference<>();
         public final Label label;
         public final Consumer a;
         public final Producer b;
@@ -2148,10 +2143,10 @@ public final class Motor {
             this.c = new Producer(this);
         }
 
-        private Duplicand interact() {
+        private void interact() {
             final ADuplicator dup = this;
             final Agent data = dup.a.chase();
-            return switch (data) {
+            switch (data) {
                 case AConstructor ctr -> {
                     final var ctrx = ctr; // reuse
                     final var ctrxx = new AConstructor(ctr.name, ctr.arity());
@@ -2161,10 +2156,10 @@ public final class Motor {
                         ctrx.arguments[i].setProducer(dupx.b);
                         ctrxx.arguments[i].setProducer(dupx.c);
                     }
-                    yield new Commute(ctrx.a, ctrxx.a);
+                    forwardOutputs(ctrx.a, ctrxx.a);
                 }
                 case ASuperposition sup when dup.label == Label.DELTA -> {
-                    yield new Annihilate(sup.b, sup.c);
+                    forwardOutputs(sup.b.producer(), sup.c.producer());
                 }
                 case ASuperposition sup -> {
                     final var supx = sup; // reuse
@@ -2177,7 +2172,7 @@ public final class Motor {
                     supxx.b.setProducer(dupx.c);
                     supx.c.setProducer(dupxx.b);
                     supxx.c.setProducer(dupxx.c);
-                    yield new Commute(supx.a, supxx.a);
+                    forwardOutputs(supx.a, supxx.a);
                 }
                 case ALambda lam -> {
                     final var lamx = new ALambda();
@@ -2190,28 +2185,33 @@ public final class Motor {
                     sup.c.setProducer(lamxx.b);
                     lamx.c.setProducer(dupx.b);
                     lamxx.c.setProducer(dupx.c);
-                    yield new Commute(lamx.a, lamxx.a);
+                    forwardOutputs(lamx.a, lamxx.a);
                 }
-                case AEndOfList end -> new Commute(end.a, new AEndOfList().a);
-                case ATrue b -> new Commute(b.a, new ATrue().a);
-                case AFalse b -> new Commute(b.a, new AFalse().a);
-                case AInteger i -> new Commute(i.a, new AInteger(i.data).a);
-                case ABigInteger i -> new Commute(i.a, new ABigInteger(i.data).a);
-                case AString s -> new Commute(s.a, new AString(s.data).a);
+                case AEndOfList end -> forwardOutputs(end.a, new AEndOfList().a);
+                case ATrue b -> forwardOutputs(b.a, new ATrue().a);
+                case AFalse b -> forwardOutputs(b.a, new AFalse().a);
+                case AInteger i -> forwardOutputs(i.a, new AInteger(i.data).a);
+                case ABigInteger i -> forwardOutputs(i.a, new ABigInteger(i.data).a);
+                case AString s -> forwardOutputs(s.a, new AString(s.data).a);
                 case ARange rng ->
-                    new Commute(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
-                case ARangeFrom rng -> new Commute(rng.a, new ARangeFrom(rng.start).a);
-                case ARangeTo rng -> new Commute(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
-                case ARangeFull rng -> new Commute(rng.a, new ARangeFull().a);
-                case AIdentity id -> new Commute(id.a, new AIdentity().a);
+                    forwardOutputs(rng.a, new ARange(rng.start, rng.end, rng.inclusive).a);
+                case ARangeFrom rng -> forwardOutputs(rng.a, new ARangeFrom(rng.start).a);
+                case ARangeTo rng -> forwardOutputs(rng.a, new ARangeTo(rng.end, rng.inclusive).a);
+                case ARangeFull rng -> forwardOutputs(rng.a, new ARangeFull().a);
+                case AIdentity id -> forwardOutputs(id.a, new AIdentity().a);
                 default -> {
                     if (isOperator(data)) {
-                        yield crash("Operand unresolved: %s", describe(data));
+                        crash("Operand unresolved: %s", describe(data));
                     } else {
                         throw new IllegalStateException();
                     }
                 }
-            };
+            }
+        }
+
+        private void forwardOutputs(final Producer left, final Producer right) {
+            this.b.forward(left);
+            this.c.forward(right);
         }
     }
 
@@ -2434,32 +2434,6 @@ public final class Motor {
 
     public enum Label {
         COPY, DELTA
-    }
-
-    private enum Origin {
-        LEFT, RIGHT
-    }
-
-    private sealed interface Duplicand permits Annihilate, Commute {
-        void connect(Consumer p, Origin origin);
-    }
-
-    private record Annihilate(Consumer left, Consumer right) implements Duplicand {
-        public void connect(final Consumer p, final Origin origin) {
-            p.setProducer(switch (origin) {
-                case LEFT -> left.producer();
-                case RIGHT -> right.producer();
-            });
-        }
-    }
-
-    private record Commute(Producer left, Producer right) implements Duplicand {
-        public void connect(final Consumer p, final Origin origin) {
-            p.setProducer(switch (origin) {
-                case LEFT -> left;
-                case RIGHT -> right;
-            });
-        }
     }
 
     private static boolean isOperator(final Agent agent) {

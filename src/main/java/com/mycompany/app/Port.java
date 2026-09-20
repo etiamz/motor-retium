@@ -22,11 +22,17 @@ public final class Port {
         // the resolved agent.
         public Agent chase() {
             Producer port = this.producer;
-            while (port.meaning instanceof Producer forwarder) {
-                port = forwarder;
+            for (;;) {
+                // Observe `port.meaning` once per iteration, because someone else may forward this
+                // port (e.g., when a duplicator publishes its results).
+                final Object meaning = port.meaning;
+                if (meaning instanceof Producer forwarder) {
+                    port = forwarder;
+                } else {
+                    this.producer = port;
+                    return (Agent) meaning;
+                }
             }
-            this.producer = port;
-            return (Agent) port.meaning;
         }
 
         public void setProducer(final Producer producer) {
@@ -35,7 +41,7 @@ public final class Port {
     }
 
     public static final class Producer {
-        private Object meaning;
+        private volatile Object meaning;
 
         public Producer(final Agent owner) {
             // This is a physical port attached to its owner.
