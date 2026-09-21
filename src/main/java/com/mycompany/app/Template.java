@@ -2065,39 +2065,44 @@ public final class Template {
 
         public Template build() {
             new Optimizer().optimize(root.a);
+            // The payloads for the agents, in the order they will materialize.
             final var payloads = new ArrayList<Payload>();
+            // The map from each consumer to its creation index in `Template.materialize`.
             final var consumerIndex = new IdentityHashMap<Consumer, Integer>();
+            // Same for the producers.
             final var producerIndex = new IdentityHashMap<Producer, Integer>();
-            final var visitedSet = new LinkedHashSet<Agent>();
-            final var pending = new ArrayDeque<Agent>();
-            int i = 0, j = 0;
-            visitedSet.add(root);
-            pending.add(root);
-            while (!pending.isEmpty()) {
-                final Agent agent = pending.poll();
-                payloads.add(payload(agent));
-                for (final Consumer consumer : consumers(agent)) {
-                    consumerIndex.put(consumer, i++);
-                    final Agent owner = consumer.chase();
-                    if (owner != null && visitedSet.add(owner)) {
-                        pending.add(owner);
+            // Traverse the virtual net, populating the collections defined above.
+            {
+                final var visitedSet = new LinkedHashSet<Agent>();
+                final var pending = new ArrayDeque<Agent>();
+                int i = 0, j = 0; // next consumer, next producer
+                visitedSet.add(root);
+                pending.add(root);
+                while (!pending.isEmpty()) {
+                    final Agent agent = pending.poll();
+                    payloads.add(payload(agent));
+                    for (final Consumer consumer : consumers(agent)) {
+                        consumerIndex.put(consumer, i++);
+                        final Agent owner = consumer.chase();
+                        if (owner != null && visitedSet.add(owner)) {
+                            pending.add(owner);
+                        }
+                    }
+                    for (final Producer producer : producers(agent)) {
+                        producerIndex.put(producer, j++);
                     }
                 }
-                for (final Producer producer : producers(agent)) {
+                for (final Producer producer : imports.values()) {
                     producerIndex.put(producer, j++);
                 }
+                assert i == consumerIndex.size();
+                assert j == producerIndex.size();
             }
-            for (final Producer producer : imports.values()) {
-                producerIndex.put(producer, j++);
-            }
-            assert i == consumerIndex.size();
-            assert j == producerIndex.size();
             final var links = new int[consumerIndex.size()];
             for (final var entry : consumerIndex.entrySet()) {
                 final Consumer consumer = entry.getKey();
                 final int index = entry.getValue();
-                // Resolve the producer forwardings introduced by the optimizations, so that the
-                // resulting template is clean.
+                // Resolve the producer chains introduced by the optimizations.
                 consumer.chase();
                 links[index] = producerIndex.get(consumer.producer);
             }
