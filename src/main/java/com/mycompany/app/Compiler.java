@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class Compiler {
-    private final IdentityHashMap<String, Motor.AConstructor> nullaryConstructors;
+    private final Map<String, Motor.AConstructor> nullaryConstructors;
 
     public Compiler() {
         this.nullaryConstructors = new IdentityHashMap<>();
@@ -21,7 +21,7 @@ public final class Compiler {
     public record Compilation(
             Template main,
             Map<String, Template> book,
-            IdentityHashMap<String, Motor.AConstructor> nullaryConstructors) {
+            Map<String, Motor.AConstructor> nullaryConstructors) {
     }
 
     @SuppressWarnings("serial")

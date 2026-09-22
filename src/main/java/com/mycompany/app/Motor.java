@@ -10,7 +10,6 @@ import com.mycompany.app.Port.Producer;
 import com.mycompany.app.Primitives.StrictOp1;
 import com.mycompany.app.Primitives.StrictOp2;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -42,7 +41,7 @@ public final class Motor {
 
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
-    private static IdentityHashMap<String, AConstructor> NULLARY_CONSTRUCTORS;
+    private static Map<String, AConstructor> NULLARY_CONSTRUCTORS;
     // Statistical counters.
     private static LongAdder NINTERACTIONS, NTRANSITIONS;
 
@@ -90,7 +89,7 @@ public final class Motor {
 
     public static void initialize(
             final Map<String, Template> book,
-            final IdentityHashMap<String, AConstructor> nullaryConstructors) {
+            final Map<String, AConstructor> nullaryConstructors) {
         if (BOOK != null) {
             throw new IllegalStateException("The machine is already initialized");
         }
