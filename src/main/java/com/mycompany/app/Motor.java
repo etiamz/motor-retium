@@ -505,21 +505,35 @@ public final class Motor {
             switch (data) {
                 case ATrue _ -> {
                     switch (op1.op) {
-                        case STRING_OF -> op1.b.forward(new AString("true").a);
-                        case HASH -> op1.b.forward(AInteger.one(U64).a);
-                        default -> reject(data);
+                        case STRING_OF -> {
+                            op1.b.forward(new AString("true").a);
+                        }
+                        case HASH -> {
+                            op1.b.forward(AInteger.one(U64).a);
+                        }
+                        default -> {
+                            reject(data);
+                        }
                     }
                 }
                 case AFalse _ -> {
                     switch (op1.op) {
-                        case STRING_OF -> op1.b.forward(new AString("false").a);
-                        case HASH -> op1.b.forward(AInteger.zero(U64).a);
-                        default -> reject(data);
+                        case STRING_OF -> {
+                            op1.b.forward(new AString("false").a);
+                        }
+                        case HASH -> {
+                            op1.b.forward(AInteger.zero(U64).a);
+                        }
+                        default -> {
+                            reject(data);
+                        }
                     }
                 }
                 case AInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF -> op1.b.forward(new AString(i.data.show()).a);
+                        case STRING_OF -> {
+                            op1.b.forward(new AString(i.data.show()).a);
+                        }
                         case STRING_OF_CHARACTER -> {
                             if (i.ty() == U8) {
                                 op1.b.forward(new AString(MyString.ofByte(i.data.toInt())).a);
@@ -527,34 +541,74 @@ public final class Motor {
                                 reject(data);
                             }
                         }
-                        case NEGATE -> op1.b.forward(new AInteger(i.data.negate()).a);
-                        case FFS -> op1.b.forward(new AInteger(i.data.ffs()).a);
-                        case CLZ -> op1.b.forward(new AInteger(i.data.clz()).a);
-                        case CTZ -> op1.b.forward(new AInteger(i.data.ctz()).a);
-                        case CLRSB -> op1.b.forward(new AInteger(i.data.clrsb()).a);
-                        case POPCOUNT -> op1.b.forward(new AInteger(i.data.popcount()).a);
-                        case PARITY -> op1.b.forward(new AInteger(i.data.parity()).a);
-                        case HASH -> op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        default -> reject(data);
+                        case NEGATE -> {
+                            op1.b.forward(new AInteger(i.data.negate()).a);
+                        }
+                        case FFS -> {
+                            op1.b.forward(new AInteger(i.data.ffs()).a);
+                        }
+                        case CLZ -> {
+                            op1.b.forward(new AInteger(i.data.clz()).a);
+                        }
+                        case CTZ -> {
+                            op1.b.forward(new AInteger(i.data.ctz()).a);
+                        }
+                        case CLRSB -> {
+                            op1.b.forward(new AInteger(i.data.clrsb()).a);
+                        }
+                        case POPCOUNT -> {
+                            op1.b.forward(new AInteger(i.data.popcount()).a);
+                        }
+                        case PARITY -> {
+                            op1.b.forward(new AInteger(i.data.parity()).a);
+                        }
+                        case HASH -> {
+                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        }
+                        default -> {
+                            reject(data);
+                        }
                     }
                 }
                 case ABigInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF -> op1.b.forward(new AString(i.data.show()).a);
-                        case NEGATE -> op1.b.forward(new ABigInteger(i.data.negate()).a);
-                        case POPCOUNT -> op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
-                        case PARITY -> op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
-                        case HASH -> op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        default -> reject(data);
+                        case STRING_OF -> {
+                            op1.b.forward(new AString(i.data.show()).a);
+                        }
+                        case NEGATE -> {
+                            op1.b.forward(new ABigInteger(i.data.negate()).a);
+                        }
+                        case POPCOUNT -> {
+                            op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
+                        }
+                        case PARITY -> {
+                            op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
+                        }
+                        case HASH -> {
+                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
+                        }
+                        default -> {
+                            reject(data);
+                        }
                     }
                 }
                 case AString s -> {
                     switch (op1.op) {
-                        case STRING_OF -> op1.b.forward(s.a);
-                        case STRLEN -> op1.b.forward(new AInteger(U64.of(s.data.length())).a);
-                        case PANIC -> panic("User panic: %s", s.data.toString());
-                        case HASH -> op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
-                        default -> reject(data);
+                        case STRING_OF -> {
+                            op1.b.forward(s.a);
+                        }
+                        case STRLEN -> {
+                            op1.b.forward(new AInteger(U64.of(s.data.length())).a);
+                        }
+                        case PANIC -> {
+                            panic("User panic: %s", s.data.toString());
+                        }
+                        case HASH -> {
+                            op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
+                        }
+                        default -> {
+                            reject(data);
+                        }
                     }
                 }
                 case ASuperposition sup -> {
