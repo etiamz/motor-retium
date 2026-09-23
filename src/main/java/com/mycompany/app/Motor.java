@@ -173,11 +173,17 @@ public final class Motor {
         }
     }
 
-    public static Agent whnf(final Consumer root) {
+    public static String whnf(final Consumer root) {
         if (BOOK == null) {
             throw new IllegalStateException("The machine is not initialized");
         }
-        return whnfAsync(root).join();
+        final Agent result = whnfAsync(root).join();
+        return switch (result) {
+            case AString s -> s.data.toString();
+            default -> panic(
+                    "Expected a string program value, got %s; use the `$show` intrinsic for display",
+                    describe(result));
+        };
     }
 
     private static CompletableFuture<Agent> whnfAsync(final Consumer root) {
