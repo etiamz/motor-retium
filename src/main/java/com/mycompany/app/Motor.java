@@ -329,7 +329,8 @@ public final class Motor {
                 };
             }
             default -> {
-                if (agent.kind >= K_LAMBDA) {
+                final boolean isData = agent.kind >= K_LAMBDA;
+                if (isData) {
                     yield thunk;
                 }
                 yield crash("No such agent kind: %d", (int) agent.kind);
@@ -455,9 +456,6 @@ public final class Motor {
         private Agent(final byte kind) {
             this.kind = kind;
         }
-    }
-
-    private record Operands(Agent first, Agent second) {
     }
 
     public static final class AReference extends Agent {
@@ -1529,52 +1527,46 @@ public final class Motor {
         private void interact() {
             final ADoRange doRng = this;
             final Agent left = doRng.a.chase(), right = doRng.c.chase();
-            switch (new Operands(left, right)) {
-                case Operands(AInteger i1, AInteger i2) when i1.ty() == U64 && i2.ty() == U64 -> {
-                    final var rng = new ARange(i1.value(), i2.value(), doRng.inclusive);
-                    doRng.b.forward(rng.a);
-                }
-                case Operands(ASuperposition sup, _) -> {
-                    final var doRngx = new ADoRange(doRng.inclusive);
-                    final var doRngxx = new ADoRange(doRng.inclusive);
-                    final var supx = sup; // reuse
-                    final var dup = new ADuplicator(Label.DELTA);
-                    doRng.b.forward(supx.a);
-                    dup.a.setProducer(doRng.c.producer());
-                    doRngx.a.setProducer(sup.b.producer());
-                    doRngxx.a.setProducer(sup.c.producer());
-                    supx.b.setProducer(doRngx.b);
-                    supx.c.setProducer(doRngxx.b);
-                    doRngx.c.setProducer(dup.b);
-                    doRngxx.c.setProducer(dup.c);
-                }
-                case Operands(AInteger i, ASuperposition sup) -> {
-                    final var doRngx = new ADoRange(doRng.inclusive);
-                    final var doRngxx = new ADoRange(doRng.inclusive);
-                    final var supx = sup; // reuse
-                    doRng.b.forward(supx.a);
-                    doRngx.c.setProducer(sup.b.producer());
-                    doRngxx.c.setProducer(sup.c.producer());
-                    supx.b.setProducer(doRngx.b);
-                    supx.c.setProducer(doRngxx.b);
-                    doRngx.a.setProducer(i.a);
-                    doRngxx.a.setProducer(i.a);
-                }
-                default -> {
-                    if (isMachineData(left)) {
-                        crash("First operand not welcome: %s", describe(left));
-                    } else if (isMachineData(right)) {
-                        crash("Second operand not welcome: %s", describe(right));
-                    } else if (isUserData(left) || isUserData(right)) {
-                        typeError(describe(doRng), left, right);
-                    } else if (isOperator(left)) {
-                        crash("First operand unresolved: %s", describe(left));
-                    } else if (isOperator(right)) {
-                        crash("Second operand unresolved: %s", describe(right));
-                    } else {
-                        throw new IllegalStateException();
-                    }
-                }
+            if (left instanceof AInteger i1 && right instanceof AInteger i2 && i1.ty() == U64
+                    && i2.ty() == U64) {
+                final var rng = new ARange(i1.value(), i2.value(), doRng.inclusive);
+                doRng.b.forward(rng.a);
+            } else if (left instanceof ASuperposition sup) {
+                final var doRngx = new ADoRange(doRng.inclusive);
+                final var doRngxx = new ADoRange(doRng.inclusive);
+                final var supx = sup; // reuse
+                final var dup = new ADuplicator(Label.DELTA);
+                doRng.b.forward(supx.a);
+                dup.a.setProducer(doRng.c.producer());
+                doRngx.a.setProducer(sup.b.producer());
+                doRngxx.a.setProducer(sup.c.producer());
+                supx.b.setProducer(doRngx.b);
+                supx.c.setProducer(doRngxx.b);
+                doRngx.c.setProducer(dup.b);
+                doRngxx.c.setProducer(dup.c);
+            } else if (left instanceof AInteger i && right instanceof ASuperposition sup) {
+                final var doRngx = new ADoRange(doRng.inclusive);
+                final var doRngxx = new ADoRange(doRng.inclusive);
+                final var supx = sup; // reuse
+                doRng.b.forward(supx.a);
+                doRngx.c.setProducer(sup.b.producer());
+                doRngxx.c.setProducer(sup.c.producer());
+                supx.b.setProducer(doRngx.b);
+                supx.c.setProducer(doRngxx.b);
+                doRngx.a.setProducer(i.a);
+                doRngxx.a.setProducer(i.a);
+            } else if (isMachineData(left)) {
+                crash("First operand not welcome: %s", describe(left));
+            } else if (isMachineData(right)) {
+                crash("Second operand not welcome: %s", describe(right));
+            } else if (isUserData(left) || isUserData(right)) {
+                typeError(describe(doRng), left, right);
+            } else if (isOperator(left)) {
+                crash("First operand unresolved: %s", describe(left));
+            } else if (isOperator(right)) {
+                crash("Second operand unresolved: %s", describe(right));
+            } else {
+                throw new IllegalStateException();
             }
         }
     }
