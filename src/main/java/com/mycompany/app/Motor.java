@@ -329,8 +329,7 @@ public final class Motor {
                 };
             }
             default -> {
-                final boolean isData = agent.kind >= K_LAMBDA;
-                if (isData) {
+                if (isWhnf(agent)) {
                     yield thunk;
                 }
                 yield crash("No such agent kind: %d", (int) agent.kind);
@@ -344,7 +343,7 @@ public final class Motor {
             final Consumer p,
             final Thunk thunk,
             final Heart heart) {
-        if (isWhnf(target)) {
+        if (isWhnf(target.chase())) {
             return () -> {
                 countInteraction();
                 interactor.run();
@@ -365,7 +364,8 @@ public final class Motor {
             final Consumer p,
             final Thunk thunk,
             final Heart heart) {
-        final boolean isLeftWhnf = isWhnf(left), isRightWhnf = isWhnf(right);
+        final boolean isLeftWhnf = isWhnf(left.chase());
+        final boolean isRightWhnf = isWhnf(right.chase());
         if (isLeftWhnf && isRightWhnf) {
             return () -> {
                 countInteraction();
@@ -667,7 +667,8 @@ public final class Motor {
 
         private void interactAux() {
             final AStrictOp2 op2 = this;
-            final Agent left = op2.a.chase(), right = op2.c.chase();
+            final Agent left = op2.a.chase();
+            final Agent right = op2.c.chase();
             switch (left) {
                 case ATrue b1 -> {
                     switch (right) {
@@ -1448,7 +1449,8 @@ public final class Motor {
 
         private void interact() {
             final ADoRange doRng = this;
-            final Agent left = doRng.a.chase(), right = doRng.c.chase();
+            final Agent left = doRng.a.chase();
+            final Agent right = doRng.c.chase();
             if (left instanceof AInteger i1 && right instanceof AInteger i2 && i1.ty() == U64
                     && i2.ty() == U64) {
                 final var rng = new ARange(i1.value(), i2.value(), doRng.inclusive);
@@ -2449,8 +2451,8 @@ public final class Motor {
         return !isOperator(agent) && !isUserData(agent);
     }
 
-    private static boolean isWhnf(final Consumer p) {
-        return p.chase().kind >= K_LAMBDA;
+    private static boolean isWhnf(final Agent agent) {
+        return agent.kind >= K_LAMBDA;
     }
 
     private static String describe(final Agent agent) {
