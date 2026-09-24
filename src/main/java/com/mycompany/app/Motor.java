@@ -1025,39 +1025,22 @@ public final class Motor {
 
         private void interact(final AString s1, final AInteger i) {
             final AStrictOp2 op2 = this;
-            switch (op2.op) {
-                case CHARACTER_AT -> {
-                    if (i.ty() != U64) {
-                        reject(s1, i);
-                        return;
-                    }
-                    CheckedInteger.Value c;
-                    try {
-                        c = U8.of(s1.data.at(i.data.toInt()));
-                    } catch (final IndexOutOfBoundsException _) {
-                        c = panic("Index out of bounds: %s", op2.op.describe());
-                    }
-                    op2.b.forward(new AInteger(c).a);
+            if (op2.op == CHARACTER_AT && i.ty() == U64) {
+                CheckedInteger.Value c;
+                try {
+                    c = U8.of(s1.data.at(i.data.toInt()));
+                } catch (final IndexOutOfBoundsException _) {
+                    c = panic("Index out of bounds: %s", op2.op.describe());
                 }
-                case STRCHR -> {
-                    if (i.ty() != U8) {
-                        reject(s1, i);
-                        return;
-                    }
-                    final int c = i.data.toInt();
-                    op2.b.forward(new AInteger(I64.of(s1.data.strchr(c))).a);
-                }
-                case STRRCHR -> {
-                    if (i.ty() != U8) {
-                        reject(s1, i);
-                        return;
-                    }
-                    final int c = i.data.toInt();
-                    op2.b.forward(new AInteger(I64.of(s1.data.strrchr(c))).a);
-                }
-                default -> {
-                    reject(s1, i);
-                }
+                op2.b.forward(new AInteger(c).a);
+            } else if (op2.op == STRCHR && i.ty() == U8) {
+                final int c = i.data.toInt();
+                op2.b.forward(new AInteger(I64.of(s1.data.strchr(c))).a);
+            } else if (op2.op == STRRCHR && i.ty() == U8) {
+                final int c = i.data.toInt();
+                op2.b.forward(new AInteger(I64.of(s1.data.strrchr(c))).a);
+            } else {
+                reject(s1, i);
             }
         }
 
