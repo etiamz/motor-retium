@@ -302,7 +302,7 @@ public final class Template {
                 case PRangeFull _ -> producers[j++] = Motor.ARangeFull.INSTANCE.a;
                 case PIdentity _ -> producers[j++] = Motor.AIdentity.INSTANCE.a;
                 case PConstructor p -> {
-                    final var agent = Motor.makeConstructor(p.name, p.arity);
+                    final var agent = new Motor.AConstructor(p.name, p.arity);
                     producers[j++] = agent.a;
                     for (final var port : agent.arguments) {
                         consumers[i++] = port;

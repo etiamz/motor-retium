@@ -13,11 +13,12 @@ public final class App {
     public static void main(final String[] args) throws IOException {
         final var source = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
         try {
-            final var program = new StrictnessAnalyzer().analyze(
-                    new OperatorSaturator().saturate(
-                            new GuardEliminator().eliminate(Parser.parse("<stdin>", source))));
-            final var compilation = new Compiler().compile(program);
-            Motor.initialize(compilation.book(), compilation.nullaryConstructors());
+            final var compilation = new Compiler().compile(
+                    new StrictnessAnalyzer().analyze(
+                            new OperatorSaturator().saturate(
+                                    new GuardEliminator()
+                                            .eliminate(Parser.parse("<stdin>", source)))));
+            Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
             final var start = System.nanoTime();
             compilation.main().materialize(root, new Port.Producer[0]);

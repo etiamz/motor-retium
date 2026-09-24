@@ -6,22 +6,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class Compiler {
-    private final Map<String, Motor.AConstructor> nullaryConstructors;
-
-    public Compiler() {
-        this.nullaryConstructors = new IdentityHashMap<>();
-    }
-
-    public record Compilation(
-            Template main,
-            Map<String, Template> book,
-            Map<String, Motor.AConstructor> nullaryConstructors) {
+    public record Compilation(Template main, Map<String, Template> book) {
     }
 
     @SuppressWarnings("serial")
@@ -32,7 +22,7 @@ public final class Compiler {
         final var main = compile(program.main(), "main");
         final var book = new HashMap<String, Template>();
         program.definitions().forEach((name, t) -> book.put(name, compile(t, name)));
-        return new Compilation(main, book, nullaryConstructors);
+        return new Compilation(main, book);
     }
 
     private Template compile(final Term term, final String where) {
@@ -114,10 +104,6 @@ public final class Compiler {
                 }
                 final int arity = ts.size();
                 final String internedName = name.intern();
-                if (arity == 0) {
-                    nullaryConstructors
-                            .computeIfAbsent(internedName, key -> new Motor.AConstructor(key, 0));
-                }
                 final var results = new Consumer[arity];
                 Arrays.setAll(results, _ -> new Consumer(null));
                 final var fvSet = new TermInterface();

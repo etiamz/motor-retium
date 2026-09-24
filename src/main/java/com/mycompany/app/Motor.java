@@ -41,9 +41,9 @@ public final class Motor {
 
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
-    private static Map<String, AConstructor> NULLARY_CONSTRUCTORS;
     // Statistical counters.
-    private static LongAdder NINTERACTIONS, NTRANSITIONS;
+    private static LongAdder NINTERACTIONS;
+    private static LongAdder NTRANSITIONS;
 
     public record Statistics(long ninteractions, long ntransitions) {
     }
@@ -72,30 +72,15 @@ public final class Motor {
         }
     }
 
-    // A Java constructor cannot returne an existing instance, so we have this tiny little factory.
-    public static AConstructor makeConstructor(final String name, final int arity) {
-        if (arity != 0) {
-            return new AConstructor(name, arity);
-        }
-        final AConstructor ctr = NULLARY_CONSTRUCTORS.get(name);
-        if (ctr == null) {
-            return crash("Unknown nullary constructor: `%s`", name);
-        }
-        return ctr;
-    }
-
     private Motor() {
     }
 
-    public static void initialize(
-            final Map<String, Template> book,
-            final Map<String, AConstructor> nullaryConstructors) {
+    public static void initialize(final Map<String, Template> book) {
         if (BOOK != null) {
             throw new IllegalStateException("The machine is already initialized");
         }
         POOL = new ForkJoinPool();
         BOOK = book;
-        NULLARY_CONSTRUCTORS = nullaryConstructors;
         if (STATS) {
             NINTERACTIONS = new LongAdder();
             NTRANSITIONS = new LongAdder();
@@ -1988,7 +1973,7 @@ public final class Motor {
             final Agent data = res.a.chase();
             switch (data) {
                 case AEndOfList _ -> {
-                    final var ctr = makeConstructor(res.name, res.arity());
+                    final var ctr = new AConstructor(res.name, res.arity());
                     for (int i = 0; i < res.arity(); i++) {
                         ctr.arguments[i].setProducer(res.arguments[i].producer());
                     }
