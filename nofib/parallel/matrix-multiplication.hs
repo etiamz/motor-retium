@@ -44,7 +44,8 @@ transpose m =
             Cons _ _ -> Cons (map head m) (transpose (map tail m))
 
 m1 :: Int64 -> List (List Int64)
-m1 size = replicate size (enumFromTo 1 size)
+m1 size =
+    replicate size (enumFromTo 1 size)
 
 renderMatrix :: List (List Int64) -> String
 renderMatrix m =

@@ -33,7 +33,8 @@ transpose m =
         }
     };
 
-m1 size = replicate size (enumFromTo 1i64 size);
+m1 size =
+    replicate size (enumFromTo 1i64 size);
 
 renderMatrix m =
     case m of {
