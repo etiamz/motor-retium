@@ -717,30 +717,6 @@ public final class Motor {
                         default -> reject(left, right);
                     }
                 }
-                case ARange rng -> {
-                    switch (right) {
-                        case ASuperposition sup -> interact(rng, sup);
-                        default -> reject(left, right);
-                    }
-                }
-                case ARangeFrom rng -> {
-                    switch (right) {
-                        case ASuperposition sup -> interact(rng, sup);
-                        default -> reject(left, right);
-                    }
-                }
-                case ARangeTo rng -> {
-                    switch (right) {
-                        case ASuperposition sup -> interact(rng, sup);
-                        default -> reject(left, right);
-                    }
-                }
-                case ARangeFull rng -> {
-                    switch (right) {
-                        case ASuperposition sup -> interact(rng, sup);
-                        default -> reject(left, right);
-                    }
-                }
                 case ASuperposition sup -> {
                     interact(sup);
                 }
@@ -1190,62 +1166,6 @@ public final class Motor {
             supx.c.setProducer(op2xx.b);
             op2x.a.setProducer(s1.a);
             op2xx.a.setProducer(s1.a);
-        }
-
-        private void interact(final ARange rng, final ASuperposition sup) {
-            final AStrictOp2 op2 = this;
-            final var op2x = new AStrictOp2(op2.op);
-            final var op2xx = new AStrictOp2(op2.op);
-            final var supx = sup; // reuse
-            op2.b.forward(supx.a);
-            op2x.c.setProducer(sup.b.producer());
-            op2xx.c.setProducer(sup.c.producer());
-            supx.b.setProducer(op2x.b);
-            supx.c.setProducer(op2xx.b);
-            op2x.a.setProducer(rng.a);
-            op2xx.a.setProducer(rng.a);
-        }
-
-        private void interact(final ARangeFrom rng, final ASuperposition sup) {
-            final AStrictOp2 op2 = this;
-            final var op2x = new AStrictOp2(op2.op);
-            final var op2xx = new AStrictOp2(op2.op);
-            final var supx = sup; // reuse
-            op2.b.forward(supx.a);
-            op2x.c.setProducer(sup.b.producer());
-            op2xx.c.setProducer(sup.c.producer());
-            supx.b.setProducer(op2x.b);
-            supx.c.setProducer(op2xx.b);
-            op2x.a.setProducer(rng.a);
-            op2xx.a.setProducer(rng.a);
-        }
-
-        private void interact(final ARangeTo rng, final ASuperposition sup) {
-            final AStrictOp2 op2 = this;
-            final var op2x = new AStrictOp2(op2.op);
-            final var op2xx = new AStrictOp2(op2.op);
-            final var supx = sup; // reuse
-            op2.b.forward(supx.a);
-            op2x.c.setProducer(sup.b.producer());
-            op2xx.c.setProducer(sup.c.producer());
-            supx.b.setProducer(op2x.b);
-            supx.c.setProducer(op2xx.b);
-            op2x.a.setProducer(rng.a);
-            op2xx.a.setProducer(rng.a);
-        }
-
-        private void interact(final ARangeFull rng, final ASuperposition sup) {
-            final AStrictOp2 op2 = this;
-            final var op2x = new AStrictOp2(op2.op);
-            final var op2xx = new AStrictOp2(op2.op);
-            final var supx = sup; // reuse
-            op2.b.forward(supx.a);
-            op2x.c.setProducer(sup.b.producer());
-            op2xx.c.setProducer(sup.c.producer());
-            supx.b.setProducer(op2x.b);
-            supx.c.setProducer(op2xx.b);
-            op2x.a.setProducer(ARangeFull.INSTANCE.a);
-            op2xx.a.setProducer(ARangeFull.INSTANCE.a);
         }
 
         private void interact(final ASuperposition sup) {
