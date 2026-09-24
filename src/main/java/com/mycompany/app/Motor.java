@@ -669,172 +669,40 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final Agent left = op2.a.chase(), right = op2.c.chase();
             switch (left) {
-                case ATrue _ -> {
+                case ATrue b1 -> {
                     switch (right) {
-                        case ATrue _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_AND -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
-                                case MIN -> op2.b.forward(ATrue.INSTANCE.a);
-                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case AFalse _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case GREATER -> op2.b.forward(ATrue.INSTANCE.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
-                                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
-                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
-                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(ATrue.INSTANCE.a);
-                            op2xx.a.setProducer(ATrue.INSTANCE.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ATrue b2 -> interact(b1, b2);
+                        case AFalse b2 -> interact(b1, b2);
+                        case ASuperposition sup -> interact(b1, sup);
+                        default -> reject(left, right);
                     }
                 }
-                case AFalse _ -> {
+                case AFalse b1 -> {
                     switch (right) {
-                        case ATrue _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case LESS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
-                                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
-                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
-                                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case AFalse _ -> {
-                            switch (op2.op) {
-                                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
-                                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
-                                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
-                                case STRICT_OR -> op2.b.forward(AFalse.INSTANCE.a);
-                                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
-                                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
-                                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
-                                case MAX -> op2.b.forward(AFalse.INSTANCE.a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(AFalse.INSTANCE.a);
-                            op2xx.a.setProducer(AFalse.INSTANCE.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ATrue b2 -> interact(b1, b2);
+                        case AFalse b2 -> interact(b1, b2);
+                        case ASuperposition sup -> interact(b1, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case AInteger i1 -> {
                     switch (right) {
-                        case ATrue _ -> {
-                            switch (op2.op) {
-                                case OFTYPE -> op2.b.forward(AInteger.one(i1.ty()).a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case AFalse _ -> {
-                            switch (op2.op) {
-                                case OFTYPE -> op2.b.forward(AInteger.zero(i1.ty()).a);
-                                default -> reject(left, right);
-                            }
-                        }
+                        case ATrue b2 -> interact(i1, b2);
+                        case AFalse b2 -> interact(i1, b2);
                         case AInteger i2 -> interact(i1, i2);
                         case ABigInteger i2 -> interact(i1, i2);
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(i1.a);
-                            op2xx.a.setProducer(i1.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(i1, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case ABigInteger i1 -> {
                     switch (right) {
-                        case ATrue _ -> {
-                            switch (op2.op) {
-                                case OFTYPE -> op2.b.forward(ABigInteger.one().a);
-                                default -> reject(left, right);
-                            }
-                        }
-                        case AFalse _ -> {
-                            switch (op2.op) {
-                                case OFTYPE -> op2.b.forward(ABigInteger.zero().a);
-                                default -> reject(left, right);
-                            }
-                        }
+                        case ATrue b2 -> interact(i1, b2);
+                        case AFalse b2 -> interact(i1, b2);
                         case AInteger i2 -> interact(i1, i2);
                         case ABigInteger i2 -> interact(i1, i2);
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(i1.a);
-                            op2xx.a.setProducer(i1.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(i1, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case AString s1 -> {
@@ -845,128 +713,36 @@ public final class Motor {
                         case ARangeFrom rng -> interact(s1, rng);
                         case ARangeTo rng -> interact(s1, rng);
                         case ARangeFull rng -> interact(s1, rng);
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(s1.a);
-                            op2xx.a.setProducer(s1.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(s1, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case ARange rng -> {
                     switch (right) {
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(rng.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(rng, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case ARangeFrom rng -> {
                     switch (right) {
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(rng.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(rng, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case ARangeTo rng -> {
                     switch (right) {
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(rng.a);
-                            op2xx.a.setProducer(rng.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
+                        case ASuperposition sup -> interact(rng, sup);
+                        default -> reject(left, right);
                     }
                 }
-                case ARangeFull _ -> {
+                case ARangeFull rng -> {
                     switch (right) {
-                        case ASuperposition sup -> {
-                            final var op2x = new AStrictOp2(op2.op);
-                            final var op2xx = new AStrictOp2(op2.op);
-                            final var supx = sup; // reuse
-                            op2.b.forward(supx.a);
-                            op2x.c.setProducer(sup.b.producer());
-                            op2xx.c.setProducer(sup.c.producer());
-                            supx.b.setProducer(op2x.b);
-                            supx.c.setProducer(op2xx.b);
-                            op2x.a.setProducer(ARangeFull.INSTANCE.a);
-                            op2xx.a.setProducer(ARangeFull.INSTANCE.a);
-                        }
-                        default -> {
-                            reject(left, right);
-                        }
-                    }
-                }
-                case AConstructor ctr -> {
-                    if (ctr.isNullary() && right instanceof ASuperposition sup) {
-                        final var op2x = new AStrictOp2(op2.op);
-                        final var op2xx = new AStrictOp2(op2.op);
-                        final var supx = sup; // reuse
-                        op2.b.forward(supx.a);
-                        op2x.c.setProducer(sup.b.producer());
-                        op2xx.c.setProducer(sup.c.producer());
-                        supx.b.setProducer(op2x.b);
-                        supx.c.setProducer(op2xx.b);
-                        op2x.a.setProducer(ctr.a);
-                        op2xx.a.setProducer(ctr.a);
-                    } else {
-                        reject(left, right);
+                        case ASuperposition sup -> interact(rng, sup);
+                        default -> reject(left, right);
                     }
                 }
                 case ASuperposition sup -> {
-                    final var op2x = new AStrictOp2(op2.op);
-                    final var op2xx = new AStrictOp2(op2.op);
-                    final var supx = sup; // reuse
-                    final var dup = new ADuplicator(Label.DELTA);
-                    op2.b.forward(supx.a);
-                    dup.a.setProducer(op2.c.producer());
-                    op2x.a.setProducer(sup.b.producer());
-                    op2xx.a.setProducer(sup.c.producer());
-                    supx.b.setProducer(op2x.b);
-                    supx.c.setProducer(op2xx.b);
-                    op2x.c.setProducer(dup.b);
-                    op2xx.c.setProducer(dup.c);
+                    interact(sup);
                 }
                 default -> {
                     reject(left, right);
@@ -974,81 +750,177 @@ public final class Motor {
             }
         }
 
-        private void interact(final AInteger i1, final AInteger i2) {
+        private void interact(final ATrue b1, final ATrue b2) {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
-                        SHIFT_LEFT, SHIFT_RIGHT -> {
-                    if (i1.ty() != i2.ty()) {
-                        reject(i1, i2);
-                        return;
-                    }
-                    final IntegerTy ty = i1.ty();
-                    final long x = i1.value(), y = i2.value();
-                    final var r = new AInteger(switch (op2.op) {
-                        case ADD -> ty.add(x, y);
-                        case SUBTRACT -> ty.subtract(x, y);
-                        case MULTIPLY -> ty.multiply(x, y);
-                        case DIVIDE -> ty.divide(x, y);
-                        case REMAINDER -> ty.remainder(x, y);
-                        case STRICT_OR -> ty.or(x, y);
-                        case STRICT_AND -> ty.and(x, y);
-                        case STRICT_XOR -> ty.xor(x, y);
-                        case SHIFT_LEFT -> ty.shiftLeft(x, y);
-                        case SHIFT_RIGHT -> ty.shiftRight(x, y);
-                        default -> crash("Unknown operation");
-                    });
-                    op2.b.forward(r.a);
-                }
-                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
-                    if (i1.ty() != i2.ty()) {
-                        reject(i1, i2);
-                        return;
-                    }
-                    final IntegerTy ty = i1.ty();
-                    final long x = i1.value(), y = i2.value();
-                    final boolean answer = switch (op2.op) {
-                        case EQUALS -> x == y;
-                        case NOT_EQUALS -> x != y;
-                        case LESS -> ty.compare(x, y) < 0;
-                        case LESS_OR_EQUALS -> ty.compare(x, y) <= 0;
-                        case GREATER -> ty.compare(x, y) > 0;
-                        case GREATER_OR_EQUALS -> ty.compare(x, y) >= 0;
-                        default -> crash("Unknown operation");
-                    };
-                    if (answer) {
-                        op2.b.forward(ATrue.INSTANCE.a);
-                    } else {
-                        op2.b.forward(AFalse.INSTANCE.a);
-                    }
-                }
-                case MIN -> {
-                    if (i1.ty() != i2.ty()) {
-                        reject(i1, i2);
-                    } else if (i1.ty().compare(i1.value(), i2.value()) <= 0) {
-                        op2.b.forward(i1.a);
-                    } else {
-                        op2.b.forward(i2.a);
-                    }
-                }
-                case MAX -> {
-                    if (i1.ty() != i2.ty()) {
-                        reject(i1, i2);
-                    } else if (i1.ty().compare(i1.value(), i2.value()) >= 0) {
-                        op2.b.forward(i1.a);
-                    } else {
-                        op2.b.forward(i2.a);
-                    }
-                }
+                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_AND -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
+                case MIN -> op2.b.forward(ATrue.INSTANCE.a);
+                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                default -> reject(b1, b2);
+            }
+        }
+
+        private void interact(final ATrue b1, final AFalse b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                case LESS_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case GREATER -> op2.b.forward(ATrue.INSTANCE.a);
+                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
+                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                default -> reject(b1, b2);
+            }
+        }
+
+        private void interact(final ATrue b1, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(ATrue.INSTANCE.a);
+            op2xx.a.setProducer(ATrue.INSTANCE.a);
+        }
+
+        private void interact(final AFalse b1, final ATrue b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case NOT_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case LESS -> op2.b.forward(ATrue.INSTANCE.a);
+                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                case GREATER_OR_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case STRICT_OR -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
+                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                default -> reject(b1, b2);
+            }
+        }
+
+        private void interact(final AFalse b1, final AFalse b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case NOT_EQUALS -> op2.b.forward(AFalse.INSTANCE.a);
+                case LESS -> op2.b.forward(AFalse.INSTANCE.a);
+                case LESS_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case GREATER -> op2.b.forward(AFalse.INSTANCE.a);
+                case GREATER_OR_EQUALS -> op2.b.forward(ATrue.INSTANCE.a);
+                case STRICT_OR -> op2.b.forward(AFalse.INSTANCE.a);
+                case STRICT_AND -> op2.b.forward(AFalse.INSTANCE.a);
+                case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
+                case MIN -> op2.b.forward(AFalse.INSTANCE.a);
+                case MAX -> op2.b.forward(AFalse.INSTANCE.a);
+                default -> reject(b1, b2);
+            }
+        }
+
+        private void interact(final AFalse b1, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(AFalse.INSTANCE.a);
+            op2xx.a.setProducer(AFalse.INSTANCE.a);
+        }
+
+        private void interact(final AInteger i1, final ATrue b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
                 case OFTYPE -> {
-                    if (i1.ty() != i2.ty()) {
-                        op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
-                    } else {
-                        op2.b.forward(i2.a);
-                    }
+                    op2.b.forward(AInteger.one(i1.ty()).a);
                 }
                 default -> {
-                    reject(i1, i2);
+                    reject(i1, b2);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final AFalse b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case OFTYPE -> {
+                    op2.b.forward(AInteger.zero(i1.ty()).a);
+                }
+                default -> {
+                    reject(i1, b2);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final AInteger i2) {
+            final AStrictOp2 op2 = this;
+            if (op2.op == OFTYPE) {
+                if (i1.ty() != i2.ty()) {
+                    op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
+                } else {
+                    op2.b.forward(i2.a);
+                }
+            } else if (i1.ty() != i2.ty()) {
+                reject(i1, i2);
+            } else if (op2.op == MIN) {
+                if (i1.ty().compare(i1.value(), i2.value()) <= 0) {
+                    op2.b.forward(i1.a);
+                } else {
+                    op2.b.forward(i2.a);
+                }
+            } else if (op2.op == MAX) {
+                if (i1.ty().compare(i1.value(), i2.value()) >= 0) {
+                    op2.b.forward(i1.a);
+                } else {
+                    op2.b.forward(i2.a);
+                }
+            } else {
+                final IntegerTy ty = i1.ty();
+                final long x = i1.value(), y = i2.value();
+                switch (op2.op) {
+                    case ADD -> op2.b.forward(new AInteger(ty.add(x, y)).a);
+                    case SUBTRACT -> op2.b.forward(new AInteger(ty.subtract(x, y)).a);
+                    case MULTIPLY -> op2.b.forward(new AInteger(ty.multiply(x, y)).a);
+                    case DIVIDE -> op2.b.forward(new AInteger(ty.divide(x, y)).a);
+                    case REMAINDER -> op2.b.forward(new AInteger(ty.remainder(x, y)).a);
+                    case STRICT_OR -> op2.b.forward(new AInteger(ty.or(x, y)).a);
+                    case STRICT_AND -> op2.b.forward(new AInteger(ty.and(x, y)).a);
+                    case STRICT_XOR -> op2.b.forward(new AInteger(ty.xor(x, y)).a);
+                    case SHIFT_LEFT -> op2.b.forward(new AInteger(ty.shiftLeft(x, y)).a);
+                    case SHIFT_RIGHT -> op2.b.forward(new AInteger(ty.shiftRight(x, y)).a);
+                    case EQUALS -> op2.b.forward(x == y ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case NOT_EQUALS -> op2.b.forward(x != y ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS ->
+                        op2.b.forward(ty.compare(x, y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS_OR_EQUALS ->
+                        op2.b.forward(ty.compare(x, y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER ->
+                        op2.b.forward(ty.compare(x, y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER_OR_EQUALS ->
+                        op2.b.forward(ty.compare(x, y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    default -> reject(i1, i2);
                 }
             }
         }
@@ -1061,6 +933,44 @@ public final class Motor {
                 }
                 default -> {
                     reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(i1.a);
+            op2xx.a.setProducer(i1.a);
+        }
+
+        private void interact(final ABigInteger i1, final ATrue b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case OFTYPE -> {
+                    op2.b.forward(ABigInteger.one().a);
+                }
+                default -> {
+                    reject(i1, b2);
+                }
+            }
+        }
+
+        private void interact(final ABigInteger i1, final AFalse b2) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case OFTYPE -> {
+                    op2.b.forward(ABigInteger.zero().a);
+                }
+                default -> {
+                    reject(i1, b2);
                 }
             }
         }
@@ -1079,63 +989,62 @@ public final class Motor {
 
         private void interact(final ABigInteger i1, final ABigInteger i2) {
             final AStrictOp2 op2 = this;
-            switch (op2.op) {
-                case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
-                        SHIFT_LEFT, SHIFT_RIGHT -> {
-                    final MyBigInteger x = i1.data, y = i2.data;
-                    final var r = new ABigInteger(switch (op2.op) {
-                        case ADD -> x.add(y);
-                        case SUBTRACT -> x.subtract(y);
-                        case MULTIPLY -> x.multiply(y);
-                        case DIVIDE -> x.divide(y);
-                        case REMAINDER -> x.remainder(y);
-                        case STRICT_OR -> x.or(y);
-                        case STRICT_AND -> x.and(y);
-                        case STRICT_XOR -> x.xor(y);
-                        case SHIFT_LEFT -> x.shiftLeft(y);
-                        case SHIFT_RIGHT -> x.shiftRight(y);
-                        default -> crash("Unknown operation");
-                    });
-                    op2.b.forward(r.a);
-                }
-                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
-                    final MyBigInteger x = i1.data, y = i2.data;
-                    final boolean answer = switch (op2.op) {
-                        case EQUALS -> x.equals(y);
-                        case NOT_EQUALS -> !x.equals(y);
-                        case LESS -> x.compareTo(y) < 0;
-                        case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
-                        case GREATER -> x.compareTo(y) > 0;
-                        case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
-                        default -> crash("Unknown operation");
-                    };
-                    if (answer) {
-                        op2.b.forward(ATrue.INSTANCE.a);
-                    } else {
-                        op2.b.forward(AFalse.INSTANCE.a);
-                    }
-                }
-                case MIN -> {
-                    if (i1.data.compareTo(i2.data) <= 0) {
-                        op2.b.forward(i1.a);
-                    } else {
-                        op2.b.forward(i2.a);
-                    }
-                }
-                case MAX -> {
-                    if (i1.data.compareTo(i2.data) >= 0) {
-                        op2.b.forward(i1.a);
-                    } else {
-                        op2.b.forward(i2.a);
-                    }
-                }
-                case OFTYPE -> {
+            if (op2.op == OFTYPE) {
+                op2.b.forward(i2.a);
+            } else if (op2.op == MIN) {
+                if (i1.data.compareTo(i2.data) <= 0) {
+                    op2.b.forward(i1.a);
+                } else {
                     op2.b.forward(i2.a);
                 }
-                default -> {
-                    reject(i1, i2);
+            } else if (op2.op == MAX) {
+                if (i1.data.compareTo(i2.data) >= 0) {
+                    op2.b.forward(i1.a);
+                } else {
+                    op2.b.forward(i2.a);
+                }
+            } else {
+                final MyBigInteger x = i1.data, y = i2.data;
+                switch (op2.op) {
+                    case ADD -> op2.b.forward(new ABigInteger(x.add(y)).a);
+                    case SUBTRACT -> op2.b.forward(new ABigInteger(x.subtract(y)).a);
+                    case MULTIPLY -> op2.b.forward(new ABigInteger(x.multiply(y)).a);
+                    case DIVIDE -> op2.b.forward(new ABigInteger(x.divide(y)).a);
+                    case REMAINDER -> op2.b.forward(new ABigInteger(x.remainder(y)).a);
+                    case STRICT_OR -> op2.b.forward(new ABigInteger(x.or(y)).a);
+                    case STRICT_AND -> op2.b.forward(new ABigInteger(x.and(y)).a);
+                    case STRICT_XOR -> op2.b.forward(new ABigInteger(x.xor(y)).a);
+                    case SHIFT_LEFT -> op2.b.forward(new ABigInteger(x.shiftLeft(y)).a);
+                    case SHIFT_RIGHT -> op2.b.forward(new ABigInteger(x.shiftRight(y)).a);
+                    case EQUALS ->
+                        op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case NOT_EQUALS ->
+                        op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS ->
+                        op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS_OR_EQUALS ->
+                        op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER ->
+                        op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER_OR_EQUALS ->
+                        op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    default -> reject(i1, i2);
                 }
             }
+        }
+
+        private void interact(final ABigInteger i1, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(i1.a);
+            op2xx.a.setProducer(i1.a);
         }
 
         private void interact(final AString s1, final AInteger i) {
@@ -1178,74 +1087,44 @@ public final class Motor {
 
         private void interact(final AString s1, final AString s2) {
             final AStrictOp2 op2 = this;
-            switch (op2.op) {
-                case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> {
-                    final MyString x = s1.data, y = s2.data;
-                    final boolean answer = switch (op2.op) {
-                        case EQUALS -> x.equals(y);
-                        case NOT_EQUALS -> !x.equals(y);
-                        case LESS -> x.compareTo(y) < 0;
-                        case LESS_OR_EQUALS -> x.compareTo(y) <= 0;
-                        case GREATER -> x.compareTo(y) > 0;
-                        case GREATER_OR_EQUALS -> x.compareTo(y) >= 0;
-                        default -> crash("Unknown operation");
-                    };
-                    if (answer) {
-                        op2.b.forward(ATrue.INSTANCE.a);
-                    } else {
-                        op2.b.forward(AFalse.INSTANCE.a);
-                    }
+            if (op2.op == MIN) {
+                if (s1.data.compareTo(s2.data) <= 0) {
+                    op2.b.forward(s1.a);
+                } else {
+                    op2.b.forward(s2.a);
                 }
-                case MIN -> {
-                    if (s1.data.compareTo(s2.data) <= 0) {
-                        op2.b.forward(s1.a);
-                    } else {
-                        op2.b.forward(s2.a);
-                    }
+            } else if (op2.op == MAX) {
+                if (s1.data.compareTo(s2.data) >= 0) {
+                    op2.b.forward(s1.a);
+                } else {
+                    op2.b.forward(s2.a);
                 }
-                case MAX -> {
-                    if (s1.data.compareTo(s2.data) >= 0) {
-                        op2.b.forward(s1.a);
-                    } else {
-                        op2.b.forward(s2.a);
-                    }
-                }
-                case PLUS_PLUS -> {
-                    op2.b.forward(new AString(s1.data.concat(s2.data)).a);
-                }
-                case STRCMP -> {
-                    op2.b.forward(new AInteger(I64.of(s1.data.compareTo(s2.data))).a);
-                }
-                case STRSTR -> {
-                    op2.b.forward(new AInteger(I64.of(s1.data.strstr(s2.data))).a);
-                }
-                case STRSPN -> {
-                    op2.b.forward(new AInteger(I64.of(s1.data.strspn(s2.data))).a);
-                }
-                case STRCSPN -> {
-                    op2.b.forward(new AInteger(I64.of(s1.data.strcspn(s2.data))).a);
-                }
-                case STRPBRK -> {
-                    op2.b.forward(new AInteger(I64.of(s1.data.strpbrk(s2.data))).a);
-                }
-                case STARTSWITH -> {
-                    final boolean answer = s1.data.startswith(s2.data);
-                    if (answer) {
-                        op2.b.forward(ATrue.INSTANCE.a);
-                    } else {
-                        op2.b.forward(AFalse.INSTANCE.a);
-                    }
-                }
-                case ENDSWITH -> {
-                    final boolean answer = s1.data.endswith(s2.data);
-                    if (answer) {
-                        op2.b.forward(ATrue.INSTANCE.a);
-                    } else {
-                        op2.b.forward(AFalse.INSTANCE.a);
-                    }
-                }
-                default -> {
-                    reject(s1, s2);
+            } else {
+                final MyString x = s1.data, y = s2.data;
+                switch (op2.op) {
+                    case EQUALS ->
+                        op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case NOT_EQUALS ->
+                        op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS ->
+                        op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case LESS_OR_EQUALS ->
+                        op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER ->
+                        op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case GREATER_OR_EQUALS ->
+                        op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case PLUS_PLUS -> op2.b.forward(new AString(x.concat(y)).a);
+                    case STRCMP -> op2.b.forward(new AInteger(I64.of(x.compareTo(y))).a);
+                    case STRSTR -> op2.b.forward(new AInteger(I64.of(x.strstr(y))).a);
+                    case STRSPN -> op2.b.forward(new AInteger(I64.of(x.strspn(y))).a);
+                    case STRCSPN -> op2.b.forward(new AInteger(I64.of(x.strcspn(y))).a);
+                    case STRPBRK -> op2.b.forward(new AInteger(I64.of(x.strpbrk(y))).a);
+                    case STARTSWITH ->
+                        op2.b.forward(x.startswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case ENDSWITH ->
+                        op2.b.forward(x.endswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    default -> reject(s1, s2);
                 }
             }
         }
@@ -1297,6 +1176,92 @@ public final class Motor {
                     reject(s1, ARangeFull.INSTANCE);
                 }
             }
+        }
+
+        private void interact(final AString s1, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(s1.a);
+            op2xx.a.setProducer(s1.a);
+        }
+
+        private void interact(final ARange rng, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(rng.a);
+            op2xx.a.setProducer(rng.a);
+        }
+
+        private void interact(final ARangeFrom rng, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(rng.a);
+            op2xx.a.setProducer(rng.a);
+        }
+
+        private void interact(final ARangeTo rng, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(rng.a);
+            op2xx.a.setProducer(rng.a);
+        }
+
+        private void interact(final ARangeFull rng, final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            op2.b.forward(supx.a);
+            op2x.c.setProducer(sup.b.producer());
+            op2xx.c.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.a.setProducer(ARangeFull.INSTANCE.a);
+            op2xx.a.setProducer(ARangeFull.INSTANCE.a);
+        }
+
+        private void interact(final ASuperposition sup) {
+            final AStrictOp2 op2 = this;
+            final var op2x = new AStrictOp2(op2.op);
+            final var op2xx = new AStrictOp2(op2.op);
+            final var supx = sup; // reuse
+            final var dup = new ADuplicator(Label.DELTA);
+            op2.b.forward(supx.a);
+            dup.a.setProducer(op2.c.producer());
+            op2x.a.setProducer(sup.b.producer());
+            op2xx.a.setProducer(sup.c.producer());
+            supx.b.setProducer(op2x.b);
+            supx.c.setProducer(op2xx.b);
+            op2x.c.setProducer(dup.b);
+            op2xx.c.setProducer(dup.c);
         }
 
         private void reject(final Agent left, final Agent right) {
