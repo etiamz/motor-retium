@@ -103,6 +103,13 @@ public final class MyBigInteger {
         return new MyBigInteger(this.value.not());
     }
 
+    public boolean at(final int index) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException();
+        }
+        return this.value.testBit(index);
+    }
+
     public long popcount() {
         return this.value.bitCount();
     }

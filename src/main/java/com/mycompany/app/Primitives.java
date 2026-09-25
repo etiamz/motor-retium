@@ -96,7 +96,7 @@ public final class Primitives {
         MIN("minimum"),
         MAX("maximum"),
         OFTYPE("type conversion"),
-        CHARACTER_AT("character access"),
+        INDEX("indexing"),
         SLICE("slicing"),
         PLUS_PLUS("concatenation"),
         STRCMP("three-way string comparison"),
@@ -129,9 +129,8 @@ public final class Primitives {
             return switch (this) {
                 case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> true;
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
-                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, CHARACTER_AT, SLICE, PLUS_PLUS,
-                        STRCMP, STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH,
-                        ENDSWITH ->
+                        SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, INDEX, SLICE, PLUS_PLUS, STRCMP,
+                        STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH ->
                     false;
             };
         }

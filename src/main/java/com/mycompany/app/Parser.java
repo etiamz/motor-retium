@@ -67,7 +67,7 @@ public final class Parser {
             Map.entry("$min", Primitives.StrictOp2.MIN),
             Map.entry("$max", Primitives.StrictOp2.MAX),
             Map.entry("$oftype", Primitives.StrictOp2.OFTYPE),
-            Map.entry("@", Primitives.StrictOp2.CHARACTER_AT),
+            Map.entry("@", Primitives.StrictOp2.INDEX),
             Map.entry("@@", Primitives.StrictOp2.SLICE),
             Map.entry("++", Primitives.StrictOp2.PLUS_PLUS),
             Map.entry("$strcmp", Primitives.StrictOp2.STRCMP),
@@ -272,7 +272,7 @@ public final class Parser {
         @Override
         public Term visitIndexingTerm(final MotorParser.IndexingTermContext ctx) {
             final var op = switch (ctx.op.getText()) {
-                case "@" -> CHARACTER_AT;
+                case "@" -> INDEX;
                 case "@@" -> SLICE;
                 default -> throw unknownOperator(ctx.op);
             };

@@ -930,6 +930,14 @@ public final class Motor {
         private void interact(final ABigInteger i1, final AInteger i2) {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
+                case INDEX -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    } else {
+                        final boolean bit = i1.data.at(i2.data.toInt());
+                        op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    }
+                }
                 case OFTYPE -> {
                     op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
                 }
@@ -987,7 +995,7 @@ public final class Motor {
 
         private void interact(final AString s1, final AInteger i) {
             final AStrictOp2 op2 = this;
-            if (op2.op == CHARACTER_AT && i.ty() == U64) {
+            if (op2.op == INDEX && i.ty() == U64) {
                 CheckedInteger.Value c;
                 try {
                     c = U8.of(s1.data.at(i.data.toInt()));
