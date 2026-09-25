@@ -81,6 +81,10 @@ public final class MyBigInteger {
         return new MyBigInteger(BigInteger.valueOf(this.value.signum()));
     }
 
+    public MyBigInteger abs() {
+        return new MyBigInteger(this.value.abs());
+    }
+
     public MyBigInteger add(final MyBigInteger other) {
         return new MyBigInteger(this.value.add(other.value));
     }

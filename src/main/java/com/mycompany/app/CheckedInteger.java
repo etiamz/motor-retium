@@ -98,6 +98,11 @@ public final class CheckedInteger {
             return new Value(this, Long.signum(a));
         }
 
+        public Value abs(final long a) {
+            this.ensure(isSigned);
+            return a < 0 ? this.negate(a) : new Value(this, a);
+        }
+
         public Value add(final long a, final long b) {
             final boolean overflow = this.compare(b, 0) >= 0 && this.compare(a, max - b) > 0;
             final boolean underflow = this.compare(b, 0) < 0 && this.compare(a, min - b) < 0;
@@ -269,6 +274,10 @@ public final class CheckedInteger {
 
         public Value signum() {
             return ty.signum(a);
+        }
+
+        public Value abs() {
+            return ty.abs(a);
         }
 
         public Value not() {

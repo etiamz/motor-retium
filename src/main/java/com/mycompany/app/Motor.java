@@ -536,6 +536,13 @@ public final class Motor {
                                 reject(data);
                             }
                         }
+                        case ABS -> {
+                            if (i.ty().isSigned) {
+                                op1.b.forward(new AInteger(i.data.abs()).a);
+                            } else {
+                                reject(data);
+                            }
+                        }
                         case FFS -> {
                             op1.b.forward(new AInteger(i.data.ffs()).a);
                         }
@@ -572,6 +579,9 @@ public final class Motor {
                         }
                         case SIGNUM -> {
                             op1.b.forward(new ABigInteger(i.data.signum()).a);
+                        }
+                        case ABS -> {
+                            op1.b.forward(new ABigInteger(i.data.abs()).a);
                         }
                         case POPCOUNT -> {
                             op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
