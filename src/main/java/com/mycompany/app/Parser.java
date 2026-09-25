@@ -33,6 +33,7 @@ public final class Parser {
             Map.entry("$show", Primitives.StrictOp1.STRING_OF),
             Map.entry("$chr", Primitives.StrictOp1.STRING_OF_CHARACTER),
             Map.entry("negate", Primitives.StrictOp1.NEGATE),
+            Map.entry("$signum", Primitives.StrictOp1.SIGNUM),
             Map.entry("$ffs", Primitives.StrictOp1.FFS),
             Map.entry("$clz", Primitives.StrictOp1.CLZ),
             Map.entry("$ctz", Primitives.StrictOp1.CTZ),

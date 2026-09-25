@@ -48,6 +48,7 @@ public final class Primitives {
         STRING_OF("integer-to-string conversion"),
         STRING_OF_CHARACTER("character-to-string conversion"),
         NEGATE("negation"),
+        SIGNUM("sign computation"),
         FFS("find first set"),
         CLZ("leading-zero count"),
         CTZ("trailing-zero count"),

@@ -97,7 +97,7 @@ intrinsic
     ;
 
 intrinsic1
-    : '$show' | '$chr' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash'
+    : '$show' | '$chr' | '$signum' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash'
     ;
 
 intrinsic2

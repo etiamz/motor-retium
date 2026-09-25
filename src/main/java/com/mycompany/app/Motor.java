@@ -529,6 +529,13 @@ public final class Motor {
                         case NEGATE -> {
                             op1.b.forward(new AInteger(i.data.negate()).a);
                         }
+                        case SIGNUM -> {
+                            if (i.ty().isSigned) {
+                                op1.b.forward(new AInteger(i.data.signum()).a);
+                            } else {
+                                reject(data);
+                            }
+                        }
                         case FFS -> {
                             op1.b.forward(new AInteger(i.data.ffs()).a);
                         }
@@ -562,6 +569,9 @@ public final class Motor {
                         }
                         case NEGATE -> {
                             op1.b.forward(new ABigInteger(i.data.negate()).a);
+                        }
+                        case SIGNUM -> {
+                            op1.b.forward(new ABigInteger(i.data.signum()).a);
                         }
                         case POPCOUNT -> {
                             op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);

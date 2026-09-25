@@ -77,6 +77,10 @@ public final class MyBigInteger {
         return new MyBigInteger(this.value.negate());
     }
 
+    public MyBigInteger signum() {
+        return new MyBigInteger(BigInteger.valueOf(this.value.signum()));
+    }
+
     public MyBigInteger add(final MyBigInteger other) {
         return new MyBigInteger(this.value.add(other.value));
     }
