@@ -1330,8 +1330,6 @@ public final class Template {
         }
 
         private static final class Optimizer {
-            private static final boolean COLLAPSE_CAPTURES = Boolean
-                    .parseBoolean(System.getProperty("motor.collapseCaptures", "true"));
             private static final boolean RESOLVE_CAPTURES = Boolean
                     .parseBoolean(System.getProperty("motor.resolveCaptures", "true"));
             private static final boolean RESOLVE_LAMBDAS = Boolean
@@ -1353,9 +1351,6 @@ public final class Template {
             public void optimize(final Consumer root) {
                 do {
                     proceed = false;
-                    if (COLLAPSE_CAPTURES) {
-                        collapseCaptures(root, new HashSet<>());
-                    }
                     if (RESOLVE_CAPTURES) {
                         resolveCaptures(root, new HashSet<>());
                     }
@@ -1372,112 +1367,6 @@ public final class Template {
                         betaReduce(root, new HashSet<>());
                     }
                 } while (proceed);
-            }
-
-            // Collapses capture chains: when the upper capture points to the lower capture's port
-            // `c`, safely remove the former.
-            private void collapseCaptures(final Consumer p, final Set<Agent> visitedSet) {
-                final Agent agent = p.chase();
-                if (agent == null || !visitedSet.add(agent)) {
-                    return;
-                }
-                switch (agent) {
-                    case AStrictOp1 op1 -> {
-                        collapseCaptures(op1.a, visitedSet);
-                    }
-                    case AStrictOp2 op2 -> {
-                        collapseCaptures(op2.a, visitedSet);
-                        collapseCaptures(op2.c, visitedSet);
-                    }
-                    case AIfThenElse ite -> {
-                        collapseCaptures(ite.a, visitedSet);
-                        collapseCaptures(ite.c, visitedSet);
-                        collapseCaptures(ite.d, visitedSet);
-                        for (final Consumer value : ite.values) {
-                            collapseCaptures(value, visitedSet);
-                        }
-                    }
-                    case AExpansion exp -> {
-                        for (final Consumer imported : exp.imports.values()) {
-                            collapseCaptures(imported, visitedSet);
-                        }
-                    }
-                    case ANot not -> {
-                        collapseCaptures(not.a, visitedSet);
-                    }
-                    case AAnd and -> {
-                        collapseCaptures(and.a, visitedSet);
-                        collapseCaptures(and.c, visitedSet);
-                    }
-                    case AOr or -> {
-                        collapseCaptures(or.a, visitedSet);
-                        collapseCaptures(or.c, visitedSet);
-                    }
-                    case ADoRange doRng -> {
-                        collapseCaptures(doRng.a, visitedSet);
-                        collapseCaptures(doRng.c, visitedSet);
-                    }
-                    case ADoRangeFrom doRng -> {
-                        collapseCaptures(doRng.a, visitedSet);
-                    }
-                    case ADoRangeTo doRng -> {
-                        collapseCaptures(doRng.a, visitedSet);
-                    }
-                    case AApplicator app -> {
-                        collapseCaptures(app.a, visitedSet);
-                        collapseCaptures(app.c, visitedSet);
-                    }
-                    case AStrictApplicator sapp -> {
-                        collapseCaptures(sapp.a, visitedSet);
-                        collapseCaptures(sapp.c, visitedSet);
-                    }
-                    case AResolver res -> {
-                        collapseCaptures(res.a, visitedSet);
-                        collapseCaptures(res.d, visitedSet);
-                    }
-                    case ACapture cap -> {
-                        collapseCaptures(cap.a, visitedSet);
-                        collapseCaptures(cap.d, visitedSet);
-                        if (cap.a.chase() instanceof ACapture other
-                                && cap.a.producer() == other.c) {
-                            cap.c.forward(cap.a.producer());
-                            cap.b.forward(cap.d.producer());
-                            proceed = true;
-                        }
-                    }
-                    case AMatcher mat -> {
-                        collapseCaptures(mat.a, visitedSet);
-                        for (final Consumer handler : mat.handlers) {
-                            collapseCaptures(handler, visitedSet);
-                        }
-                        for (final Consumer value : mat.values) {
-                            collapseCaptures(value, visitedSet);
-                        }
-                    }
-                    case AConstructorResolver res -> {
-                        collapseCaptures(res.a, visitedSet);
-                        for (final Consumer argument : res.arguments) {
-                            collapseCaptures(argument, visitedSet);
-                        }
-                    }
-                    case ASelector sel -> {
-                        collapseCaptures(sel.a, visitedSet);
-                    }
-                    case ADuplicator dup -> {
-                        collapseCaptures(dup.a, visitedSet);
-                    }
-                    case ALambda lam -> {
-                        collapseCaptures(lam.c, visitedSet);
-                    }
-                    case AConstructor ctr -> {
-                        for (final Consumer argument : ctr.arguments) {
-                            collapseCaptures(argument, visitedSet);
-                        }
-                    }
-                    case ARoot _,AReference _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,ARangeFull _,AIdentity _ ->
-                        {
-                        }
-                }
             }
 
             // Interact captures with WHNF data; see the cases of `Motor.ACapture.interact`.
