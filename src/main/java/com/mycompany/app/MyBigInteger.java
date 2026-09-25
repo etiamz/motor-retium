@@ -110,6 +110,32 @@ public final class MyBigInteger {
         return this.value.testBit(index);
     }
 
+    public MyBigInteger slice(final int start, final int end) {
+        if (start < 0 || start > end) {
+            throw new IndexOutOfBoundsException();
+        }
+        final int width = end - start;
+        if (width == 0) {
+            return zero();
+        }
+        final byte[] bytes = new byte[Math.ceilDiv(width, Byte.SIZE)];
+        for (int i = 0; i < width; i++) {
+            if (this.value.testBit(start + i)) {
+                final int j = bytes.length - 1 - i / Byte.SIZE;
+                final byte byteMask = (byte) (1 << (i % Byte.SIZE));
+                bytes[j] |= byteMask;
+            }
+        }
+        return new MyBigInteger(new BigInteger(1, bytes));
+    }
+
+    public MyBigInteger slice(final int start) {
+        if (start < 0) {
+            throw new IndexOutOfBoundsException();
+        }
+        return new MyBigInteger(this.value.shiftRight(start));
+    }
+
     public long popcount() {
         return this.value.bitCount();
     }
