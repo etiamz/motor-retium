@@ -846,18 +846,6 @@ public final class Motor {
                 }
             } else if (i1.ty() != i2.ty()) {
                 reject(i1, i2);
-            } else if (op2.op == MIN) {
-                if (i1.ty().compare(i1.value(), i2.value()) <= 0) {
-                    op2.b.forward(i1.a);
-                } else {
-                    op2.b.forward(i2.a);
-                }
-            } else if (op2.op == MAX) {
-                if (i1.ty().compare(i1.value(), i2.value()) >= 0) {
-                    op2.b.forward(i1.a);
-                } else {
-                    op2.b.forward(i2.a);
-                }
             } else {
                 final IntegerTy ty = i1.ty();
                 final long x = i1.value(), y = i2.value();
@@ -882,6 +870,8 @@ public final class Motor {
                         op2.b.forward(ty.compare(x, y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
                     case GREATER_OR_EQUALS ->
                         op2.b.forward(ty.compare(x, y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    case MIN -> op2.b.forward(ty.compare(x, y) <= 0 ? i1.a : i2.a);
+                    case MAX -> op2.b.forward(ty.compare(x, y) >= 0 ? i1.a : i2.a);
                     default -> reject(i1, i2);
                 }
             }
@@ -951,47 +941,33 @@ public final class Motor {
 
         private void interact(final ABigInteger i1, final ABigInteger i2) {
             final AStrictOp2 op2 = this;
-            if (op2.op == OFTYPE) {
-                op2.b.forward(i2.a);
-            } else if (op2.op == MIN) {
-                if (i1.data.compareTo(i2.data) <= 0) {
-                    op2.b.forward(i1.a);
-                } else {
-                    op2.b.forward(i2.a);
-                }
-            } else if (op2.op == MAX) {
-                if (i1.data.compareTo(i2.data) >= 0) {
-                    op2.b.forward(i1.a);
-                } else {
-                    op2.b.forward(i2.a);
-                }
-            } else {
-                final MyBigInteger x = i1.data, y = i2.data;
-                switch (op2.op) {
-                    case ADD -> op2.b.forward(new ABigInteger(x.add(y)).a);
-                    case SUBTRACT -> op2.b.forward(new ABigInteger(x.subtract(y)).a);
-                    case MULTIPLY -> op2.b.forward(new ABigInteger(x.multiply(y)).a);
-                    case DIVIDE -> op2.b.forward(new ABigInteger(x.divide(y)).a);
-                    case REMAINDER -> op2.b.forward(new ABigInteger(x.remainder(y)).a);
-                    case STRICT_OR -> op2.b.forward(new ABigInteger(x.or(y)).a);
-                    case STRICT_AND -> op2.b.forward(new ABigInteger(x.and(y)).a);
-                    case STRICT_XOR -> op2.b.forward(new ABigInteger(x.xor(y)).a);
-                    case SHIFT_LEFT -> op2.b.forward(new ABigInteger(x.shiftLeft(y)).a);
-                    case SHIFT_RIGHT -> op2.b.forward(new ABigInteger(x.shiftRight(y)).a);
-                    case EQUALS ->
-                        op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case NOT_EQUALS ->
-                        op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS ->
-                        op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS_OR_EQUALS ->
-                        op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER ->
-                        op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER_OR_EQUALS ->
-                        op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    default -> reject(i1, i2);
-                }
+            final MyBigInteger x = i1.data, y = i2.data;
+            switch (op2.op) {
+                case ADD -> op2.b.forward(new ABigInteger(x.add(y)).a);
+                case SUBTRACT -> op2.b.forward(new ABigInteger(x.subtract(y)).a);
+                case MULTIPLY -> op2.b.forward(new ABigInteger(x.multiply(y)).a);
+                case DIVIDE -> op2.b.forward(new ABigInteger(x.divide(y)).a);
+                case REMAINDER -> op2.b.forward(new ABigInteger(x.remainder(y)).a);
+                case STRICT_OR -> op2.b.forward(new ABigInteger(x.or(y)).a);
+                case STRICT_AND -> op2.b.forward(new ABigInteger(x.and(y)).a);
+                case STRICT_XOR -> op2.b.forward(new ABigInteger(x.xor(y)).a);
+                case SHIFT_LEFT -> op2.b.forward(new ABigInteger(x.shiftLeft(y)).a);
+                case SHIFT_RIGHT -> op2.b.forward(new ABigInteger(x.shiftRight(y)).a);
+                case EQUALS -> op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case NOT_EQUALS ->
+                    op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case LESS ->
+                    op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case LESS_OR_EQUALS ->
+                    op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case GREATER ->
+                    op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case GREATER_OR_EQUALS ->
+                    op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case MIN -> op2.b.forward(x.compareTo(y) <= 0 ? i1.a : i2.a);
+                case MAX -> op2.b.forward(x.compareTo(y) >= 0 ? i1.a : i2.a);
+                case OFTYPE -> op2.b.forward(i2.a);
+                default -> reject(i1, i2);
             }
         }
 
@@ -1032,45 +1008,32 @@ public final class Motor {
 
         private void interact(final AString s1, final AString s2) {
             final AStrictOp2 op2 = this;
-            if (op2.op == MIN) {
-                if (s1.data.compareTo(s2.data) <= 0) {
-                    op2.b.forward(s1.a);
-                } else {
-                    op2.b.forward(s2.a);
-                }
-            } else if (op2.op == MAX) {
-                if (s1.data.compareTo(s2.data) >= 0) {
-                    op2.b.forward(s1.a);
-                } else {
-                    op2.b.forward(s2.a);
-                }
-            } else {
-                final MyString x = s1.data, y = s2.data;
-                switch (op2.op) {
-                    case EQUALS ->
-                        op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case NOT_EQUALS ->
-                        op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS ->
-                        op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS_OR_EQUALS ->
-                        op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER ->
-                        op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER_OR_EQUALS ->
-                        op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case PLUS_PLUS -> op2.b.forward(new AString(x.concat(y)).a);
-                    case STRCMP -> op2.b.forward(new AInteger(I64.of(x.compareTo(y))).a);
-                    case STRSTR -> op2.b.forward(new AInteger(I64.of(x.strstr(y))).a);
-                    case STRSPN -> op2.b.forward(new AInteger(I64.of(x.strspn(y))).a);
-                    case STRCSPN -> op2.b.forward(new AInteger(I64.of(x.strcspn(y))).a);
-                    case STRPBRK -> op2.b.forward(new AInteger(I64.of(x.strpbrk(y))).a);
-                    case STARTSWITH ->
-                        op2.b.forward(x.startswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case ENDSWITH ->
-                        op2.b.forward(x.endswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    default -> reject(s1, s2);
-                }
+            final MyString x = s1.data, y = s2.data;
+            switch (op2.op) {
+                case EQUALS -> op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case NOT_EQUALS ->
+                    op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case LESS ->
+                    op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case LESS_OR_EQUALS ->
+                    op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case GREATER ->
+                    op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case GREATER_OR_EQUALS ->
+                    op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case MIN -> op2.b.forward(x.compareTo(y) <= 0 ? s1.a : s2.a);
+                case MAX -> op2.b.forward(x.compareTo(y) >= 0 ? s1.a : s2.a);
+                case PLUS_PLUS -> op2.b.forward(new AString(x.concat(y)).a);
+                case STRCMP -> op2.b.forward(new AInteger(I64.of(x.compareTo(y))).a);
+                case STRSTR -> op2.b.forward(new AInteger(I64.of(x.strstr(y))).a);
+                case STRSPN -> op2.b.forward(new AInteger(I64.of(x.strspn(y))).a);
+                case STRCSPN -> op2.b.forward(new AInteger(I64.of(x.strcspn(y))).a);
+                case STRPBRK -> op2.b.forward(new AInteger(I64.of(x.strpbrk(y))).a);
+                case STARTSWITH ->
+                    op2.b.forward(x.startswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case ENDSWITH ->
+                    op2.b.forward(x.endswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                default -> reject(s1, s2);
             }
         }
 
