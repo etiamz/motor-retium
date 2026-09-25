@@ -62,11 +62,34 @@ public final class MyBigInteger {
     }
 
     public static MyBigInteger of(final CheckedInteger.Value value) {
-        return parse(value.show()); // TODO: implement proper conversion
+        final long raw = value.a();
+        if (value.ty().isSigned || raw >= 0) {
+            return new MyBigInteger(BigInteger.valueOf(raw));
+        }
+        // This is an unsigned integer with a negative two's complement representation; interpret it
+        // directly as a byte array.
+        final byte[] bytes = new byte[]{ //
+                (byte) (raw >> 56), //
+                (byte) (raw >> 48), //
+                (byte) (raw >> 40), //
+                (byte) (raw >> 32), //
+                (byte) (raw >> 24), //
+                (byte) (raw >> 16), //
+                (byte) (raw >> 8), //
+                (byte) raw};
+        return new MyBigInteger(new BigInteger(1, bytes));
     }
 
     public CheckedInteger.Value toCheckedInteger(final CheckedInteger.IntegerTy target) {
-        return target.parse(this.value.toString()); // TODO: implement proper conversion
+        final int myBitLength = this.value.bitLength();
+        final int targetBitLength = target.isSigned ? target.bits - 1 : target.bits;
+        final boolean meNegative = this.value.signum() < 0;
+        final boolean signednessFailure = !target.isSigned && meNegative;
+        final boolean rangeFailure = myBitLength > targetBitLength;
+        if (signednessFailure || rangeFailure) {
+            throw new CheckedInteger.OutOfRange(target);
+        }
+        return target.of(this.value.longValue());
     }
 
     public String show() {
