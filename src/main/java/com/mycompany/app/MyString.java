@@ -47,6 +47,70 @@ public final class MyString {
         return new MyString(buffer);
     }
 
+    public MyString prependPacked8(final long element) {
+        return Helpers.prependPacked(this, element, 8);
+    }
+
+    public MyString prependPacked16(final long element) {
+        return Helpers.prependPacked(this, element, 16);
+    }
+
+    public MyString prependPacked32(final long element) {
+        return Helpers.prependPacked(this, element, 32);
+    }
+
+    public MyString prependPacked64(final long element) {
+        return Helpers.prependPacked(this, element, 64);
+    }
+
+    public MyString appendPacked8(final long element) {
+        return Helpers.appendPacked(this, element, 8);
+    }
+
+    public MyString appendPacked16(final long element) {
+        return Helpers.appendPacked(this, element, 16);
+    }
+
+    public MyString appendPacked32(final long element) {
+        return Helpers.appendPacked(this, element, 32);
+    }
+
+    public MyString appendPacked64(final long element) {
+        return Helpers.appendPacked(this, element, 64);
+    }
+
+    public long readPacked8(final long index) {
+        return Helpers.readPacked(this, index, 8);
+    }
+
+    public long readPacked16(final long index) {
+        return Helpers.readPacked(this, index, 16);
+    }
+
+    public long readPacked32(final long index) {
+        return Helpers.readPacked(this, index, 32);
+    }
+
+    public long readPacked64(final long index) {
+        return Helpers.readPacked(this, index, 64);
+    }
+
+    public long findPacked8(final long element) {
+        return Helpers.findPacked(this, element, 8);
+    }
+
+    public long findPacked16(final long element) {
+        return Helpers.findPacked(this, element, 16);
+    }
+
+    public long findPacked32(final long element) {
+        return Helpers.findPacked(this, element, 32);
+    }
+
+    public long findPacked64(final long element) {
+        return Helpers.findPacked(this, element, 64);
+    }
+
     public MyString slice(final int start, final int end) {
         if (start < 0 || start > end || end > this.length) {
             throw new IndexOutOfBoundsException();
@@ -250,6 +314,77 @@ public final class MyString {
                 table[set.data[set.offset + i] & 0xFF] = true;
             }
             return table;
+        }
+
+        private static MyString prependPacked(
+                final MyString packed,
+                final long element,
+                final int nbits) {
+            final int width = nbits / 8;
+            final byte[] buffer = new byte[width + packed.length];
+            writeAt(buffer, 0, element, nbits);
+            System.arraycopy(packed.data, packed.offset, buffer, width, packed.length);
+            return new MyString(buffer);
+        }
+
+        private static MyString appendPacked(
+                final MyString packed,
+                final long element,
+                final int nbits) {
+            final int width = nbits / 8;
+            final byte[] buffer = new byte[packed.length + width];
+            System.arraycopy(packed.data, packed.offset, buffer, 0, packed.length);
+            writeAt(buffer, packed.length, element, nbits);
+            return new MyString(buffer);
+        }
+
+        private static long readPacked(final MyString packed, final long index, final int nbits) {
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length / width) >= 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
+            final int start = packed.offset + (int) index * width;
+            return readAt(packed.data, start, nbits);
+        }
+
+        private static long findPacked(final MyString packed, final long element, final int nbits) {
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length % width != 0;
+            if (misalignment) {
+                throw new IndexOutOfBoundsException();
+            }
+            for (int i = 0; i < packed.length / width; i++) {
+                final int start = packed.offset + i * width;
+                final long value = readAt(packed.data, start, nbits);
+                if (value == element) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static long readAt(final byte[] buffer, final int start, final int nbits) {
+            final int width = nbits / 8;
+            long value = 0;
+            for (int i = 0; i < width; i++) {
+                final long b = buffer[start + i] & 0xFFL;
+                value |= b << (i * 8);
+            }
+            return value;
+        }
+
+        private static void writeAt(
+                final byte[] buffer,
+                final int start,
+                final long element,
+                final int nbits) {
+            final int width = nbits / 8;
+            for (int i = 0; i < width; i++) {
+                final byte b = (byte) (element >>> (i * 8));
+                buffer[start + i] = b;
+            }
         }
     }
 }

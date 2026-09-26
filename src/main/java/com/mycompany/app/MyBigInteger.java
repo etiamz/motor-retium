@@ -1,7 +1,5 @@
 package com.mycompany.app;
 
-import static com.mycompany.app.CheckedInteger.IntegerTy.*;
-
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import java.math.BigInteger;
 
@@ -173,54 +171,6 @@ public final class MyBigInteger {
         return new MyBigInteger(this.value.shiftRight(start));
     }
 
-    public MyBigInteger prependPacked8(final long element) {
-        return new MyBigInteger(prependPacked(this.value, U8.of(element)));
-    }
-
-    public MyBigInteger prependPacked16(final long element) {
-        return new MyBigInteger(prependPacked(this.value, U16.of(element)));
-    }
-
-    public MyBigInteger prependPacked32(final long element) {
-        return new MyBigInteger(prependPacked(this.value, U32.of(element)));
-    }
-
-    public MyBigInteger prependPacked64(final long element) {
-        return new MyBigInteger(prependPacked(this.value, U64.of(element)));
-    }
-
-    public long readPacked8(final long index) {
-        return readPacked(this.value, index, U8);
-    }
-
-    public long readPacked16(final long index) {
-        return readPacked(this.value, index, U16);
-    }
-
-    public long readPacked32(final long index) {
-        return readPacked(this.value, index, U32);
-    }
-
-    public long readPacked64(final long index) {
-        return readPacked(this.value, index, U64);
-    }
-
-    public long findPacked8(final long element) {
-        return findPacked(this.value, U8.of(element));
-    }
-
-    public long findPacked16(final long element) {
-        return findPacked(this.value, U16.of(element));
-    }
-
-    public long findPacked32(final long element) {
-        return findPacked(this.value, U32.of(element));
-    }
-
-    public long findPacked64(final long element) {
-        return findPacked(this.value, U64.of(element));
-    }
-
     public long popcount() {
         return this.value.bitCount();
     }
@@ -279,52 +229,6 @@ public final class MyBigInteger {
 
     private static <T> T fail() {
         throw new OutOfRange();
-    }
-
-    private static BigInteger prependPacked(
-            final BigInteger array,
-            final CheckedInteger.Value element) {
-        assert !element.ty().isSigned;
-        ensure(array.signum() >= 0);
-        final int nbits = element.ty().bits;
-        return array.shiftLeft(nbits).or(new BigInteger(1, element.toByteArray()));
-    }
-
-    private static long readPacked(final BigInteger array, final long index, final IntegerTy ty) {
-        assert !ty.isSigned;
-        ensure(array.signum() >= 0);
-        final int nbits = ty.bits;
-        final int length = Math.ceilDiv(array.bitLength(), nbits);
-        ensure(Long.compareUnsigned(index, length) < 0);
-        final int start = (int) index * nbits;
-        long value = 0;
-        for (int i = 0; i < nbits; i++) {
-            if (array.testBit(start + i)) {
-                value |= 1L << i;
-            }
-        }
-        return value;
-    }
-
-    private static long findPacked(final BigInteger array, final CheckedInteger.Value element) {
-        assert !element.ty().isSigned;
-        ensure(array.signum() >= 0);
-        final int nbits = element.ty().bits;
-        final BigInteger a = BigInteger.valueOf(element.a());
-        // `i += nbits` can overflow, so we use `long` here.
-        for (long i = 0; i < array.bitLength(); i += nbits) {
-            boolean matches = true;
-            for (int j = 0; j < nbits; j++) {
-                if (array.testBit((int) i + j) != a.testBit(j)) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (matches) {
-                return i / nbits;
-            }
-        }
-        return -1;
     }
 
     private static class Parsing {
