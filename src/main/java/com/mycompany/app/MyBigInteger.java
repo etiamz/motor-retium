@@ -1,5 +1,8 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.CheckedInteger.IntegerTy.*;
+
+import com.mycompany.app.CheckedInteger.IntegerTy;
 import java.math.BigInteger;
 
 public final class MyBigInteger {
@@ -13,8 +16,28 @@ public final class MyBigInteger {
         this.value = value;
     }
 
+    public MyBigInteger(final byte[] val) {
+        this.value = new BigInteger(val);
+    }
+
+    public MyBigInteger(final byte[] val, final int off, final int len) {
+        this.value = new BigInteger(val, off, len);
+    }
+
+    public MyBigInteger(final int signum, final byte[] magnitude) {
+        this.value = new BigInteger(signum, magnitude);
+    }
+
+    public MyBigInteger(final int signum, final byte[] magnitude, final int off, final int len) {
+        this.value = new BigInteger(signum, magnitude, off, len);
+    }
+
     public BigInteger value() {
         return this.value;
+    }
+
+    public int bitLength() {
+        return this.value.bitLength();
     }
 
     // FNV-1a, 64-bit.
@@ -47,11 +70,11 @@ public final class MyBigInteger {
     }
 
     public static MyBigInteger parse(final String s) {
-        final var n = Helpers.numeral(s);
+        final var n = Parsing.numeral(s);
         final BigInteger base = BigInteger.valueOf(n.radix);
         BigInteger value = BigInteger.ZERO;
         for (final char c : n.digits.toCharArray()) {
-            final BigInteger digit = BigInteger.valueOf(Helpers.decode(c, n.radix));
+            final BigInteger digit = BigInteger.valueOf(Parsing.decode(c, n.radix));
             if (n.isNegative) {
                 value = value.multiply(base).subtract(digit);
             } else {
@@ -62,29 +85,14 @@ public final class MyBigInteger {
     }
 
     public static MyBigInteger of(final CheckedInteger.Value value) {
-        final long raw = value.a();
-        if (value.ty().isSigned || raw >= 0) {
-            return new MyBigInteger(BigInteger.valueOf(raw));
-        }
-        // This is an unsigned integer with a negative two's complement representation; interpret it
-        // directly as a byte array.
-        final byte[] bytes = new byte[]{ //
-                (byte) (raw >> 56), //
-                (byte) (raw >> 48), //
-                (byte) (raw >> 40), //
-                (byte) (raw >> 32), //
-                (byte) (raw >> 24), //
-                (byte) (raw >> 16), //
-                (byte) (raw >> 8), //
-                (byte) raw};
-        return new MyBigInteger(new BigInteger(1, bytes));
+        return value.ty().isSigned
+                ? new MyBigInteger(value.toByteArray())
+                : new MyBigInteger(1, value.toByteArray());
     }
 
-    public CheckedInteger.Value toCheckedInteger(final CheckedInteger.IntegerTy target) {
-        final int targetBitLength = target.isSigned ? target.bits - 1 : target.bits;
-        final boolean signednessFailure = !target.isSigned && this.value.signum() < 0;
-        final boolean rangeFailure = this.value.bitLength() > targetBitLength;
-        if (signednessFailure || rangeFailure) {
+    public CheckedInteger.Value convertTo(final IntegerTy target) {
+        if ((!target.isSigned && this.value.signum() < 0)
+                || (this.bitLength() > target.bitLength())) {
             throw new CheckedInteger.OutOfRange(target);
         }
         return target.of(this.value.longValue());
@@ -155,7 +163,7 @@ public final class MyBigInteger {
                 bytes[j] |= byteMask;
             }
         }
-        return new MyBigInteger(new BigInteger(1, bytes));
+        return new MyBigInteger(1, bytes);
     }
 
     public MyBigInteger slice(final int start) {
@@ -163,6 +171,54 @@ public final class MyBigInteger {
             throw new IndexOutOfBoundsException();
         }
         return new MyBigInteger(this.value.shiftRight(start));
+    }
+
+    public MyBigInteger prependPacked8(final long element) {
+        return new MyBigInteger(prependPacked(this.value, U8.of(element)));
+    }
+
+    public MyBigInteger prependPacked16(final long element) {
+        return new MyBigInteger(prependPacked(this.value, U16.of(element)));
+    }
+
+    public MyBigInteger prependPacked32(final long element) {
+        return new MyBigInteger(prependPacked(this.value, U32.of(element)));
+    }
+
+    public MyBigInteger prependPacked64(final long element) {
+        return new MyBigInteger(prependPacked(this.value, U64.of(element)));
+    }
+
+    public long readPacked8(final long index) {
+        return readPacked(this.value, index, U8);
+    }
+
+    public long readPacked16(final long index) {
+        return readPacked(this.value, index, U16);
+    }
+
+    public long readPacked32(final long index) {
+        return readPacked(this.value, index, U32);
+    }
+
+    public long readPacked64(final long index) {
+        return readPacked(this.value, index, U64);
+    }
+
+    public long findPacked8(final long element) {
+        return findPacked(this.value, U8.of(element));
+    }
+
+    public long findPacked16(final long element) {
+        return findPacked(this.value, U16.of(element));
+    }
+
+    public long findPacked32(final long element) {
+        return findPacked(this.value, U32.of(element));
+    }
+
+    public long findPacked64(final long element) {
+        return findPacked(this.value, U64.of(element));
     }
 
     public long popcount() {
@@ -225,7 +281,53 @@ public final class MyBigInteger {
         throw new OutOfRange();
     }
 
-    private static class Helpers {
+    private static BigInteger prependPacked(
+            final BigInteger array,
+            final CheckedInteger.Value element) {
+        assert !element.ty().isSigned;
+        ensure(array.signum() >= 0);
+        final int nbits = element.ty().bits;
+        return array.shiftLeft(nbits).or(new BigInteger(1, element.toByteArray()));
+    }
+
+    private static long readPacked(final BigInteger array, final long index, final IntegerTy ty) {
+        assert !ty.isSigned;
+        ensure(array.signum() >= 0);
+        final int nbits = ty.bits;
+        final int length = Math.ceilDiv(array.bitLength(), nbits);
+        ensure(Long.compareUnsigned(index, length) < 0);
+        final int start = (int) index * nbits;
+        long value = 0;
+        for (int i = 0; i < nbits; i++) {
+            if (array.testBit(start + i)) {
+                value |= 1L << i;
+            }
+        }
+        return value;
+    }
+
+    private static long findPacked(final BigInteger array, final CheckedInteger.Value element) {
+        assert !element.ty().isSigned;
+        ensure(array.signum() >= 0);
+        final int nbits = element.ty().bits;
+        final BigInteger a = BigInteger.valueOf(element.a());
+        // `i += nbits` can overflow, so we use `long` here.
+        for (long i = 0; i < array.bitLength(); i += nbits) {
+            boolean matches = true;
+            for (int j = 0; j < nbits; j++) {
+                if (array.testBit((int) i + j) != a.testBit(j)) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return i / nbits;
+            }
+        }
+        return -1;
+    }
+
+    private static class Parsing {
         private static int decode(final char c, final int radix) {
             if (c >= '0' && c <= '9') {
                 return c - '0' < radix ? c - '0' : fail();

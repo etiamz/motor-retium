@@ -36,6 +36,28 @@ public final class CheckedInteger {
             this.max = max;
         }
 
+        public int bitLength() {
+            return this.isSigned ? this.bits - 1 : this.bits;
+        }
+
+        public byte[] toByteArray(final long a) {
+            return switch (this) {
+                case U8, I8 -> new byte[]{(byte) a};
+                case U16, I16 -> new byte[]{(byte) (a >> 8), (byte) a};
+                case U32, I32 ->
+                    new byte[]{(byte) (a >> 24), (byte) (a >> 16), (byte) (a >> 8), (byte) a};
+                case U64, I64 -> new byte[]{ //
+                        (byte) (a >> 56), //
+                        (byte) (a >> 48), //
+                        (byte) (a >> 40), //
+                        (byte) (a >> 32), //
+                        (byte) (a >> 24), //
+                        (byte) (a >> 16), //
+                        (byte) (a >> 8), //
+                        (byte) a};
+            };
+        }
+
         public int compare(final long a, final long b) {
             return isSigned ? Long.compare(a, b) : Long.compareUnsigned(a, b);
         }
@@ -262,6 +284,10 @@ public final class CheckedInteger {
                 h = (h ^ (b & 0xFF)) * 0x100000001B3L;
             }
             return h;
+        }
+
+        public byte[] toByteArray() {
+            return ty.toByteArray(a);
         }
 
         public int toInt() {

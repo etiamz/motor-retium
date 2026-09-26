@@ -905,7 +905,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(new AInteger(i2.data.toCheckedInteger(i1.ty())).a);
+                    op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
                 }
                 default -> {
                     reject(i1, i2);
@@ -953,17 +953,90 @@ public final class Motor {
 
         private void interact(final ABigInteger i1, final AInteger i2) {
             final AStrictOp2 op2 = this;
+            final MyBigInteger x = i1.data;
+            final long y = i2.value();
             switch (op2.op) {
                 case INDEX -> {
                     if (i2.ty() != U64) {
                         reject(i1, i2);
-                    } else {
-                        final boolean bit = i1.data.at(i2.data.toInt());
-                        op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
                     }
+                    final boolean bit = x.at(i2.data.toInt());
+                    op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
                 }
                 case OFTYPE -> {
                     op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
+                }
+                case PREPEND8 -> {
+                    if (i2.ty() != U8) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new ABigInteger(x.prependPacked8(y)).a);
+                }
+                case PREPEND16 -> {
+                    if (i2.ty() != U16) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new ABigInteger(x.prependPacked16(y)).a);
+                }
+                case PREPEND32 -> {
+                    if (i2.ty() != U32) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new ABigInteger(x.prependPacked32(y)).a);
+                }
+                case PREPEND64 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new ABigInteger(x.prependPacked64(y)).a);
+                }
+                case READ8 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(U8.of(x.readPacked8(y))).a);
+                }
+                case READ16 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(U16.of(x.readPacked16(y))).a);
+                }
+                case READ32 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(U32.of(x.readPacked32(y))).a);
+                }
+                case READ64 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(U64.of(x.readPacked64(y))).a);
+                }
+                case FIND8 -> {
+                    if (i2.ty() != U8) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(I64.of(x.findPacked8(y))).a);
+                }
+                case FIND16 -> {
+                    if (i2.ty() != U16) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(I64.of(x.findPacked16(y))).a);
+                }
+                case FIND32 -> {
+                    if (i2.ty() != U32) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(I64.of(x.findPacked32(y))).a);
+                }
+                case FIND64 -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    op2.b.forward(new AInteger(I64.of(x.findPacked64(y))).a);
                 }
                 default -> {
                     reject(i1, i2);

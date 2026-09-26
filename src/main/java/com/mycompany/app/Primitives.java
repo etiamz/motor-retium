@@ -109,7 +109,19 @@ public final class Primitives {
         STRCSPN("byte-set complement span"),
         STRPBRK("byte-set search"),
         STARTSWITH("prefix check"),
-        ENDSWITH("suffix check");
+        ENDSWITH("suffix check"),
+        PREPEND8("8-bit packed prepend"),
+        PREPEND16("16-bit packed prepend"),
+        PREPEND32("32-bit packed prepend"),
+        PREPEND64("64-bit packed prepend"),
+        READ8("8-bit packed read"),
+        READ16("16-bit packed read"),
+        READ32("32-bit packed read"),
+        READ64("64-bit packed read"),
+        FIND8("8-bit packed search"),
+        FIND16("16-bit packed search"),
+        FIND32("32-bit packed search"),
+        FIND64("64-bit packed search");
         // @formatter:on
 
         private final String description;
@@ -132,7 +144,9 @@ public final class Primitives {
                 case EQUALS, NOT_EQUALS, LESS, LESS_OR_EQUALS, GREATER, GREATER_OR_EQUALS -> true;
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, INDEX, SLICE, PLUS_PLUS, STRCMP,
-                        STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH ->
+                        STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH,
+                        PREPEND8, PREPEND16, PREPEND32, PREPEND64, READ8, READ16, READ32, READ64,
+                        FIND8, FIND16, FIND32, FIND64 ->
                     false;
             };
         }
