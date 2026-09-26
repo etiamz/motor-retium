@@ -92,7 +92,7 @@ public final class MyBigInteger {
 
     public CheckedInteger.Value convertTo(final IntegerTy target) {
         if ((!target.isSigned && this.value.signum() < 0)
-                || (this.bitLength() > target.bitLength())) {
+                || (this.bitLength() > target.capacity())) {
             throw new CheckedInteger.OutOfRange(target);
         }
         return target.of(this.value.longValue());

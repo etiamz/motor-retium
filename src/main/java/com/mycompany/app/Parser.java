@@ -41,7 +41,7 @@ public final class Parser {
             Map.entry("$clrsb", Primitives.StrictOp1.CLRSB),
             Map.entry("$popcount", Primitives.StrictOp1.POPCOUNT),
             Map.entry("$parity", Primitives.StrictOp1.PARITY),
-            Map.entry("$strlen", Primitives.StrictOp1.STRLEN),
+            Map.entry("$length", Primitives.StrictOp1.LENGTH),
             Map.entry("$panic", Primitives.StrictOp1.PANIC),
             Map.entry("$hash", Primitives.StrictOp1.HASH));
 

@@ -36,8 +36,13 @@ public final class CheckedInteger {
             this.max = max;
         }
 
-        public int bitLength() {
+        public int capacity() {
             return this.isSigned ? this.bits - 1 : this.bits;
+        }
+
+        public int bitLength(final long a) {
+            final long raw = this.isSigned && a < 0 ? ~a : a;
+            return Long.SIZE - Long.numberOfLeadingZeros(raw);
         }
 
         public byte[] toByteArray(final long a) {
@@ -274,6 +279,10 @@ public final class CheckedInteger {
     public record Value(IntegerTy ty, long a) {
         public String show() {
             return ty.show(a);
+        }
+
+        public int bitLength() {
+            return ty.bitLength(a);
         }
 
         // FNV-1a, 64-bit.

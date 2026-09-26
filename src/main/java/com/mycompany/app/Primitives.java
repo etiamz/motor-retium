@@ -56,7 +56,7 @@ public final class Primitives {
         CLRSB("leading-redundant-sign-bit count"),
         POPCOUNT("population count"),
         PARITY("parity"),
-        STRLEN("length computation"),
+        LENGTH("length computation"),
         PANIC("panicking"),
         HASH("hashing");
         // @formatter:on

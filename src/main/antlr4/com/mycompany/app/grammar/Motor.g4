@@ -97,11 +97,12 @@ intrinsic
     ;
 
 intrinsic1
-    : '$show' | '$chr' | '$signum' | '$abs' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$strlen' | '$panic' | '$hash'
+    : '$show' | '$chr' | '$signum' | '$abs' | '$ffs' | '$clz' | '$ctz' | '$clrsb' | '$popcount' | '$parity' | '$length' | '$panic' | '$hash'
     ;
 
 intrinsic2
-    : '$min' | '$max' | '$oftype' | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$startswith' | '$endswith'
+    : '$min' | '$max' | '$oftype'
+    | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$startswith' | '$endswith'
     | '$prepend8' | '$prepend16' | '$prepend32' | '$prepend64'
     | '$read8' | '$read16' | '$read32' | '$read64'
     | '$find8' | '$find16' | '$find32' | '$find64'

@@ -22,7 +22,7 @@ life sz =
           (map (take sz . (\xs -> append xs (copy sz 0u64))) start)
           (copy sz (copy sz 0u64))))
     in
-    $strlen (last generations);
+    $length (last generations);
 
 start =
     Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons (Cons 0u64 (Cons 0u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 1u64 (Cons 0u64 Nil))))))))))))))))))))))))))) Nil))))))))))))));

@@ -561,6 +561,9 @@ public final class Motor {
                         case PARITY -> {
                             op1.b.forward(new AInteger(i.data.parity()).a);
                         }
+                        case LENGTH -> {
+                            op1.b.forward(new AInteger(U64.of(i.data.bitLength())).a);
+                        }
                         case HASH -> {
                             op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
                         }
@@ -589,6 +592,9 @@ public final class Motor {
                         case PARITY -> {
                             op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
                         }
+                        case LENGTH -> {
+                            op1.b.forward(new AInteger(U64.of(i.data.bitLength())).a);
+                        }
                         case HASH -> {
                             op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
                         }
@@ -602,7 +608,7 @@ public final class Motor {
                         case STRING_OF -> {
                             op1.b.forward(s.a);
                         }
-                        case STRLEN -> {
+                        case LENGTH -> {
                             op1.b.forward(new AInteger(U64.of(s.data.length())).a);
                         }
                         case PANIC -> {
