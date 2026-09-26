@@ -8,6 +8,9 @@ module Main (main) where
 
 import Control.Exception (Exception, catch, throw)
 import Data.Bits (shiftR)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString.Lazy as LBS
 import Data.Word (Word64)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
@@ -81,7 +84,7 @@ solve target level =
                             <= shiftR (target - 1) (fromIntegral nremaining) ->
                         Exhausted
                     | nremaining <= 4 -> stars st top elems
-                    | otherwise -> pairs st top elems Nil
+                    | otherwise -> pairs st top elems BS.empty
 
     pairs st top elems memo =
         case elems of
@@ -98,11 +101,11 @@ solve target level =
                         | candidate <= top ->
                             pairs st top pending memo
                     _
-                        | candidate > target || contains candidate memo ->
+                        | candidate > target || contains64 candidate memo ->
                             sums st top x ys pending memo
                     _
                         | Exhausted <- proceed st candidate ->
-                            sums st top x ys pending (Cons candidate memo)
+                            sums st top x ys pending (prepend64 candidate memo)
 
     stars st top elems =
         case elems of
@@ -124,7 +127,22 @@ solve target level =
         let State elems nremaining = st
          in search (State (Cons candidate elems) (nremaining - 1))
 
-    contains candidate memo =
-        case memo of
-            Nil -> False
-            Cons x xs -> candidate == x || contains candidate xs
+packedWord64 :: Word64 -> BS.ByteString
+packedWord64 =
+    LBS.toStrict . Builder.toLazyByteString . Builder.word64LE
+
+prepend64 :: Word64 -> BS.ByteString -> BS.ByteString
+prepend64 candidate memo =
+    packedWord64 candidate <> memo
+
+contains64 :: Word64 -> BS.ByteString -> Bool
+contains64 candidate memo =
+    go (packedWord64 candidate) memo
+  where
+    go candidate' memo =
+        if BS.null memo
+            then False
+            else
+                if candidate' `BS.isPrefixOf` memo
+                    then True
+                    else go candidate' (BS.drop 8 memo)
