@@ -81,11 +81,9 @@ public final class MyBigInteger {
     }
 
     public CheckedInteger.Value toCheckedInteger(final CheckedInteger.IntegerTy target) {
-        final int myBitLength = this.value.bitLength();
         final int targetBitLength = target.isSigned ? target.bits - 1 : target.bits;
-        final boolean meNegative = this.value.signum() < 0;
-        final boolean signednessFailure = !target.isSigned && meNegative;
-        final boolean rangeFailure = myBitLength > targetBitLength;
+        final boolean signednessFailure = !target.isSigned && this.value.signum() < 0;
+        final boolean rangeFailure = this.value.bitLength() > targetBitLength;
         if (signednessFailure || rangeFailure) {
             throw new CheckedInteger.OutOfRange(target);
         }
