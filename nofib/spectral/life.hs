@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- Full sharing, low parallelisme; mirrors `life.rete`.
 
 -- \$ fourmolu --mode inplace nofib/spectral/life.hs
 
+import qualified Data.ByteString.Char8 as BS
 import Data.Word (Word64)
 import System.Environment (getArgs)
 import Prelude hiding (concat, enumFrom, foldr, init, iterate, last, map, null, tail, take, zip, zip3, zipWith3)
@@ -21,12 +24,12 @@ main = do
     let sz = case args of
             [] -> defaultInput
             (input : _) -> read input
-    print (show (life sz))
+    print (BS.pack (show (life sz)))
 
 life :: Word64 -> Word64
 life sz =
     let generations =
-            (map disp . zip (map show (enumFrom 0)) . limit . iterate (gen sz))
+            (map disp . zip (map (BS.pack . show) (enumFrom 0)) . limit . iterate (gen sz))
                 ( take
                     sz
                     ( append
@@ -34,7 +37,7 @@ life sz =
                         (copy sz (copy sz 0))
                     )
                 )
-     in fromIntegral (length (last generations))
+     in fromIntegral (BS.length (last generations))
 
 {- FOURMOLU_DISABLE -}
 start :: List (List Word64)
@@ -77,18 +80,18 @@ copy :: Word64 -> a -> List a
 copy n x =
     if n == 0 then Nil else Cons x (copy (n - 1) x)
 
-disp :: Pair String (List (List Word64)) -> String
+disp :: Pair BS.ByteString (List (List Word64)) -> BS.ByteString
 disp item =
     let Pair gen xss = item
-     in gen ++ "\n\n" ++ (foldr (glue "\n") "" . map (concat . map star)) xss
+     in gen <> "\n\n" <> (foldr (glue "\n") "" . map (concat . map star)) xss
 
-star :: Word64 -> String
+star :: Word64 -> BS.ByteString
 star cell =
     if cell == 0 then "  " else " o"
 
-glue :: String -> String -> String -> String
+glue :: BS.ByteString -> BS.ByteString -> BS.ByteString -> BS.ByteString
 glue s xs ys =
-    xs ++ s ++ ys
+    xs <> s <> ys
 
 limit :: List (List (List Word64)) -> List (List (List Word64))
 limit boards =
@@ -129,9 +132,9 @@ foldr :: (a -> b -> b) -> b -> List a -> b
 foldr f z xs =
     case xs of Nil -> z; Cons x xs -> f x (foldr f z xs)
 
-concat :: List String -> String
+concat :: List BS.ByteString -> BS.ByteString
 concat xs =
-    case xs of Nil -> ""; Cons x xs -> x ++ concat xs
+    case xs of Nil -> ""; Cons x xs -> x <> concat xs
 
 append :: List a -> List a -> List a
 append xs ys =

@@ -112,13 +112,21 @@ def _ghc_o2(haskell: Path) -> _Seconds:
 def _ghc(haskell: Path, level: str) -> _Seconds:
     with tempfile.TemporaryDirectory() as directory:
         binary = Path(directory) / "benchmark"
-        flags = [level, "-outputdir", directory, "-o", binary]
+        flags = [
+            level,
+            "-package",
+            "bytestring",
+            "-outputdir",
+            directory,
+            "-o",
+            binary,
+        ]
         run(["ghc", *flags, haskell])
         return _measure([binary])
 
 
 def _ghc_bytecode(haskell: Path) -> _Seconds:
-    return _measure(["runghc", "--", haskell])
+    return _measure(["runghc", "-package=bytestring", "--", haskell])
 
 
 def _measure(command: Command, **kwargs) -> _Seconds:

@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- Full sharing, substantial parallelisme; mirrors `matrix-multiplication.rete`.
 
 -- \$ fourmolu --mode inplace nofib/parallel/matrix-multiplication.hs
 
+import qualified Data.ByteString.Char8 as BS
 import Data.Int (Int64)
 import System.Environment (getArgs)
 import Prelude hiding (enumFromTo, head, map, replicate, tail)
@@ -47,17 +50,17 @@ m1 :: Int64 -> List (List Int64)
 m1 size =
     replicate size (enumFromTo 1 size)
 
-renderMatrix :: List (List Int64) -> String
+renderMatrix :: List (List Int64) -> BS.ByteString
 renderMatrix m =
     case m of
         Nil -> ""
-        Cons row rows -> renderRow row ++ "\n" ++ renderMatrix rows
+        Cons row rows -> renderRow row <> "\n" <> renderMatrix rows
 
-renderRow :: List Int64 -> String
+renderRow :: List Int64 -> BS.ByteString
 renderRow row =
     case row of
         Nil -> ""
-        Cons x xs -> show x ++ " " ++ renderRow xs
+        Cons x xs -> BS.pack (show x) <> " " <> renderRow xs
 
 map :: (a -> b) -> List a -> List b
 map f xs =

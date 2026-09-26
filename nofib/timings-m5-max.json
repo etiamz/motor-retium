@@ -8,94 +8,94 @@
     "ghc": "The Glorious Glasgow Haskell Compilation System, version 9.10.3",
     "data": {
         "imaginary/peano-exponentiation": {
-            "motor-retium OpenJDK G1": 7.64,
-            "motor-retium OpenJDK ParallelGC": 7.79,
-            "motor-retium GraalVM G1": 6.88,
-            "motor-retium GraalVM ParallelGC": 7.11,
-            "GHC -O0": 0.45,
-            "GHC -O2": 0.41,
-            "GHC bytecode": 0.6
+            "motor-retium OpenJDK G1": 7.6,
+            "motor-retium OpenJDK ParallelGC": 7.84,
+            "motor-retium GraalVM G1": 6.9,
+            "motor-retium GraalVM ParallelGC": 7.07,
+            "GHC -O0": 0.47,
+            "GHC -O2": 0.42,
+            "GHC bytecode": 0.57
         },
         "imaginary/primes": {
-            "motor-retium OpenJDK G1": 8.31,
-            "motor-retium OpenJDK ParallelGC": 8.99,
-            "motor-retium GraalVM G1": 7.18,
-            "motor-retium GraalVM ParallelGC": 6.99,
-            "GHC -O0": 0.39,
-            "GHC -O2": 0.35,
+            "motor-retium OpenJDK G1": 8.35,
+            "motor-retium OpenJDK ParallelGC": 8.74,
+            "motor-retium GraalVM G1": 7.1,
+            "motor-retium GraalVM ParallelGC": 6.95,
+            "GHC -O0": 0.4,
+            "GHC -O2": 0.5,
             "GHC bytecode": 0.36
         },
         "imaginary/queens": {
-            "motor-retium OpenJDK G1": 3.42,
-            "motor-retium OpenJDK ParallelGC": 4.36,
-            "motor-retium GraalVM G1": 2.84,
-            "motor-retium GraalVM ParallelGC": 2.46,
-            "GHC -O0": 0.42,
-            "GHC -O2": 0.35,
-            "GHC bytecode": 0.83
+            "motor-retium OpenJDK G1": 3.17,
+            "motor-retium OpenJDK ParallelGC": 4.78,
+            "motor-retium GraalVM G1": 2.85,
+            "motor-retium GraalVM ParallelGC": 2.37,
+            "GHC -O0": 0.41,
+            "GHC -O2": 0.36,
+            "GHC bytecode": 0.85
         },
         "imaginary/takeuchi": {
-            "motor-retium OpenJDK G1": 21.27,
-            "motor-retium OpenJDK ParallelGC": 21.7,
-            "motor-retium GraalVM G1": 20.03,
-            "motor-retium GraalVM ParallelGC": 18.91,
-            "GHC -O0": 5.74,
-            "GHC -O2": 0.64,
-            "GHC bytecode": 59.96
+            "motor-retium OpenJDK G1": 21.8,
+            "motor-retium OpenJDK ParallelGC": 22.14,
+            "motor-retium GraalVM G1": 20.14,
+            "motor-retium GraalVM ParallelGC": 19.45,
+            "GHC -O0": 5.78,
+            "GHC -O2": 0.68,
+            "GHC bytecode": 58.8
         },
         "parallel/coins": {
-            "motor-retium OpenJDK G1": 10.82,
-            "motor-retium OpenJDK ParallelGC": 11.11,
-            "motor-retium GraalVM G1": 22.47,
-            "motor-retium GraalVM ParallelGC": 9.96,
-            "GHC -O0": 3.19,
-            "GHC -O2": 0.71,
-            "GHC bytecode": 43.19
+            "motor-retium OpenJDK G1": 10.91,
+            "motor-retium OpenJDK ParallelGC": 11.23,
+            "motor-retium GraalVM G1": 14.69,
+            "motor-retium GraalVM ParallelGC": 17.71,
+            "GHC -O0": 3.43,
+            "GHC -O2": 0.72,
+            "GHC bytecode": 43.17
         },
         "parallel/fibonacci": {
-            "motor-retium OpenJDK G1": 16.48,
-            "motor-retium OpenJDK ParallelGC": 18.56,
-            "motor-retium GraalVM G1": 13.85,
-            "motor-retium GraalVM ParallelGC": 13.95,
-            "GHC -O0": 15.03,
-            "GHC -O2": 0.89,
-            "GHC bytecode": 152.19
+            "motor-retium OpenJDK G1": 16.13,
+            "motor-retium OpenJDK ParallelGC": 18.82,
+            "motor-retium GraalVM G1": 14.04,
+            "motor-retium GraalVM ParallelGC": 14.12,
+            "GHC -O0": 14.53,
+            "GHC -O2": 0.93,
+            "GHC bytecode": 153.58
         },
         "parallel/matrix-multiplication": {
-            "motor-retium OpenJDK G1": 2.11,
-            "motor-retium OpenJDK ParallelGC": 2.34,
-            "motor-retium GraalVM G1": 1.85,
-            "motor-retium GraalVM ParallelGC": 1.67,
-            "GHC -O0": 0.45,
-            "GHC -O2": 0.41,
-            "GHC bytecode": 0.94
+            "motor-retium OpenJDK G1": 2.06,
+            "motor-retium OpenJDK ParallelGC": 3.01,
+            "motor-retium GraalVM G1": 1.51,
+            "motor-retium GraalVM ParallelGC": 1.78,
+            "GHC -O0": 0.5,
+            "GHC -O2": 0.38,
+            "GHC bytecode": 0.93
         },
         "spectral/gcd": {
-            "motor-retium OpenJDK G1": 1.72,
-            "motor-retium OpenJDK ParallelGC": 1.94,
-            "motor-retium GraalVM G1": 1.56,
+            "motor-retium OpenJDK G1": 1.76,
+            "motor-retium OpenJDK ParallelGC": 1.95,
+            "motor-retium GraalVM G1": 1.59,
             "motor-retium GraalVM ParallelGC": 1.55,
-            "GHC -O0": 0.37,
-            "GHC -O2": 0.38,
+            "GHC -O0": 0.36,
+            "GHC -O2": 0.34,
             "GHC bytecode": 0.31
         },
         "spectral/lcss": {
-            "motor-retium OpenJDK G1": 4.88,
-            "motor-retium OpenJDK ParallelGC": 4.78,
-            "motor-retium GraalVM G1": 4.37,
-            "motor-retium GraalVM ParallelGC": 4.09,
-            "GHC -O0": 0.48,
-            "GHC -O2": 0.54,
+            "motor-retium OpenJDK G1": 4.83,
+            "motor-retium OpenJDK ParallelGC": 4.76,
+            "motor-retium GraalVM G1": 4.3,
+            "motor-retium GraalVM ParallelGC": 4.05,
+            "GHC -O0": 0.57,
+            "GHC -O2": 0.53,
             "GHC bytecode": 1.07
         },
         "spectral/life": {
             "motor-retium OpenJDK G1": 1.73,
-            "motor-retium OpenJDK ParallelGC": 2.07,
+            "motor-retium OpenJDK ParallelGC": 2.09,
             "motor-retium GraalVM G1": 1.65,
-            "motor-retium GraalVM ParallelGC": 1.71,
-            "GHC -O0": 0.4,
-            "GHC -O2": 0.38,
-            "GHC bytecode": 0.35
+            "motor-retium GraalVM ParallelGC": 1.74,
+            "GHC -O0": 0.44,
+            "GHC -O2": 0.46,
+            "GHC bytecode": 0.33
         }
     }
 }

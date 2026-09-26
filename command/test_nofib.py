@@ -94,7 +94,15 @@ def _run_motor(rete: Path, input: _Input) -> str:
 def _run_ghc(haskell: Path, input: _Input) -> str:
     with tempfile.TemporaryDirectory() as directory:
         binary = Path(directory) / "test"
-        flags = ["-O2", "-outputdir", directory, "-o", binary]
+        flags = [
+            "-O2",
+            "-package",
+            "bytestring",
+            "-outputdir",
+            directory,
+            "-o",
+            binary,
+        ]
         # Compile to native; bytecode interpretation is too slow.
         run(["ghc", *flags, haskell])
         return run([binary, *input.values()])

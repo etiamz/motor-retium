@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- Full sharing, low parallelisme; mirrors `lcss.rete`.
 
 -- \$ fourmolu --mode inplace nofib/spectral/lcss.hs
 
+import qualified Data.ByteString.Char8 as BS
 import Data.Int (Int64)
 import System.Environment (getArgs)
 import Prelude hiding (drop, elem, enumFromThenTo, id, length, map, reverse, snd, take, zip)
@@ -69,11 +72,11 @@ algb2 x k0j1 k1j1 yks =
              in let kjcurr = if x == y then k0j1 + 1 else max k1j1 k0j
                  in Cons (Pair y kjcurr) (algb2 x k0j kjcurr ys)
 
-renderList :: List Int64 -> String
+renderList :: List Int64 -> BS.ByteString
 renderList xs =
     case xs of
         Nil -> ""
-        Cons x xs -> show x ++ " " ++ renderList xs
+        Cons x xs -> BS.pack (show x) <> " " <> renderList xs
 
 map :: (a -> b) -> List a -> List b
 map f xs =
