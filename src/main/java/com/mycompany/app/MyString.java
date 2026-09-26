@@ -47,35 +47,35 @@ public final class MyString {
         return new MyString(buffer);
     }
 
-    public MyString prepend8(final long element) {
+    public MyString prependPacked8(final long element) {
         return PackedHelpers.prepend(this, element, 8);
     }
 
-    public MyString prepend16(final long element) {
+    public MyString prependPacked16(final long element) {
         return PackedHelpers.prepend(this, element, 16);
     }
 
-    public MyString prepend32(final long element) {
+    public MyString prependPacked32(final long element) {
         return PackedHelpers.prepend(this, element, 32);
     }
 
-    public MyString prepend64(final long element) {
+    public MyString prependPacked64(final long element) {
         return PackedHelpers.prepend(this, element, 64);
     }
 
-    public MyString append8(final long element) {
+    public MyString appendPacked8(final long element) {
         return PackedHelpers.append(this, element, 8);
     }
 
-    public MyString append16(final long element) {
+    public MyString appendPacked16(final long element) {
         return PackedHelpers.append(this, element, 16);
     }
 
-    public MyString append32(final long element) {
+    public MyString appendPacked32(final long element) {
         return PackedHelpers.append(this, element, 32);
     }
 
-    public MyString append64(final long element) {
+    public MyString appendPacked64(final long element) {
         return PackedHelpers.append(this, element, 64);
     }
 
@@ -95,19 +95,19 @@ public final class MyString {
         return PackedHelpers.read(this, index, 64);
     }
 
-    public long find8(final long element) {
+    public long findPacked8(final long element) {
         return PackedHelpers.find(this, element, 8);
     }
 
-    public long find16(final long element) {
+    public long findPacked16(final long element) {
         return PackedHelpers.find(this, element, 16);
     }
 
-    public long find32(final long element) {
+    public long findPacked32(final long element) {
         return PackedHelpers.find(this, element, 32);
     }
 
-    public long find64(final long element) {
+    public long findPacked64(final long element) {
         return PackedHelpers.find(this, element, 64);
     }
 
