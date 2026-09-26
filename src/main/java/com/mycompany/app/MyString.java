@@ -47,68 +47,68 @@ public final class MyString {
         return new MyString(buffer);
     }
 
-    public MyString prependPacked8(final long element) {
-        return Helpers.prependPacked(this, element, 8);
+    public MyString prepend8(final long element) {
+        return PackedHelpers.prepend(this, element, 8);
     }
 
-    public MyString prependPacked16(final long element) {
-        return Helpers.prependPacked(this, element, 16);
+    public MyString prepend16(final long element) {
+        return PackedHelpers.prepend(this, element, 16);
     }
 
-    public MyString prependPacked32(final long element) {
-        return Helpers.prependPacked(this, element, 32);
+    public MyString prepend32(final long element) {
+        return PackedHelpers.prepend(this, element, 32);
     }
 
-    public MyString prependPacked64(final long element) {
-        return Helpers.prependPacked(this, element, 64);
+    public MyString prepend64(final long element) {
+        return PackedHelpers.prepend(this, element, 64);
     }
 
-    public MyString appendPacked8(final long element) {
-        return Helpers.appendPacked(this, element, 8);
+    public MyString append8(final long element) {
+        return PackedHelpers.append(this, element, 8);
     }
 
-    public MyString appendPacked16(final long element) {
-        return Helpers.appendPacked(this, element, 16);
+    public MyString append16(final long element) {
+        return PackedHelpers.append(this, element, 16);
     }
 
-    public MyString appendPacked32(final long element) {
-        return Helpers.appendPacked(this, element, 32);
+    public MyString append32(final long element) {
+        return PackedHelpers.append(this, element, 32);
     }
 
-    public MyString appendPacked64(final long element) {
-        return Helpers.appendPacked(this, element, 64);
+    public MyString append64(final long element) {
+        return PackedHelpers.append(this, element, 64);
     }
 
     public long readPacked8(final long index) {
-        return Helpers.readPacked(this, index, 8);
+        return PackedHelpers.read(this, index, 8);
     }
 
     public long readPacked16(final long index) {
-        return Helpers.readPacked(this, index, 16);
+        return PackedHelpers.read(this, index, 16);
     }
 
     public long readPacked32(final long index) {
-        return Helpers.readPacked(this, index, 32);
+        return PackedHelpers.read(this, index, 32);
     }
 
     public long readPacked64(final long index) {
-        return Helpers.readPacked(this, index, 64);
+        return PackedHelpers.read(this, index, 64);
     }
 
-    public long findPacked8(final long element) {
-        return Helpers.findPacked(this, element, 8);
+    public long find8(final long element) {
+        return PackedHelpers.find(this, element, 8);
     }
 
-    public long findPacked16(final long element) {
-        return Helpers.findPacked(this, element, 16);
+    public long find16(final long element) {
+        return PackedHelpers.find(this, element, 16);
     }
 
-    public long findPacked32(final long element) {
-        return Helpers.findPacked(this, element, 32);
+    public long find32(final long element) {
+        return PackedHelpers.find(this, element, 32);
     }
 
-    public long findPacked64(final long element) {
-        return Helpers.findPacked(this, element, 64);
+    public long find64(final long element) {
+        return PackedHelpers.find(this, element, 64);
     }
 
     public MyString slice(final int start, final int end) {
@@ -315,8 +315,10 @@ public final class MyString {
             }
             return table;
         }
+    }
 
-        private static MyString prependPacked(
+    private static class PackedHelpers {
+        private static MyString prepend(
                 final MyString packed,
                 final long element,
                 final int nbits) {
@@ -327,10 +329,7 @@ public final class MyString {
             return new MyString(buffer);
         }
 
-        private static MyString appendPacked(
-                final MyString packed,
-                final long element,
-                final int nbits) {
+        private static MyString append(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
             final byte[] buffer = new byte[packed.length + width];
             System.arraycopy(packed.data, packed.offset, buffer, 0, packed.length);
@@ -338,7 +337,7 @@ public final class MyString {
             return new MyString(buffer);
         }
 
-        private static long readPacked(final MyString packed, final long index, final int nbits) {
+        private static long read(final MyString packed, final long index, final int nbits) {
             final int width = nbits / 8;
             final boolean misalignment = packed.length % width != 0;
             final boolean outOfBounds = Long.compareUnsigned(index, packed.length / width) >= 0;
@@ -349,7 +348,7 @@ public final class MyString {
             return readAt(packed.data, start, nbits);
         }
 
-        private static long findPacked(final MyString packed, final long element, final int nbits) {
+        private static long find(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
             final boolean misalignment = packed.length % width != 0;
             if (misalignment) {
