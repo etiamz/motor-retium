@@ -41,34 +41,23 @@ public final class Motor {
 
     private static ForkJoinPool POOL;
     private static Map<String, Template> BOOK;
-    // Statistical counters.
     private static LongAdder NINTERACTIONS;
-    private static LongAdder NTRANSITIONS;
-
-    public record Statistics(long ninteractions, long ntransitions) {
-    }
 
     public static boolean statsEnabled() {
         return STATS;
     }
 
-    public static Statistics stats() {
+    public static long ninteractions() {
         if (!STATS) {
             throw new IllegalStateException(
                     "Statistics are disabled: `-Dmotor.stats=true` is not set");
         }
-        return new Statistics(NINTERACTIONS.sum(), NTRANSITIONS.sum());
+        return NINTERACTIONS.sum();
     }
 
     private static void countInteraction() {
         if (STATS) {
             NINTERACTIONS.increment();
-        }
-    }
-
-    private static void countTransition() {
-        if (STATS) {
-            NTRANSITIONS.increment();
         }
     }
 
@@ -83,7 +72,6 @@ public final class Motor {
         BOOK = book;
         if (STATS) {
             NINTERACTIONS = new LongAdder();
-            NTRANSITIONS = new LongAdder();
         }
     }
 
@@ -184,7 +172,6 @@ public final class Motor {
     private static void drive(Bounce bounce, final Heart heart) {
         try {
             for (;;) {
-                countTransition();
                 switch (bounce) {
                     case Thunk thunk -> {
                         bounce = thunk.run();

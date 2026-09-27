@@ -20,18 +20,11 @@ public final class App {
                                             .eliminate(Parser.parse("<stdin>", source)))));
             Motor.initialize(compilation.book());
             final var root = new Port.Consumer(null);
-            final var start = System.nanoTime();
             compilation.main().materialize(root, new Port.Producer[0]);
             final String output = Motor.whnf(root);
-            final double elapsedSeconds = (System.nanoTime() - start) / 1e9;
             System.out.println(output);
             if (Motor.statsEnabled()) {
-                final var stats = Motor.stats();
-                final double mips = stats.ninteractions() / elapsedSeconds / 1e6,
-                        mtps = stats.ntransitions() / elapsedSeconds / 1e6;
-                System.err.printf("Interactions: %d (%.2f MIPS)\n", stats.ninteractions(), mips);
-                System.err.printf("Transitions: %d (%.2f MTPS)\n", stats.ntransitions(), mtps);
-                System.err.printf("Elapsed: %.2fs\n", elapsedSeconds);
+                System.err.printf("Interactions: %d\n", Motor.ninteractions());
             }
         } catch (final SyntaxError e) {
             System.err.println(e.getMessage());
