@@ -14,6 +14,30 @@ public final class MyString {
     }
 
     public MyString(final byte[] data, final int offset, final int length) {
+        if (data == null) {
+            throw new IllegalArgumentException("Null byte array");
+        }
+        if (offset < 0) {
+            throw new IllegalArgumentException(String.format("Negative offset %d", offset));
+        }
+        if (length < 0) {
+            throw new IllegalArgumentException(String.format("Negative length %d", length));
+        }
+        if (offset > data.length) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Offset %d exceeds the byte array of length %d",
+                            offset,
+                            data.length));
+        }
+        if (length > data.length - offset) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Length %d exceeds %d bytes available from offset %d",
+                            length,
+                            data.length - offset,
+                            offset));
+        }
         this.data = data;
         this.offset = offset;
         this.length = length;
@@ -159,7 +183,7 @@ public final class MyString {
     }
 
     public int strspn(final MyString set) {
-        final boolean[] table = Helpers.membership(set);
+        final boolean[] table = CharacterHelpers.membership(set);
         for (int i = 0; i < this.length; i++) {
             if (!table[this.data[this.offset + i] & 0xFF]) {
                 return i;
@@ -169,7 +193,7 @@ public final class MyString {
     }
 
     public int strcspn(final MyString set) {
-        final boolean[] table = Helpers.membership(set);
+        final boolean[] table = CharacterHelpers.membership(set);
         for (int i = 0; i < this.length; i++) {
             if (table[this.data[this.offset + i] & 0xFF]) {
                 return i;
@@ -251,7 +275,7 @@ public final class MyString {
         final ByteArrayOutputStream bytes = new ByteArrayOutputStream(s.length());
         int i = 0;
         while (i < s.length()) {
-            final var c = Helpers.unescapeAt(s, i);
+            final var c = CharacterHelpers.unescapeAt(s, i);
             bytes.write(c.value);
             i += c.length;
         }
@@ -259,14 +283,14 @@ public final class MyString {
     }
 
     public static int unescapeCharacter(final String s) {
-        final var c = Helpers.unescapeAt(s, 0);
+        final var c = CharacterHelpers.unescapeAt(s, 0);
         if (c.length != s.length()) {
             throw new IllegalArgumentException();
         }
         return c.value;
     }
 
-    private static class Helpers {
+    private static class CharacterHelpers {
         private record UnescapedCharacter(int value, int length) {
         }
 
