@@ -45,6 +45,11 @@
       <artifactId>commons-text</artifactId>
       <version>1.13.1</version>
     </dependency>
+    <dependency>
+      <groupId>io.vavr</groupId>
+      <artifactId>vavr</artifactId>
+      <version>1.0.1</version>
+    </dependency>
   </dependencies>
   <build>
     <finalName>motor-retium</finalName>

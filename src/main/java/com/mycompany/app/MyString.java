@@ -1,13 +1,15 @@
 package com.mycompany.app;
 
+import io.vavr.collection.Iterator;
+import io.vavr.collection.Vector;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.function.IntUnaryOperator;
+import java.util.function.Predicate;
 
 public final class MyString {
-    private final byte[] data;
-    private final int offset;
-    private final int length;
+    private final Vector<Byte> data; // an immutable, persistent byte vector
 
     public MyString(final byte[] data) {
         this(data, 0, data.length);
@@ -38,9 +40,12 @@ public final class MyString {
                             data.length - offset,
                             offset));
         }
+        // _O(length)_ instead of _O(data.length)_ due to `Arrays.copyOfRange`.
+        this.data = Vector.ofAll(Arrays.copyOfRange(data, offset, offset + length));
+    }
+
+    private MyString(final Vector<Byte> data) {
         this.data = data;
-        this.offset = offset;
-        this.length = length;
     }
 
     public static MyString ofByte(final int value) {
@@ -52,23 +57,20 @@ public final class MyString {
     }
 
     public int length() {
-        return this.length;
+        return this.data.length();
     }
 
     // FNV-1a, 64-bit.
     public long hash64() {
         long h = 0xCBF29CE484222325L;
-        for (int i = 0; i < this.length; i++) {
-            h = (h ^ (this.data[this.offset + i] & 0xFF)) * 0x100000001B3L;
+        for (final byte myByte : this.data) {
+            h = (h ^ (myByte & 0xFF)) * 0x100000001B3L;
         }
         return h;
     }
 
     public MyString concat(final MyString other) {
-        final byte[] buffer = new byte[this.length + other.length];
-        System.arraycopy(this.data, this.offset, buffer, 0, this.length);
-        System.arraycopy(other.data, other.offset, buffer, this.length, other.length);
-        return new MyString(buffer);
+        return new MyString(this.data.appendAll(other.data));
     }
 
     public MyString prependPacked8(final long element) {
@@ -136,105 +138,55 @@ public final class MyString {
     }
 
     public MyString slice(final int start, final int end) {
-        if (start < 0 || start > end || end > this.length) {
+        if (start < 0 || start > end || end > this.length()) {
             throw new IndexOutOfBoundsException();
         }
-        return new MyString(this.data, this.offset + start, end - start);
+        return new MyString(this.data.slice(start, end));
     }
 
     public int at(final int index) {
-        if (index < 0 || index >= this.length) {
+        if (index < 0 || index >= this.length()) {
             throw new IndexOutOfBoundsException();
         }
-        return this.data[this.offset + index] & 0xFF;
+        return this.data.get(index) & 0xFF;
     }
 
     public int strchr(final int c) {
-        for (int i = 0; i < this.length; i++) {
-            if ((this.data[this.offset + i] & 0xFF) == c) {
-                return i;
-            }
-        }
-        return -1;
+        return this.data.indexWhere(myByte -> (myByte & 0xFF) == c);
     }
 
     public int strrchr(final int c) {
-        for (int i = this.length - 1; i >= 0; i--) {
-            if ((this.data[this.offset + i] & 0xFF) == c) {
-                return i;
-            }
-        }
-        return -1;
+        return this.data.lastIndexWhere(myByte -> (myByte & 0xFF) == c);
     }
 
     public int strstr(final MyString needle) {
-        for (int i = 0; i < this.length - needle.length + 1; i++) {
-            if (Arrays.equals(
-                    this.data,
-                    this.offset + i,
-                    this.offset + i + needle.length,
-                    needle.data,
-                    needle.offset,
-                    needle.offset + needle.length)) {
-                return i;
-            }
-        }
-        return -1;
+        return this.data.indexOfSlice(needle.data);
     }
 
     public int strspn(final MyString set) {
-        final boolean[] table = CharacterHelpers.membership(set);
-        for (int i = 0; i < this.length; i++) {
-            if (!table[this.data[this.offset + i] & 0xFF]) {
-                return i;
-            }
-        }
-        return this.length;
+        return this.data.segmentLength(set.data.toSet()::contains, 0);
     }
 
     public int strcspn(final MyString set) {
-        final boolean[] table = CharacterHelpers.membership(set);
-        for (int i = 0; i < this.length; i++) {
-            if (table[this.data[this.offset + i] & 0xFF]) {
-                return i;
-            }
-        }
-        return this.length;
+        return this.data.segmentLength(Predicate.not(set.data.toSet()::contains), 0);
     }
 
     public int strpbrk(final MyString set) {
         final int i = this.strcspn(set);
-        return i == this.length ? -1 : i;
+        return i == this.length() ? -1 : i;
     }
 
     public boolean startswith(final MyString prefix) {
-        return prefix.length <= this.length && Arrays.equals(
-                this.data,
-                this.offset,
-                this.offset + prefix.length,
-                prefix.data,
-                prefix.offset,
-                prefix.offset + prefix.length);
+        return this.data.startsWith(prefix.data);
     }
 
     public boolean endswith(final MyString suffix) {
-        return suffix.length <= this.length && Arrays.equals(
-                this.data,
-                this.offset + this.length - suffix.length,
-                this.offset + this.length,
-                suffix.data,
-                suffix.offset,
-                suffix.offset + suffix.length);
+        return this.data.endsWith(suffix.data);
     }
 
     public int compareTo(final MyString other) {
-        return Arrays.compareUnsigned(
-                this.data,
-                this.offset,
-                this.offset + this.length,
-                other.data,
-                other.offset,
-                other.offset + other.length);
+        return this.data.iterator().zipWith(other.data.iterator(), Byte::compareUnsigned)
+                .find(result -> result != 0).getOrElse(this.length() - other.length());
     }
 
     public MyString min(final MyString other) {
@@ -247,25 +199,19 @@ public final class MyString {
 
     @Override
     public boolean equals(final Object other) {
-        return other instanceof MyString s && Arrays.equals(
-                this.data,
-                this.offset,
-                this.offset + this.length,
-                s.data,
-                s.offset,
-                s.offset + s.length);
+        return other instanceof MyString s && this.data.equals(s.data);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(Arrays.copyOfRange(data, offset, offset + length));
+        return this.data.hashCode();
     }
 
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder("\"");
-        for (int i = 0; i < this.length; i++) {
-            builder.append(Primitives.escapeByte(this.at(i)));
+        for (final byte myByte : this.data) {
+            builder.append(Primitives.escapeByte(myByte & 0xFF));
         }
         builder.append('"');
         return builder.toString();
@@ -331,14 +277,6 @@ public final class MyString {
                 throw new IllegalArgumentException();
             }
         }
-
-        private static boolean[] membership(final MyString set) {
-            final boolean[] table = new boolean[256];
-            for (int i = 0; i < set.length; i++) {
-                table[set.data[set.offset + i] & 0xFF] = true;
-            }
-            return table;
-        }
     }
 
     private static class PackedHelpers {
@@ -347,67 +285,57 @@ public final class MyString {
                 final long element,
                 final int nbits) {
             final int width = nbits / 8;
-            final byte[] buffer = new byte[width + packed.length];
-            writeAt(buffer, 0, element, nbits);
-            System.arraycopy(packed.data, packed.offset, buffer, width, packed.length);
-            return new MyString(buffer);
+            final var result = packed.data.prependAll(encode(width, element));
+            return new MyString(result);
         }
 
         private static MyString append(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
-            final byte[] buffer = new byte[packed.length + width];
-            System.arraycopy(packed.data, packed.offset, buffer, 0, packed.length);
-            writeAt(buffer, packed.length, element, nbits);
-            return new MyString(buffer);
+            final var result = packed.data.appendAll(encode(width, element));
+            return new MyString(result);
         }
 
         private static long read(final MyString packed, final long index, final int nbits) {
             final int width = nbits / 8;
-            final boolean misalignment = packed.length % width != 0;
-            final boolean outOfBounds = Long.compareUnsigned(index, packed.length / width) >= 0;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
             if (misalignment || outOfBounds) {
                 throw new IndexOutOfBoundsException();
             }
-            final int start = packed.offset + (int) index * width;
-            return readAt(packed.data, start, nbits);
+            final int start = (int) index * width;
+            return decode(width, i -> packed.data.get(start + i));
         }
 
         private static long find(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
-            final boolean misalignment = packed.length % width != 0;
-            if (misalignment) {
+            if (packed.length() % width != 0) {
                 throw new IndexOutOfBoundsException();
             }
-            for (int i = 0; i < packed.length / width; i++) {
-                final int start = packed.offset + i * width;
-                final long value = readAt(packed.data, start, nbits);
-                if (value == element) {
+            final Iterator<Byte> it = packed.data.iterator();
+            final IntUnaryOperator next = i -> it.next();
+            for (int i = 0; i < packed.length() / width; i++) {
+                if (decode(width, next) == element) {
                     return i;
                 }
             }
             return -1;
         }
 
-        private static long readAt(final byte[] buffer, final int start, final int nbits) {
-            final int width = nbits / 8;
+        // Reads bytes one after another, from `0` to `width - 1`, without re-reading.
+        private static long decode(final int width, final IntUnaryOperator byteAt) {
             long value = 0;
             for (int i = 0; i < width; i++) {
-                final long b = buffer[start + i] & 0xFFL;
-                value |= b << (i * 8);
+                value |= (byteAt.applyAsInt(i) & 0xFFL) << (i * 8);
             }
             return value;
         }
 
-        private static void writeAt(
-                final byte[] buffer,
-                final int start,
-                final long element,
-                final int nbits) {
-            final int width = nbits / 8;
+        private static Vector<Byte> encode(final int width, final long element) {
+            final byte[] buffer = new byte[width];
             for (int i = 0; i < width; i++) {
-                final byte b = (byte) (element >>> (i * 8));
-                buffer[start + i] = b;
+                buffer[i] = (byte) (element >>> (i * 8));
             }
+            return Vector.ofAll(buffer);
         }
     }
 }
