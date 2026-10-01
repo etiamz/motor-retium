@@ -690,6 +690,10 @@ public final class Motor {
                         case AFalse b2 -> interact(i1, b2);
                         case AInteger i2 -> interact(i1, i2);
                         case ABigInteger i2 -> interact(i1, i2);
+                        case ARange rng -> interact(i1, rng);
+                        case ARangeFrom rng -> interact(i1, rng);
+                        case ARangeTo rng -> interact(i1, rng);
+                        case ARangeFull rng -> interact(i1, rng);
                         case ASuperposition sup -> interact(i1, sup);
                         default -> reject(left, right);
                     }
@@ -861,6 +865,16 @@ public final class Motor {
                 } else {
                     op2.b.forward(i2.a);
                 }
+            } else if (op2.op == INDEX) {
+                if (i2.ty() != U64) {
+                    reject(i1, i2);
+                }
+                try {
+                    final boolean bit = i1.data.at(i2.data.toInt());
+                    op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                } catch (final IndexOutOfBoundsException _) {
+                    panic("Index out of bounds: %s", op2.op.describe());
+                }
             } else if (i1.ty() != i2.ty()) {
                 reject(i1, i2);
             } else {
@@ -902,6 +916,55 @@ public final class Motor {
                 }
                 default -> {
                     reject(i1, i2);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ARange rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(i1.slice(rng.start, rng.end, rng.inclusive).a);
+                }
+                default -> {
+                    reject(i1, rng);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ARangeFrom rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    final boolean inclusive = false;
+                    op2.b.forward(i1.slice(rng.start, i1.ty().bits, inclusive).a);
+                }
+                default -> {
+                    reject(i1, rng);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ARangeTo rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(i1.slice(0, rng.end, rng.inclusive).a);
+                }
+                default -> {
+                    reject(i1, rng);
+                }
+            }
+        }
+
+        private void interact(final AInteger i1, final ARangeFull rng) {
+            final AStrictOp2 op2 = this;
+            switch (op2.op) {
+                case SLICE -> {
+                    op2.b.forward(i1.a);
+                }
+                default -> {
+                    reject(i1, rng);
                 }
             }
         }
@@ -2395,6 +2458,24 @@ public final class Motor {
 
         public static AInteger one(final IntegerTy ty) {
             return new AInteger(ty.one());
+        }
+
+        public AInteger slice(final long start, final long end, final boolean inclusive) {
+            if (inclusive && end == -1L) {
+                return panic("Range out of bounds: %s", SLICE.describe());
+            }
+            final int i, j;
+            try {
+                i = U64.toInt(start);
+                j = U64.toInt(inclusive ? end + 1 : end);
+            } catch (final CheckedInteger.OutOfRange e) {
+                return panic("Out of range: %s", Primitives.describe(e.ty));
+            }
+            try {
+                return new AInteger(this.data.slice(i, j));
+            } catch (final IndexOutOfBoundsException _) {
+                return panic("Range out of bounds: %s", SLICE.describe());
+            }
         }
     }
 

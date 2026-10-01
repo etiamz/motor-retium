@@ -175,6 +175,25 @@ public final class CheckedInteger {
             return new Value(this, this.normalize(~a));
         }
 
+        public boolean at(final long a, final int index) {
+            if (index < 0 || index >= bits) {
+                throw new IndexOutOfBoundsException();
+            }
+            return ((a >>> index) & 1L) != 0;
+        }
+
+        public Value slice(final long a, final int start, final int end) {
+            if (start < 0 || start > end || end > bits) {
+                throw new IndexOutOfBoundsException();
+            }
+            final int width = end - start;
+            if (width == 0) {
+                return this.zero();
+            }
+            final long mask = -1L >>> (Long.SIZE - width);
+            return new Value(this, this.normalize((a >>> start) & mask));
+        }
+
         public Value ffs(final long a) {
             final long raw = a & this.mask();
             return raw == 0
@@ -317,6 +336,14 @@ public final class CheckedInteger {
 
         public Value not() {
             return ty.not(a);
+        }
+
+        public boolean at(final int index) {
+            return ty.at(a, index);
+        }
+
+        public Value slice(final int start, final int end) {
+            return ty.slice(a, start, end);
         }
 
         public Value ffs() {
