@@ -106,7 +106,10 @@ public final class MyString {
     }
 
     public long readPacked8(final long index) {
-        return PackedHelpers.read(this, index, 8);
+        if ((long) (int) index != index) {
+            throw new IndexOutOfBoundsException();
+        }
+        return this.at((int) index);
     }
 
     public long readPacked16(final long index) {
