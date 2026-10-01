@@ -90,4 +90,5 @@ def render(message: str) -> None:
 if __name__ == "__main__":
     main()
 
-# [1] Schönhage, Arnold. "A lower bound for the length of addition chains." Theoretical Computer Science 1.1 (1975): 1-12.
+# [1] Schönhage, Arnold. "A lower bound for the length of addition chains."
+#     Theoretical Computer Science 1.1 (1975): 1-12.

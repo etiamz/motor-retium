@@ -1,26 +1,37 @@
 -- An automatically parallel search for minimal-length addition chains (MLACs).
 
+-- Keep the lines at 80 columns or lesse; reflow if necessary.
+
 #ifndef TARGET
-#define TARGET 80000003
+#define TARGET 100000003
 #endif
 
 #ifndef LEVEL
-#define LEVEL 28
+#define LEVEL 29
 #endif
+
+#define CEILDIV(a, b) (((a) - 1u64) / (b) + 1u64)
+
+#define POW2(e) (1u64 << ($oftype 0u64 (e)))
 
 data List a = Nil | Cons a (List a);
 
 data State =
     State
     (List "an unsigned 64-bit chain element")
-    "an unsigned 64-bit remaining depth";
+    "an unsigned 64-bit remaining depth"
+    "a string of packed vertical bounds"
+    "a string of packed slant bounds";
 
 data Exhausted = Exhausted;
 
+target = TARGET/**/u64;
+
+level = LEVEL/**/u64;
+
 main =
-    case search (State (Cons 1u64 Nil) LEVEL/**/u64) of {
-        Exhausted -> "No solution"
-    };
+    let st = State (Cons 1u64 Nil) level (bounds vertical) (bounds slant) in
+    case search st of { Exhausted -> "No solution" };
 
 render elems =
     case elems of {
@@ -38,68 +49,53 @@ renderAux elems =
     };
 
 search st =
-    let State elems nremaining = st in
-    let Cons top _ = elems in
-    if top == TARGET/**/u64
+    let State elems nremaining verticalBounds slantBounds = st in
+    let Cons top rest = elems in
+    -- If the target is found, terminate the program immediately.
+    if top == target
     then $panic (render elems)
-    -- Test that _top * 2^nremaining_ is below `TARGET`, i.e., even doubling the
-    -- largest element each time would not be able to reach the target. If
-    -- `nremaining` is 64 or more, even starting from 1 would exceed any 64-bit
-    -- target, so this bound cannot prune.
-    else if nremaining < 64u64 && top <= ((TARGET/**/u64 - 1u64) >> nremaining)
+    -- Vertical pruning.
+    else if top < $read64 verticalBounds nremaining
     then Exhausted
-    -- There is at least one shortest addition chain for a given target that has
-    -- four terminal star steps [1].
-    else if nremaining <= 4u64
-    then stars st top elems
-    else pairs st top elems "";
+    else case rest of {
+        -- Slant pruning.
+        Cons penultimate _
+            | top + penultimate < $read64 slantBounds nremaining
+                && top * (1u64 << nremaining) != target ->
+                    Exhausted;
+        Cons _ _ -> expand st;
+        Nil -> expand st
+    };
 
--- Different pairs may produce the same next element. E.g., for the chain _1, 2,
--- 3, 4_, both _4 + 2_ and _3 + 3_ produce _6_, giving the same child chain. In
--- order to explore the same prefix onely once, we record tried frontier
--- candidates in `memo` & allow `$find64 memo candidate != -1i64` to deduplicate
--- equal candidates during the search.
-pairs st top elems memo =
+expand st =
+    let State elems nremaining _ _ = st in
+    let Cons top _ = elems in
+    -- There is at least one shortest addition chain for a given target that has
+    -- four terminal star steps [2].
+    if nremaining <= 4u64
+    then stars st top elems
+    else pairs st top elems;
+
+pairs st top elems =
     case elems of {
         Nil -> Exhausted;
-        -- Since the `elems` list is descending, the largest sum for this _x_ is
-        -- _x + x_; if it does not exceed _top_, prune.
-        Cons x _ | x + x <= top -> Exhausted;
-        Cons x xs ->
-            -- Try all partners in `elems` for `x`, then continue enumerating
-            -- pairs with `xs`.
-            sums st top x elems xs memo
+        Cons x xs -> sums st top x elems xs
     };
 
-sums st top x elems pending memo =
+sums st top x elems pending =
     case elems of {
-        Nil -> pairs st top pending memo;
-        Cons y ys ->
-            let candidate = x + y in
-            -- Same prune as in `pairs`, but _y_ is established now: if _x + y_
-            -- does not exceed _top_, neither will _x + y'_, where _y'_ is a
-            -- smaller number, so stop searching for partners for this _x_.
-            if candidate <= top
-            then pairs st top pending memo
-            else if candidate > TARGET/**/u64 || $find64 memo candidate != -1i64
-            then sums st top x ys pending memo
-            else
-                join
-                (proceed st candidate)
-                (sums st top x ys pending ($prepend64 memo candidate))
+        Nil -> pairs st top pending;
+        Cons y ys | x + y <= top -> sums st top x ys pending;
+        Cons y ys | x + y > target -> sums st top x ys pending;
+        Cons y ys -> join (proceed st (x + y)) (sums st top x ys pending)
     };
 
--- Same as `sums`, except specialized to the four terminal star steps [1].
+-- Same as `sums`, except specialized to the four terminal star steps [2].
 stars st top elems =
     case elems of {
         Nil -> Exhausted;
-        Cons y ys ->
-            let candidate = top + y in
-            if candidate <= top
-            then Exhausted
-            else if candidate > TARGET/**/u64
-            then stars st top ys
-            else join (proceed st candidate) (stars st top ys)
+        Cons y ys | top + y > target -> stars st top ys;
+        Cons y ys -> join (proceed st (top + y)) (stars st top ys)
     };
 
 -- `join a b` is strict in both `a` & `b`, which lets the engine parallelize
@@ -108,7 +104,61 @@ join a b =
     case a of { Exhausted -> b };
 
 proceed st candidate =
-    let State elems nremaining = st in
-    search (State (Cons candidate elems) (nremaining - 1u64));
+    let State elems nremaining verticalBounds slantBounds = st in
+    let st' =
+        State
+        (Cons candidate elems)
+        (nremaining - 1u64)
+        verticalBounds
+        slantBounds
+    in
+    search st';
 
--- [1] Bahig, Hatem M. "Star reduction among minimal length addition chains." Computing 91.4 (2011): 335-352.
+bounds sequence =
+    goBounds sequence 0u64;
+
+goBounds sequence i =
+    if i > level
+    then ""
+    else $prepend64 (goBounds sequence (i + 1u64)) (sequence i);
+
+-- Theorem 1 concerning sequence F in Section "4. Lower Bounds" from [1].
+vertical nremaining =
+    let n = target in
+    let lb = $oftype 0i64 level in
+    let i = lb - $oftype 0i64 nremaining in
+    let t = $oftype 0i64 ($ctz n) in
+    if lb - t - 1i64 <= i && i <= lb
+    then CEILDIV(n, POW2(lb - i))
+    else if i == lb - t - 2i64
+    then CEILDIV(n, POW2(t) * (POW2(lb - t - (i + 1i64)) + 1u64))
+    else if 0i64 <= i && i <= lb - t - 3i64
+        && n % (POW2(lb - t - i - 2i64) + 1u64) != 0u64
+    then CEILDIV(n, POW2(t) * (POW2(lb - t - (i + 1i64)) + 1u64))
+    else if 0i64 <= i && i <= lb - t - 3i64
+        && n % (POW2(lb - t - i - 2i64) + 1u64) == 0u64
+    then CEILDIV(n, POW2(t + 1i64) * (POW2(lb - t - (i + 2i64)) + 1u64))
+    else $panic "Unreachable in `vertical`";
+
+-- Theorem 2 concerning sequence G in Section "4. Lower Bounds" from [1].
+slant nremaining =
+    let n = target in
+    let lb = $oftype 0i64 level in
+    let i = lb - $oftype 0i64 nremaining + 1i64 in
+    let t = $oftype 0i64 ($ctz n) in
+    if nremaining == 0u64
+    then 666u64 -- the search finishes before reaching slant pruning
+    else if lb - t <= i && i <= lb
+    then CEILDIV(n, POW2(lb - i))
+    else if 0i64 <= i && i <= lb - t - 1i64
+        && n % (POW2(lb - t - i) + 1u64) != 0u64
+    then CEILDIV(3u64 * n, POW2(t) * (POW2(lb - t - i + 1i64) + 1u64))
+    else if 0i64 <= i && i <= lb - t - 1i64
+        && n % (POW2(lb - t - i) + 1u64) == 0u64
+    then CEILDIV(3u64 * n, POW2(t + 1i64) * (POW2(lb - t - i) + 1u64))
+    else $panic "Unreachable in `slant`";
+
+-- [1] Thurber, Edward G., and Neill M. Clift. "Addition chains, vector chains,
+--     and efficient computation." Discrete Mathematics 344.2 (2021): 112200.
+-- [2] Bahig, Hatem M. "Star reduction among minimal length addition chains."
+--     Computing 91.4 (2011): 335-352.
