@@ -747,6 +747,7 @@ public final class Motor {
                 case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
                 case MIN -> op2.b.forward(ATrue.INSTANCE.a);
                 case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                case OFTYPE -> op2.b.forward(b2.a);
                 default -> reject(b1, b2);
             }
         }
@@ -765,6 +766,7 @@ public final class Motor {
                 case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
                 case MIN -> op2.b.forward(AFalse.INSTANCE.a);
                 case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                case OFTYPE -> op2.b.forward(b2.a);
                 default -> reject(b1, b2);
             }
         }
@@ -797,6 +799,7 @@ public final class Motor {
                 case STRICT_XOR -> op2.b.forward(ATrue.INSTANCE.a);
                 case MIN -> op2.b.forward(AFalse.INSTANCE.a);
                 case MAX -> op2.b.forward(ATrue.INSTANCE.a);
+                case OFTYPE -> op2.b.forward(b2.a);
                 default -> reject(b1, b2);
             }
         }
@@ -815,6 +818,7 @@ public final class Motor {
                 case STRICT_XOR -> op2.b.forward(AFalse.INSTANCE.a);
                 case MIN -> op2.b.forward(AFalse.INSTANCE.a);
                 case MAX -> op2.b.forward(AFalse.INSTANCE.a);
+                case OFTYPE -> op2.b.forward(b2.a);
                 default -> reject(b1, b2);
             }
         }
@@ -1265,6 +1269,7 @@ public final class Motor {
                     op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
                 case MIN -> op2.b.forward(x.compareTo(y) <= 0 ? s1.a : s2.a);
                 case MAX -> op2.b.forward(x.compareTo(y) >= 0 ? s1.a : s2.a);
+                case OFTYPE -> op2.b.forward(s2.a);
                 case PLUS_PLUS -> op2.b.forward(new AString(x.concat(y)).a);
                 case STRCMP -> op2.b.forward(new AInteger(I64.of(x.compareTo(y))).a);
                 case STRSTR -> op2.b.forward(new AInteger(I64.of(x.strstr(y))).a);
