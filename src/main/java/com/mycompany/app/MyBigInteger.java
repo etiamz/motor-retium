@@ -138,24 +138,24 @@ public final class MyBigInteger {
         return new MyBigInteger(this.value.not());
     }
 
-    public boolean at(final int index) {
-        if (index < 0) {
+    public boolean at(final long index) {
+        if (index < 0 || index > Integer.MAX_VALUE) {
             throw new IndexOutOfBoundsException();
         }
-        return this.value.testBit(index);
+        return this.value.testBit((int) index);
     }
 
-    public MyBigInteger slice(final int start, final int end) {
-        if (start < 0 || start > end) {
+    public MyBigInteger slice(final long start, final long end) {
+        if (start < 0 || start > end || end > Integer.MAX_VALUE) {
             throw new IndexOutOfBoundsException();
         }
-        final int width = end - start;
+        final int width = (int) (end - start);
         if (width == 0) {
             return zero();
         }
         final byte[] bytes = new byte[Math.ceilDiv(width, Byte.SIZE)];
         for (int i = 0; i < width; i++) {
-            if (this.value.testBit(start + i)) {
+            if (this.value.testBit((int) start + i)) {
                 final int j = bytes.length - 1 - i / Byte.SIZE;
                 final byte byteMask = (byte) (1 << (i % Byte.SIZE));
                 bytes[j] |= byteMask;
@@ -164,11 +164,11 @@ public final class MyBigInteger {
         return new MyBigInteger(1, bytes);
     }
 
-    public MyBigInteger slice(final int start) {
-        if (start < 0) {
+    public MyBigInteger slice(final long start) {
+        if (start < 0 || start > Integer.MAX_VALUE) {
             throw new IndexOutOfBoundsException();
         }
-        return new MyBigInteger(this.value.shiftRight(start));
+        return new MyBigInteger(this.value.shiftRight((int) start));
     }
 
     public long popcount() {

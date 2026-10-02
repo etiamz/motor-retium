@@ -175,18 +175,18 @@ public final class CheckedInteger {
             return new Value(this, this.normalize(~a));
         }
 
-        public boolean at(final long a, final int index) {
+        public boolean at(final long a, final long index) {
             if (index < 0 || index >= bits) {
                 throw new IndexOutOfBoundsException();
             }
             return ((a >>> index) & 1L) != 0;
         }
 
-        public Value slice(final long a, final int start, final int end) {
+        public Value slice(final long a, final long start, final long end) {
             if (start < 0 || start > end || end > bits) {
                 throw new IndexOutOfBoundsException();
             }
-            final int width = end - start;
+            final long width = end - start;
             if (width == 0) {
                 return this.zero();
             }
@@ -338,11 +338,11 @@ public final class CheckedInteger {
             return ty.not(a);
         }
 
-        public boolean at(final int index) {
+        public boolean at(final long index) {
             return ty.at(a, index);
         }
 
-        public Value slice(final int start, final int end) {
+        public Value slice(final long start, final long end) {
             return ty.slice(a, start, end);
         }
 

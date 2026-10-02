@@ -106,10 +106,7 @@ public final class MyString {
     }
 
     public long readPacked8(final long index) {
-        if ((long) (int) index != index) {
-            throw new IndexOutOfBoundsException();
-        }
-        return this.at((int) index);
+        return this.at(index);
     }
 
     public long readPacked16(final long index) {
@@ -140,18 +137,18 @@ public final class MyString {
         return PackedHelpers.find(this, element, 64);
     }
 
-    public MyString slice(final int start, final int end) {
+    public MyString slice(final long start, final long end) {
         if (start < 0 || start > end || end > this.length()) {
             throw new IndexOutOfBoundsException();
         }
-        return new MyString(this.data.slice(start, end));
+        return new MyString(this.data.slice((int) start, (int) end));
     }
 
-    public int at(final int index) {
+    public int at(final long index) {
         if (index < 0 || index >= this.length()) {
             throw new IndexOutOfBoundsException();
         }
-        return this.data.get(index) & 0xFF;
+        return this.data.get((int) index) & 0xFF;
     }
 
     public int strchr(final int c) {

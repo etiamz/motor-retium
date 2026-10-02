@@ -874,7 +874,7 @@ public final class Motor {
                     reject(i1, i2);
                 }
                 try {
-                    final boolean bit = i1.data.at(i2.data.toInt());
+                    final boolean bit = i1.data.at(i2.value());
                     op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
                 } catch (final IndexOutOfBoundsException _) {
                     panic("Index out of bounds: %s", op2.op.describe());
@@ -1018,8 +1018,12 @@ public final class Motor {
                     if (i2.ty() != U64) {
                         reject(i1, i2);
                     }
-                    final boolean bit = i1.data.at(i2.data.toInt());
-                    op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    try {
+                        final boolean bit = i1.data.at(i2.value());
+                        op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                    } catch (final IndexOutOfBoundsException _) {
+                        panic("Index out of bounds: %s", op2.op.describe());
+                    }
                 }
                 case OFTYPE -> {
                     op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
@@ -1078,8 +1082,11 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case SLICE -> {
-                    final int start = U64.toInt(rng.start);
-                    op2.b.forward(new ABigInteger(i1.data.slice(start)).a);
+                    try {
+                        op2.b.forward(new ABigInteger(i1.data.slice(rng.start)).a);
+                    } catch (final IndexOutOfBoundsException _) {
+                        panic("Range out of bounds: %s", op2.op.describe());
+                    }
                 }
                 default -> {
                     reject(i1, rng);
@@ -1133,7 +1140,7 @@ public final class Motor {
                         if (i.ty() != U64) {
                             reject(s1, i);
                         }
-                        op2.b.forward(new AInteger(U8.of(s1.data.at(i.data.toInt()))).a);
+                        op2.b.forward(new AInteger(U8.of(s1.data.at(i.value()))).a);
                     }
                     case STRCHR -> {
                         if (i.ty() != U8) {
@@ -2469,15 +2476,8 @@ public final class Motor {
             if (inclusive && end == -1L) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
-            final int i, j;
             try {
-                i = U64.toInt(start);
-                j = U64.toInt(inclusive ? end + 1 : end);
-            } catch (final CheckedInteger.OutOfRange e) {
-                return panic("Out of range: %s", Primitives.describe(e.ty));
-            }
-            try {
-                return new AInteger(this.data.slice(i, j));
+                return new AInteger(this.data.slice(start, inclusive ? end + 1 : end));
             } catch (final IndexOutOfBoundsException _) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
@@ -2506,15 +2506,8 @@ public final class Motor {
             if (inclusive && end == -1L) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
-            final int i, j;
             try {
-                i = U64.toInt(start);
-                j = U64.toInt(inclusive ? end + 1 : end);
-            } catch (final CheckedInteger.OutOfRange e) {
-                return panic("Out of range: %s", Primitives.describe(e.ty));
-            }
-            try {
-                return new ABigInteger(this.data.slice(i, j));
+                return new ABigInteger(this.data.slice(start, inclusive ? end + 1 : end));
             } catch (final IndexOutOfBoundsException _) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
@@ -2539,15 +2532,8 @@ public final class Motor {
             if (inclusive && end == -1L) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
-            final int i, j;
             try {
-                i = U64.toInt(start);
-                j = U64.toInt(inclusive ? end + 1 : end);
-            } catch (final CheckedInteger.OutOfRange e) {
-                return panic("Out of range: %s", Primitives.describe(e.ty));
-            }
-            try {
-                return new AString(this.data.slice(i, j));
+                return new AString(this.data.slice(start, inclusive ? end + 1 : end));
             } catch (final IndexOutOfBoundsException _) {
                 return panic("Range out of bounds: %s", SLICE.describe());
             }
