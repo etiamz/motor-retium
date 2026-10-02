@@ -94,6 +94,7 @@ op2
 intrinsic
     : intrinsic1
     | intrinsic2
+    | intrinsic3
     ;
 
 intrinsic1
@@ -107,6 +108,10 @@ intrinsic2
     | '$append8' | '$append16' | '$append32' | '$append64'
     | '$read8' | '$read16' | '$read32' | '$read64'
     | '$find8' | '$find16' | '$find32' | '$find64'
+    ;
+
+intrinsic3
+    : '$update8' | '$update16' | '$update32' | '$update64'
     ;
 
 // Literals.

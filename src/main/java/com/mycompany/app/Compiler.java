@@ -1,5 +1,7 @@
 package com.mycompany.app;
 
+import static com.mycompany.app.Primitives.StrictOp2.*;
+
 import com.mycompany.app.Template.Builder.Consumer;
 import com.mycompany.app.Template.Builder.Producer;
 import java.util.ArrayList;
@@ -233,6 +235,14 @@ public final class Compiler {
                 merge(fvSet, compile(builder, t2, agent.c()));
                 yield fvSet;
             }
+            case Term.StrictOp3(var op, var t1, var t2, var t3) -> {
+                yield switch (op) {
+                    case UPDATE8 -> compileUpdate(builder, UPDATE8, t1, t2, t3, output);
+                    case UPDATE16 -> compileUpdate(builder, UPDATE16, t1, t2, t3, output);
+                    case UPDATE32 -> compileUpdate(builder, UPDATE32, t1, t2, t3, output);
+                    case UPDATE64 -> compileUpdate(builder, UPDATE64, t1, t2, t3, output);
+                };
+            }
             case Term.BooleanLiteral(var b) -> {
                 output.setProducer(b ? builder.mkTrue().a() : builder.mkFalse().a());
                 yield new TermInterface();
@@ -250,6 +260,23 @@ public final class Compiler {
                 yield new TermInterface();
             }
         };
+    }
+
+    private TermInterface compileUpdate(
+            final Template.Builder builder,
+            final Primitives.StrictOp2 op,
+            final Term t1,
+            final Term t2,
+            final Term t3,
+            final Consumer output) {
+        final var agent = builder.mkStrictOp2(op);
+        final var doUpd = builder.mkDoUpdate();
+        output.setProducer(agent.b());
+        agent.c().setProducer(doUpd.b());
+        final var fvSet = compile(builder, t1, agent.a());
+        merge(fvSet, compile(builder, t2, doUpd.a()));
+        merge(fvSet, compile(builder, t3, doUpd.c()));
+        return fvSet;
     }
 
     // Same interface as `compile`, but builds a term into an expansion that materializes on demand

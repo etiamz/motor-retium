@@ -4,7 +4,9 @@ import io.vavr.collection.Iterator;
 import io.vavr.collection.Vector;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 
@@ -103,6 +105,22 @@ public final class MyString {
 
     public MyString appendPacked64(final long element) {
         return PackedHelpers.append(this, element, 64);
+    }
+
+    public MyString updatePacked8(final long index, final long element) {
+        return PackedHelpers.update(this, index, element, 8);
+    }
+
+    public MyString updatePacked16(final long index, final long element) {
+        return PackedHelpers.update(this, index, element, 16);
+    }
+
+    public MyString updatePacked32(final long index, final long element) {
+        return PackedHelpers.update(this, index, element, 32);
+    }
+
+    public MyString updatePacked64(final long index, final long element) {
+        return PackedHelpers.update(this, index, element, 64);
     }
 
     public long readPacked8(final long index) {
@@ -302,13 +320,22 @@ public final class MyString {
             return new MyString(result);
         }
 
-        private static long read(final MyString packed, final long index, final int nbits) {
-            final int width = nbits / 8;
-            final boolean misalignment = packed.length() % width != 0;
-            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
-            if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
+        private static MyString update(
+                final MyString packed,
+                final long index,
+                final long element,
+                final int nbits) {
+            final int width = checkAlignment(packed, index, nbits);
+            final int start = (int) index * width;
+            var result = packed.data;
+            for (int i = 0; i < width; i++) {
+                result = result.update(start + i, (byte) (element >>> (i * 8)));
             }
+            return new MyString(result);
+        }
+
+        private static long read(final MyString packed, final long index, final int nbits) {
+            final int width = checkAlignment(packed, index, nbits);
             final int start = (int) index * width;
             return decode(width, i -> packed.data.get(start + i));
         }
@@ -328,6 +355,19 @@ public final class MyString {
             return -1;
         }
 
+        private static int checkAlignment(
+                final MyString packed,
+                final long index,
+                final int nbits) {
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
+            return width;
+        }
+
         // Reads bytes one after another, from `0` to `width - 1`, without re-reading.
         private static long decode(final int width, final IntUnaryOperator byteAt) {
             long value = 0;
@@ -337,12 +377,30 @@ public final class MyString {
             return value;
         }
 
-        private static Vector<Byte> encode(final int width, final long element) {
+        private static List<Byte> encode(final int width, final long element) {
             final byte[] buffer = new byte[width];
             for (int i = 0; i < width; i++) {
                 buffer[i] = (byte) (element >>> (i * 8));
             }
-            return Vector.ofAll(buffer);
+            return new ByteList(buffer);
+        }
+
+        private static final class ByteList extends AbstractList<Byte> {
+            private final byte[] bytes;
+
+            private ByteList(final byte[] bytes) {
+                this.bytes = bytes;
+            }
+
+            @Override
+            public Byte get(final int index) {
+                return bytes[index];
+            }
+
+            @Override
+            public int size() {
+                return bytes.length;
+            }
         }
     }
 }

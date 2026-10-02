@@ -109,6 +109,8 @@ public final class OperatorSaturator {
             case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, saturate(t));
             case Term.StrictOp2(var t1, var op, var t2) ->
                 new Term.StrictOp2(saturate(t1), op, saturate(t2));
+            case Term.StrictOp3(var op, var t1, var t2, var t3) ->
+                new Term.StrictOp3(op, saturate(t1), saturate(t2), saturate(t3));
             case Term.Variable _,Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
                 term;
         };
@@ -161,6 +163,8 @@ public final class OperatorSaturator {
             case Primitives.Or _ -> new Term.Or(ts.get(0), ts.get(1));
             case Primitives.StrictOp1 op1 -> new Term.StrictOp1(op1, ts.get(0));
             case Primitives.StrictOp2 op2 -> new Term.StrictOp2(ts.get(0), op2, ts.get(1));
+            case Primitives.StrictOp3 op3 ->
+                new Term.StrictOp3(op3, ts.get(0), ts.get(1), ts.get(2));
         };
     }
 }

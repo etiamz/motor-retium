@@ -4,7 +4,7 @@ import com.mycompany.app.CheckedInteger.IntegerTy;
 
 public final class Primitives {
     public sealed interface Operator
-            permits Not, And, Or, Apply, StrictApply, StrictOp1, StrictOp2 {
+            permits Not, And, Or, Apply, StrictApply, StrictOp1, StrictOp2, StrictOp3 {
         public int arity();
     }
 
@@ -118,6 +118,10 @@ public final class Primitives {
         APPEND16("16-bit packed append"),
         APPEND32("32-bit packed append"),
         APPEND64("64-bit packed append"),
+        UPDATE8("8-bit packed update"),
+        UPDATE16("16-bit packed update"),
+        UPDATE32("32-bit packed update"),
+        UPDATE64("64-bit packed update"),
         READ8("8-bit packed read"),
         READ16("16-bit packed read"),
         READ32("32-bit packed read"),
@@ -150,9 +154,34 @@ public final class Primitives {
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, INDEX, SLICE, PLUS_PLUS, STRCMP,
                         STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH,
                         PREPEND8, PREPEND16, PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32,
-                        APPEND64, READ8, READ16, READ32, READ64, FIND8, FIND16, FIND32, FIND64 ->
+                        APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, READ8, READ16, READ32,
+                        READ64, FIND8, FIND16, FIND32, FIND64 ->
                     false;
             };
+        }
+    }
+
+    public enum StrictOp3 implements Operator {
+        // @formatter:off
+        UPDATE8("8-bit packed update"),
+        UPDATE16("16-bit packed update"),
+        UPDATE32("32-bit packed update"),
+        UPDATE64("64-bit packed update");
+        // @formatter:on
+
+        private final String description;
+
+        private StrictOp3(final String description) {
+            this.description = description;
+        }
+
+        public String describe() {
+            return description;
+        }
+
+        @Override
+        public int arity() {
+            return 3;
         }
     }
 

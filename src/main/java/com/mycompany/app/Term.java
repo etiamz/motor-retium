@@ -78,6 +78,9 @@ public sealed interface Term {
     public record StrictOp2(Term t1, Primitives.StrictOp2 op, Term t2) implements Term {
     }
 
+    public record StrictOp3(Primitives.StrictOp3 op, Term t1, Term t2, Term t3) implements Term {
+    }
+
     public enum StrictnessSource {
         USER_SPECIFIED, INFERRED
     }
@@ -153,6 +156,7 @@ public sealed interface Term {
                 union(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) -> t.freeVariables();
             case StrictOp2(var t1, var _, var t2) -> union(t1, t2);
+            case StrictOp3(var _, var t1, var t2, var t3) -> union(t1, t2, t3);
             case Operator _,Reference _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };
@@ -192,6 +196,7 @@ public sealed interface Term {
                 unionReferences(Stream.concat(t1.stream(), t2.stream()).toArray(Term[]::new));
             case StrictOp1(var _, var t) -> t.references();
             case StrictOp2(var t1, var _, var t2) -> unionReferences(t1, t2);
+            case StrictOp3(var _, var t1, var t2, var t3) -> unionReferences(t1, t2, t3);
             case Operator _,Variable _,BooleanLiteral _,IntegerLiteral _,BigIntegerLiteral _,StringLiteral _ ->
                 new LinkedHashSet<>();
         };

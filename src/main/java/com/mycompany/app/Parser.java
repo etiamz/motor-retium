@@ -98,6 +98,12 @@ public final class Parser {
             Map.entry("$find32", Primitives.StrictOp2.FIND32),
             Map.entry("$find64", Primitives.StrictOp2.FIND64));
 
+    private static final Map<String, Primitives.Operator> TERNARY_OPS = Map.ofEntries(
+            Map.entry("$update8", Primitives.StrictOp3.UPDATE8),
+            Map.entry("$update16", Primitives.StrictOp3.UPDATE16),
+            Map.entry("$update32", Primitives.StrictOp3.UPDATE32),
+            Map.entry("$update64", Primitives.StrictOp3.UPDATE64));
+
     private static final Set<Class<?>> RANGE_CONTEXTS = Set.of(
             MotorParser.RangeTermContext.class,
             MotorParser.InclusiveRangeTermContext.class,
@@ -748,6 +754,9 @@ public final class Parser {
             }
             if (BINARY_OPS.containsKey(text)) {
                 return new Term.Operator(BINARY_OPS.get(text));
+            }
+            if (TERNARY_OPS.containsKey(text)) {
+                return new Term.Operator(TERNARY_OPS.get(text));
             }
             throw unknownOperator(token);
         }

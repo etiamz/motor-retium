@@ -145,6 +145,12 @@ public final class StrictnessAnalyzer {
                     result.addAll(demand(t2));
                     yield result;
                 }
+                case Term.StrictOp3(var _, var t1, var t2, var t3) -> {
+                    final var result = demand(t1);
+                    result.addAll(demand(t2));
+                    result.addAll(demand(t3));
+                    yield result;
+                }
                 case Term.Constructor(var _, var _, var missing) -> {
                     if (missing != 0) {
                         throw new IllegalStateException("Constructors must be already saturated");
@@ -207,6 +213,8 @@ public final class StrictnessAnalyzer {
                 case Term.StrictOp1(var op, var t) -> new Term.StrictOp1(op, annotate(t));
                 case Term.StrictOp2(var t1, var op, var t2) ->
                     new Term.StrictOp2(annotate(t1), op, annotate(t2));
+                case Term.StrictOp3(var op, var t1, var t2, var t3) ->
+                    new Term.StrictOp3(op, annotate(t1), annotate(t2), annotate(t3));
                 case Term.Operator _ ->
                     throw new IllegalStateException("Operators must be already saturated");
                 case Term.Variable _,Term.Reference _,Term.BooleanLiteral _,Term.IntegerLiteral _,Term.BigIntegerLiteral _,Term.StringLiteral _ ->
