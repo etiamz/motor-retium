@@ -34,7 +34,7 @@ public final class MyBigInteger {
         return this.value;
     }
 
-    public int bitLength() {
+    public long bitLength() {
         return this.value.bitLength();
     }
 

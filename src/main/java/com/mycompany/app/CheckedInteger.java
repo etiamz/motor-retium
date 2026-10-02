@@ -40,7 +40,7 @@ public final class CheckedInteger {
             return this.isSigned ? this.bits - 1 : this.bits;
         }
 
-        public int bitLength(final long a) {
+        public long bitLength(final long a) {
             final long raw = this.isSigned && a < 0 ? ~a : a;
             return Long.SIZE - Long.numberOfLeadingZeros(raw);
         }
@@ -300,7 +300,7 @@ public final class CheckedInteger {
             return ty.show(a);
         }
 
-        public int bitLength() {
+        public long bitLength() {
             return ty.bitLength(a);
         }
 

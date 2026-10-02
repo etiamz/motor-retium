@@ -56,7 +56,7 @@ public final class MyString {
         return new MyString(s.getBytes(StandardCharsets.US_ASCII));
     }
 
-    public int length() {
+    public long length() {
         return this.data.length();
     }
 
@@ -122,7 +122,7 @@ public final class MyString {
     }
 
     public long findPacked8(final long element) {
-        return PackedHelpers.find(this, element, 8);
+        return this.strchr((int) element);
     }
 
     public long findPacked16(final long element) {
@@ -151,28 +151,28 @@ public final class MyString {
         return this.data.get((int) index) & 0xFF;
     }
 
-    public int strchr(final int c) {
+    public long strchr(final int c) {
         return this.data.indexWhere(myByte -> (myByte & 0xFF) == c);
     }
 
-    public int strrchr(final int c) {
+    public long strrchr(final int c) {
         return this.data.lastIndexWhere(myByte -> (myByte & 0xFF) == c);
     }
 
-    public int strstr(final MyString needle) {
+    public long strstr(final MyString needle) {
         return this.data.indexOfSlice(needle.data);
     }
 
-    public int strspn(final MyString set) {
+    public long strspn(final MyString set) {
         return this.data.segmentLength(set.data.toSet()::contains, 0);
     }
 
-    public int strcspn(final MyString set) {
+    public long strcspn(final MyString set) {
         return this.data.segmentLength(Predicate.not(set.data.toSet()::contains), 0);
     }
 
-    public int strpbrk(final MyString set) {
-        final int i = this.strcspn(set);
+    public long strpbrk(final MyString set) {
+        final long i = this.strcspn(set);
         return i == this.length() ? -1 : i;
     }
 
@@ -185,8 +185,15 @@ public final class MyString {
     }
 
     public int compareTo(final MyString other) {
-        return this.data.iterator().zipWith(other.data.iterator(), Byte::compareUnsigned)
-                .find(result -> result != 0).getOrElse(this.length() - other.length());
+        final var left = this.data.iterator();
+        final var right = other.data.iterator();
+        while (left.hasNext() && right.hasNext()) {
+            final int result = Byte.compareUnsigned(left.next(), right.next());
+            if (result != 0) {
+                return result;
+            }
+        }
+        return Long.compare(this.length(), other.length());
     }
 
     public MyString min(final MyString other) {
