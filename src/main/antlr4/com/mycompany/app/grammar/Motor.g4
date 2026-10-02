@@ -109,6 +109,7 @@ intrinsic2
     | '$remove8' | '$remove16' | '$remove32' | '$remove64'
     | '$read8' | '$read16' | '$read32' | '$read64'
     | '$find8' | '$find16' | '$find32' | '$find64'
+    | '$rfind8' | '$rfind16' | '$rfind32' | '$rfind64'
     ;
 
 intrinsic3

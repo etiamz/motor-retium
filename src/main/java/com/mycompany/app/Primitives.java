@@ -137,7 +137,11 @@ public final class Primitives {
         FIND8("8-bit packed search"),
         FIND16("16-bit packed search"),
         FIND32("32-bit packed search"),
-        FIND64("64-bit packed search");
+        FIND64("64-bit packed search"),
+        RFIND8("8-bit packed reverse search"),
+        RFIND16("16-bit packed reverse search"),
+        RFIND32("32-bit packed reverse search"),
+        RFIND64("64-bit packed reverse search");
         // @formatter:on
 
         private final String description;
@@ -164,7 +168,8 @@ public final class Primitives {
                         PREPEND8, PREPEND16, PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32,
                         APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, INSERT8, INSERT16,
                         INSERT32, INSERT64, REMOVE8, REMOVE16, REMOVE32, REMOVE64, READ8, READ16,
-                        READ32, READ64, FIND8, FIND16, FIND32, FIND64 ->
+                        READ32, READ64, FIND8, FIND16, FIND32, FIND64, RFIND8, RFIND16, RFIND32,
+                        RFIND64 ->
                     false;
             };
         }

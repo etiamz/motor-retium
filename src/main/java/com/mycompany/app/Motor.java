@@ -1288,6 +1288,30 @@ public final class Motor {
                         }
                         op2.b.forward(new AInteger(I64.of(s1.data.findPacked64(i.value()))).a);
                     }
+                    case RFIND8 -> {
+                        if (i.ty() != U8) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked8(i.value()))).a);
+                    }
+                    case RFIND16 -> {
+                        if (i.ty() != U16) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked16(i.value()))).a);
+                    }
+                    case RFIND32 -> {
+                        if (i.ty() != U32) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked32(i.value()))).a);
+                    }
+                    case RFIND64 -> {
+                        if (i.ty() != U64) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked64(i.value()))).a);
+                    }
                     default -> reject(s1, i);
                 }
             } catch (final IndexOutOfBoundsException _) {

@@ -187,6 +187,22 @@ public final class MyString {
         return PackedHelpers.find(this, element, 64);
     }
 
+    public long rfindPacked8(final long element) {
+        return this.strrchr((int) element);
+    }
+
+    public long rfindPacked16(final long element) {
+        return PackedHelpers.rfind(this, element, 16);
+    }
+
+    public long rfindPacked32(final long element) {
+        return PackedHelpers.rfind(this, element, 32);
+    }
+
+    public long rfindPacked64(final long element) {
+        return PackedHelpers.rfind(this, element, 64);
+    }
+
     public MyString slice(final long start, final long end) {
         if (start < 0 || start > end || end > this.length()) {
             throw new IndexOutOfBoundsException();
@@ -430,10 +446,34 @@ public final class MyString {
             return -1;
         }
 
+        private static long rfind(final MyString packed, final long element, final int nbits) {
+            final int width = nbits / 8;
+            if (packed.length() % width != 0) {
+                throw new IndexOutOfBoundsException();
+            }
+            final Iterator<Byte> it = packed.data.reverseIterator();
+            final IntUnaryOperator next = i -> it.next();
+            for (int i = (int) (packed.length() / width) - 1; i >= 0; i--) {
+                if (decodeReverse(width, next) == element) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         // Reads bytes one after another, from `0` to `width - 1`, without re-reading.
         private static long decode(final int width, final IntUnaryOperator byteAt) {
             long value = 0;
             for (int i = 0; i < width; i++) {
+                value |= (byteAt.applyAsInt(i) & 0xFFL) << (i * 8);
+            }
+            return value;
+        }
+
+        // Same as `decode`, but reads bytes from `width - 1` to `0`.
+        private static long decodeReverse(final int width, final IntUnaryOperator byteAt) {
+            long value = 0;
+            for (int i = width - 1; i >= 0; i--) {
                 value |= (byteAt.applyAsInt(i) & 0xFFL) << (i * 8);
             }
             return value;

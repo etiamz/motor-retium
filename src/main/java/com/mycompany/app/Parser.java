@@ -100,7 +100,11 @@ public final class Parser {
             Map.entry("$find8", Primitives.StrictOp2.FIND8),
             Map.entry("$find16", Primitives.StrictOp2.FIND16),
             Map.entry("$find32", Primitives.StrictOp2.FIND32),
-            Map.entry("$find64", Primitives.StrictOp2.FIND64));
+            Map.entry("$find64", Primitives.StrictOp2.FIND64),
+            Map.entry("$rfind8", Primitives.StrictOp2.RFIND8),
+            Map.entry("$rfind16", Primitives.StrictOp2.RFIND16),
+            Map.entry("$rfind32", Primitives.StrictOp2.RFIND32),
+            Map.entry("$rfind64", Primitives.StrictOp2.RFIND64));
 
     private static final Map<String, Primitives.Operator> TERNARY_OPS = Map.ofEntries(
             Map.entry("$update8", Primitives.StrictOp3.UPDATE8),
