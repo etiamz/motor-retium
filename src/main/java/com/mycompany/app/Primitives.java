@@ -3,6 +3,14 @@ package com.mycompany.app;
 import com.mycompany.app.CheckedInteger.IntegerTy;
 
 public final class Primitives {
+    @SuppressWarnings("serial")
+    public static final class IndexOutOfBounds extends RuntimeException {
+    }
+
+    @SuppressWarnings("serial")
+    public static final class RangeOutOfBounds extends RuntimeException {
+    }
+
     public sealed interface Operator
             permits Not, And, Or, Apply, StrictApply, StrictOp1, StrictOp2, StrictOp3 {
         public int arity();
@@ -110,6 +118,10 @@ public final class Primitives {
         STRPBRK("byte-set search"),
         STARTSWITH("prefix check"),
         ENDSWITH("suffix check"),
+        REPLICATE8("8-bit packed replication"),
+        REPLICATE16("16-bit packed replication"),
+        REPLICATE32("32-bit packed replication"),
+        REPLICATE64("64-bit packed replication"),
         PREPEND8("8-bit packed prepend"),
         PREPEND16("16-bit packed prepend"),
         PREPEND32("32-bit packed prepend"),
@@ -165,11 +177,11 @@ public final class Primitives {
                 case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, STRICT_OR, STRICT_AND, STRICT_XOR,
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, INDEX, SLICE, PLUS_PLUS, STRCMP,
                         STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH,
-                        PREPEND8, PREPEND16, PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32,
-                        APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, INSERT8, INSERT16,
-                        INSERT32, INSERT64, REMOVE8, REMOVE16, REMOVE32, REMOVE64, READ8, READ16,
-                        READ32, READ64, FIND8, FIND16, FIND32, FIND64, RFIND8, RFIND16, RFIND32,
-                        RFIND64 ->
+                        REPLICATE8, REPLICATE16, REPLICATE32, REPLICATE64, PREPEND8, PREPEND16,
+                        PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32, APPEND64, UPDATE8,
+                        UPDATE16, UPDATE32, UPDATE64, INSERT8, INSERT16, INSERT32, INSERT64,
+                        REMOVE8, REMOVE16, REMOVE32, REMOVE64, READ8, READ16, READ32, READ64, FIND8,
+                        FIND16, FIND32, FIND64, RFIND8, RFIND16, RFIND32, RFIND64 ->
                     false;
             };
         }

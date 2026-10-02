@@ -11,6 +11,10 @@ import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 
 public final class MyString {
+    @SuppressWarnings("serial")
+    public static final class LengthTooBig extends RuntimeException {
+    }
+
     private final Vector<Byte> data; // an immutable, persistent byte vector
 
     public MyString(final byte[] data) {
@@ -73,6 +77,22 @@ public final class MyString {
 
     public MyString concat(final MyString other) {
         return new MyString(this.data.appendAll(other.data));
+    }
+
+    public static MyString replicatePacked8(final long count, final long element) {
+        return PackedHelpers.replicate(count, element, 8);
+    }
+
+    public static MyString replicatePacked16(final long count, final long element) {
+        return PackedHelpers.replicate(count, element, 16);
+    }
+
+    public static MyString replicatePacked32(final long count, final long element) {
+        return PackedHelpers.replicate(count, element, 32);
+    }
+
+    public static MyString replicatePacked64(final long count, final long element) {
+        return PackedHelpers.replicate(count, element, 64);
     }
 
     public MyString prependPacked8(final long element) {
@@ -205,14 +225,14 @@ public final class MyString {
 
     public MyString slice(final long start, final long end) {
         if (start < 0 || start > end || end > this.length()) {
-            throw new IndexOutOfBoundsException();
+            throw new Primitives.RangeOutOfBounds();
         }
         return new MyString(this.data.slice((int) start, (int) end));
     }
 
     public int at(final long index) {
         if (index < 0 || index >= this.length()) {
-            throw new IndexOutOfBoundsException();
+            throw new Primitives.IndexOutOfBounds();
         }
         return this.data.get((int) index) & 0xFF;
     }
@@ -353,6 +373,19 @@ public final class MyString {
     }
 
     private static class PackedHelpers {
+        private static MyString replicate(final long count, final long element, final int nbits) {
+            final int width = nbits / 8;
+            if (Long.compareUnsigned(count, Integer.MAX_VALUE / width) > 0) {
+                throw new LengthTooBig();
+            }
+            final byte[] buffer = new byte[(int) count * width];
+            final var bytes = encode(width, element);
+            for (int i = 0; i < buffer.length; i++) {
+                buffer[i] = bytes.get(i % width);
+            }
+            return new MyString(Vector.ofAll(buffer));
+        }
+
         private static MyString prepend(
                 final MyString packed,
                 final long element,
@@ -377,7 +410,7 @@ public final class MyString {
             final boolean misalignment = packed.length() % width != 0;
             final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
             if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final int start = (int) index * width;
             var result = packed.data;
@@ -396,7 +429,7 @@ public final class MyString {
             final boolean misalignment = packed.length() % width != 0;
             final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) > 0;
             if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final int start = (int) index * width;
             final var result = packed.data.insertAll(start, encode(width, element));
@@ -408,7 +441,7 @@ public final class MyString {
             final boolean misalignment = packed.length() % width != 0;
             final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
             if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final int start = (int) index * width;
             final var before = packed.data.take(start);
@@ -425,7 +458,7 @@ public final class MyString {
             final boolean misalignment = packed.length() % width != 0;
             final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
             if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final int start = (int) index * width;
             return decode(width, i -> packed.data.get(start + i));
@@ -434,7 +467,7 @@ public final class MyString {
         private static long find(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
             if (packed.length() % width != 0) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final Iterator<Byte> it = packed.data.iterator();
             final IntUnaryOperator next = i -> it.next();
@@ -449,7 +482,7 @@ public final class MyString {
         private static long rfind(final MyString packed, final long element, final int nbits) {
             final int width = nbits / 8;
             if (packed.length() % width != 0) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             final Iterator<Byte> it = packed.data.reverseIterator();
             final IntUnaryOperator next = i -> it.next();

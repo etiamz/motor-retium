@@ -177,14 +177,14 @@ public final class CheckedInteger {
 
         public boolean at(final long a, final long index) {
             if (index < 0 || index >= bits) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.IndexOutOfBounds();
             }
             return ((a >>> index) & 1L) != 0;
         }
 
         public Value slice(final long a, final long start, final long end) {
             if (start < 0 || start > end || end > bits) {
-                throw new IndexOutOfBoundsException();
+                throw new Primitives.RangeOutOfBounds();
             }
             final long width = end - start;
             if (width == 0) {

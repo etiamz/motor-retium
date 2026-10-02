@@ -140,14 +140,14 @@ public final class MyBigInteger {
 
     public boolean at(final long index) {
         if (index < 0 || index > Integer.MAX_VALUE) {
-            throw new IndexOutOfBoundsException();
+            throw new Primitives.IndexOutOfBounds();
         }
         return this.value.testBit((int) index);
     }
 
     public MyBigInteger slice(final long start, final long end) {
         if (start < 0 || start > end || end > Integer.MAX_VALUE) {
-            throw new IndexOutOfBoundsException();
+            throw new Primitives.RangeOutOfBounds();
         }
         final int width = (int) (end - start);
         if (width == 0) {
@@ -166,7 +166,7 @@ public final class MyBigInteger {
 
     public MyBigInteger slice(final long start) {
         if (start < 0 || start > Integer.MAX_VALUE) {
-            throw new IndexOutOfBoundsException();
+            throw new Primitives.RangeOutOfBounds();
         }
         return new MyBigInteger(this.value.shiftRight((int) start));
     }

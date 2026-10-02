@@ -1,7 +1,6 @@
 package com.mycompany.app;
 
 import static com.mycompany.app.CheckedInteger.IntegerTy.*;
-import static com.mycompany.app.Primitives.StrictOp2.*;
 
 import com.mycompany.app.CheckedInteger.IntegerTy;
 import com.mycompany.app.CheckedInteger.Value;
@@ -487,136 +486,74 @@ public final class Motor {
             switch (data) {
                 case ATrue _ -> {
                     switch (op1.op) {
-                        case STRING_OF -> {
-                            op1.b.forward(new AString("true").a);
-                        }
-                        case HASH -> {
-                            op1.b.forward(AInteger.one(U64).a);
-                        }
-                        default -> {
-                            reject(data);
-                        }
+                        case STRING_OF -> forwardString(op1.b, "true");
+                        case HASH -> forwardInteger(op1.b, U64.one());
+                        default -> reject(data);
                     }
                 }
                 case AFalse _ -> {
                     switch (op1.op) {
-                        case STRING_OF -> {
-                            op1.b.forward(new AString("false").a);
-                        }
-                        case HASH -> {
-                            op1.b.forward(AInteger.zero(U64).a);
-                        }
-                        default -> {
-                            reject(data);
-                        }
+                        case STRING_OF -> forwardString(op1.b, "false");
+                        case HASH -> forwardInteger(op1.b, U64.zero());
+                        default -> reject(data);
                     }
                 }
                 case AInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF -> {
-                            op1.b.forward(new AString(i.data.show()).a);
-                        }
+                        case STRING_OF -> forwardString(op1.b, i.data.show());
                         case STRING_OF_CHARACTER -> {
                             if (i.ty() == U8) {
-                                op1.b.forward(new AString(MyString.ofByte(i.data.toInt())).a);
+                                forwardString(op1.b, MyString.ofByte(i.data.toInt()));
                             } else {
                                 reject(data);
                             }
                         }
-                        case NEGATE -> {
-                            op1.b.forward(new AInteger(i.data.negate()).a);
-                        }
+                        case NEGATE -> forwardInteger(op1.b, i.data.negate());
                         case SIGNUM -> {
                             if (i.ty().isSigned) {
-                                op1.b.forward(new AInteger(i.data.signum()).a);
+                                forwardInteger(op1.b, i.data.signum());
                             } else {
                                 reject(data);
                             }
                         }
                         case ABS -> {
                             if (i.ty().isSigned) {
-                                op1.b.forward(new AInteger(i.data.abs()).a);
+                                forwardInteger(op1.b, i.data.abs());
                             } else {
                                 reject(data);
                             }
                         }
-                        case FFS -> {
-                            op1.b.forward(new AInteger(i.data.ffs()).a);
-                        }
-                        case CLZ -> {
-                            op1.b.forward(new AInteger(i.data.clz()).a);
-                        }
-                        case CTZ -> {
-                            op1.b.forward(new AInteger(i.data.ctz()).a);
-                        }
-                        case CLRSB -> {
-                            op1.b.forward(new AInteger(i.data.clrsb()).a);
-                        }
-                        case POPCOUNT -> {
-                            op1.b.forward(new AInteger(i.data.popcount()).a);
-                        }
-                        case PARITY -> {
-                            op1.b.forward(new AInteger(i.data.parity()).a);
-                        }
-                        case LENGTH -> {
-                            op1.b.forward(new AInteger(U64.of(i.data.bitLength())).a);
-                        }
-                        case HASH -> {
-                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        }
-                        default -> {
-                            reject(data);
-                        }
+                        case FFS -> forwardInteger(op1.b, i.data.ffs());
+                        case CLZ -> forwardInteger(op1.b, i.data.clz());
+                        case CTZ -> forwardInteger(op1.b, i.data.ctz());
+                        case CLRSB -> forwardInteger(op1.b, i.data.clrsb());
+                        case POPCOUNT -> forwardInteger(op1.b, i.data.popcount());
+                        case PARITY -> forwardInteger(op1.b, i.data.parity());
+                        case LENGTH -> forwardInteger(op1.b, new Value(U64, i.data.bitLength()));
+                        case HASH -> forwardInteger(op1.b, new Value(U64, i.data.hash64()));
+                        default -> reject(data);
                     }
                 }
                 case ABigInteger i -> {
                     switch (op1.op) {
-                        case STRING_OF -> {
-                            op1.b.forward(new AString(i.data.show()).a);
-                        }
-                        case NEGATE -> {
-                            op1.b.forward(new ABigInteger(i.data.negate()).a);
-                        }
-                        case SIGNUM -> {
-                            op1.b.forward(new ABigInteger(i.data.signum()).a);
-                        }
-                        case ABS -> {
-                            op1.b.forward(new ABigInteger(i.data.abs()).a);
-                        }
-                        case POPCOUNT -> {
-                            op1.b.forward(new AInteger(U64.of(i.data.popcount())).a);
-                        }
-                        case PARITY -> {
-                            op1.b.forward(new AInteger(U64.of(i.data.parity())).a);
-                        }
-                        case LENGTH -> {
-                            op1.b.forward(new AInteger(U64.of(i.data.bitLength())).a);
-                        }
-                        case HASH -> {
-                            op1.b.forward(new AInteger(new Value(U64, i.data.hash64())).a);
-                        }
-                        default -> {
-                            reject(data);
-                        }
+                        case STRING_OF -> forwardString(op1.b, i.data.show());
+                        case NEGATE -> forwardBigInteger(op1.b, i.data.negate());
+                        case SIGNUM -> forwardBigInteger(op1.b, i.data.signum());
+                        case ABS -> forwardBigInteger(op1.b, i.data.abs());
+                        case POPCOUNT -> forwardInteger(op1.b, new Value(U64, i.data.popcount()));
+                        case PARITY -> forwardInteger(op1.b, new Value(U64, i.data.parity()));
+                        case LENGTH -> forwardInteger(op1.b, new Value(U64, i.data.bitLength()));
+                        case HASH -> forwardInteger(op1.b, new Value(U64, i.data.hash64()));
+                        default -> reject(data);
                     }
                 }
                 case AString s -> {
                     switch (op1.op) {
-                        case STRING_OF -> {
-                            op1.b.forward(s.a);
-                        }
-                        case LENGTH -> {
-                            op1.b.forward(new AInteger(U64.of(s.data.length())).a);
-                        }
-                        case PANIC -> {
-                            panic("User panic: %s", s.data.toString());
-                        }
-                        case HASH -> {
-                            op1.b.forward(new AInteger(new Value(U64, s.data.hash64())).a);
-                        }
-                        default -> {
-                            reject(data);
-                        }
+                        case STRING_OF -> op1.b.forward(s.a);
+                        case LENGTH -> forwardInteger(op1.b, new Value(U64, s.data.length()));
+                        case PANIC -> panic("User panic: %s", s.data.toString());
+                        case HASH -> forwardInteger(op1.b, new Value(U64, s.data.hash64()));
+                        default -> reject(data);
                     }
                 }
                 case ASuperposition sup -> {
@@ -670,6 +607,12 @@ public final class Motor {
                 panic("Out of range: %s", Primitives.describe(e.ty));
             } catch (final MyBigInteger.OutOfRange e) {
                 panic("Out of big integer range");
+            } catch (final MyString.LengthTooBig e) {
+                panic("Length out of bounds: %s", op.describe());
+            } catch (final Primitives.IndexOutOfBounds e) {
+                panic("Index out of bounds: %s", op.describe());
+            } catch (final Primitives.RangeOutOfBounds e) {
+                panic("Range out of bounds: %s", op.describe());
             }
         }
 
@@ -853,7 +796,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(AInteger.one(i1.ty()).a);
+                    forwardInteger(op2.b, i1.ty().one());
                 }
                 default -> {
                     reject(i1, b2);
@@ -865,7 +808,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(AInteger.zero(i1.ty()).a);
+                    forwardInteger(op2.b, i1.ty().zero());
                 }
                 default -> {
                     reject(i1, b2);
@@ -875,51 +818,79 @@ public final class Motor {
 
         private void interact(final AInteger i1, final AInteger i2) {
             final AStrictOp2 op2 = this;
-            if (op2.op == OFTYPE) {
-                if (i1.ty() != i2.ty()) {
-                    op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
-                } else {
-                    op2.b.forward(i2.a);
+            switch (op2.op) {
+                case OFTYPE -> {
+                    if (i1.ty() != i2.ty()) {
+                        forwardInteger(op2.b, i2.data.convertTo(i1.ty()));
+                    } else {
+                        op2.b.forward(i2.a);
+                    }
                 }
-            } else if (op2.op == INDEX) {
-                if (i2.ty() != U64) {
-                    reject(i1, i2);
+                case INDEX -> {
+                    if (i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    forwardBoolean(op2.b, i1.data.at(i2.value()));
                 }
-                try {
-                    final boolean bit = i1.data.at(i2.value());
-                    op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                } catch (final IndexOutOfBoundsException _) {
-                    panic("Index out of bounds: %s", op2.op.describe());
+                case REPLICATE8 -> {
+                    if (i1.ty() != U64 || i2.ty() != U8) {
+                        reject(i1, i2);
+                    }
+                    final long count = i1.value();
+                    final long element = i2.value();
+                    forwardString(op2.b, MyString.replicatePacked8(count, element));
                 }
-            } else if (i1.ty() != i2.ty()) {
-                reject(i1, i2);
-            } else {
-                final IntegerTy ty = i1.ty();
-                final long x = i1.value(), y = i2.value();
-                switch (op2.op) {
-                    case ADD -> op2.b.forward(new AInteger(ty.add(x, y)).a);
-                    case SUBTRACT -> op2.b.forward(new AInteger(ty.subtract(x, y)).a);
-                    case MULTIPLY -> op2.b.forward(new AInteger(ty.multiply(x, y)).a);
-                    case DIVIDE -> op2.b.forward(new AInteger(ty.divide(x, y)).a);
-                    case REMAINDER -> op2.b.forward(new AInteger(ty.remainder(x, y)).a);
-                    case STRICT_OR -> op2.b.forward(new AInteger(ty.or(x, y)).a);
-                    case STRICT_AND -> op2.b.forward(new AInteger(ty.and(x, y)).a);
-                    case STRICT_XOR -> op2.b.forward(new AInteger(ty.xor(x, y)).a);
-                    case SHIFT_LEFT -> op2.b.forward(new AInteger(ty.shiftLeft(x, y)).a);
-                    case SHIFT_RIGHT -> op2.b.forward(new AInteger(ty.shiftRight(x, y)).a);
-                    case EQUALS -> op2.b.forward(x == y ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case NOT_EQUALS -> op2.b.forward(x != y ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS ->
-                        op2.b.forward(ty.compare(x, y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case LESS_OR_EQUALS ->
-                        op2.b.forward(ty.compare(x, y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER ->
-                        op2.b.forward(ty.compare(x, y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case GREATER_OR_EQUALS ->
-                        op2.b.forward(ty.compare(x, y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    case MIN -> op2.b.forward(ty.compare(x, y) <= 0 ? i1.a : i2.a);
-                    case MAX -> op2.b.forward(ty.compare(x, y) >= 0 ? i1.a : i2.a);
-                    default -> reject(i1, i2);
+                case REPLICATE16 -> {
+                    if (i1.ty() != U64 || i2.ty() != U16) {
+                        reject(i1, i2);
+                    }
+                    final long count = i1.value();
+                    final long element = i2.value();
+                    forwardString(op2.b, MyString.replicatePacked16(count, element));
+                }
+                case REPLICATE32 -> {
+                    if (i1.ty() != U64 || i2.ty() != U32) {
+                        reject(i1, i2);
+                    }
+                    final long count = i1.value();
+                    final long element = i2.value();
+                    forwardString(op2.b, MyString.replicatePacked32(count, element));
+                }
+                case REPLICATE64 -> {
+                    if (i1.ty() != U64 || i2.ty() != U64) {
+                        reject(i1, i2);
+                    }
+                    final long count = i1.value();
+                    final long element = i2.value();
+                    forwardString(op2.b, MyString.replicatePacked64(count, element));
+                }
+                default -> {
+                    if (i1.ty() != i2.ty()) {
+                        reject(i1, i2);
+                    }
+                    final IntegerTy ty = i1.ty();
+                    final long x = i1.value(), y = i2.value();
+                    switch (op2.op) {
+                        case ADD -> forwardInteger(op2.b, ty.add(x, y));
+                        case SUBTRACT -> forwardInteger(op2.b, ty.subtract(x, y));
+                        case MULTIPLY -> forwardInteger(op2.b, ty.multiply(x, y));
+                        case DIVIDE -> forwardInteger(op2.b, ty.divide(x, y));
+                        case REMAINDER -> forwardInteger(op2.b, ty.remainder(x, y));
+                        case STRICT_OR -> forwardInteger(op2.b, ty.or(x, y));
+                        case STRICT_AND -> forwardInteger(op2.b, ty.and(x, y));
+                        case STRICT_XOR -> forwardInteger(op2.b, ty.xor(x, y));
+                        case SHIFT_LEFT -> forwardInteger(op2.b, ty.shiftLeft(x, y));
+                        case SHIFT_RIGHT -> forwardInteger(op2.b, ty.shiftRight(x, y));
+                        case EQUALS -> forwardBoolean(op2.b, x == y);
+                        case NOT_EQUALS -> forwardBoolean(op2.b, x != y);
+                        case LESS -> forwardBoolean(op2.b, ty.compare(x, y) < 0);
+                        case LESS_OR_EQUALS -> forwardBoolean(op2.b, ty.compare(x, y) <= 0);
+                        case GREATER -> forwardBoolean(op2.b, ty.compare(x, y) > 0);
+                        case GREATER_OR_EQUALS -> forwardBoolean(op2.b, ty.compare(x, y) >= 0);
+                        case MIN -> op2.b.forward(ty.compare(x, y) <= 0 ? i1.a : i2.a);
+                        case MAX -> op2.b.forward(ty.compare(x, y) >= 0 ? i1.a : i2.a);
+                        default -> reject(i1, i2);
+                    }
                 }
             }
         }
@@ -928,7 +899,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(new AInteger(i2.data.convertTo(i1.ty())).a);
+                    forwardInteger(op2.b, i2.data.convertTo(i1.ty()));
                 }
                 default -> {
                     reject(i1, i2);
@@ -1003,7 +974,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(ABigInteger.one().a);
+                    forwardBigInteger(op2.b, MyBigInteger.one());
                 }
                 default -> {
                     reject(i1, b2);
@@ -1015,7 +986,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case OFTYPE -> {
-                    op2.b.forward(ABigInteger.zero().a);
+                    forwardBigInteger(op2.b, MyBigInteger.zero());
                 }
                 default -> {
                     reject(i1, b2);
@@ -1030,15 +1001,10 @@ public final class Motor {
                     if (i2.ty() != U64) {
                         reject(i1, i2);
                     }
-                    try {
-                        final boolean bit = i1.data.at(i2.value());
-                        op2.b.forward(bit ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                    } catch (final IndexOutOfBoundsException _) {
-                        panic("Index out of bounds: %s", op2.op.describe());
-                    }
+                    forwardBoolean(op2.b, i1.data.at(i2.value()));
                 }
                 case OFTYPE -> {
-                    op2.b.forward(new ABigInteger(MyBigInteger.of(i2.data)).a);
+                    forwardBigInteger(op2.b, MyBigInteger.of(i2.data));
                 }
                 default -> {
                     reject(i1, i2);
@@ -1050,27 +1016,22 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final MyBigInteger x = i1.data, y = i2.data;
             switch (op2.op) {
-                case ADD -> op2.b.forward(new ABigInteger(x.add(y)).a);
-                case SUBTRACT -> op2.b.forward(new ABigInteger(x.subtract(y)).a);
-                case MULTIPLY -> op2.b.forward(new ABigInteger(x.multiply(y)).a);
-                case DIVIDE -> op2.b.forward(new ABigInteger(x.divide(y)).a);
-                case REMAINDER -> op2.b.forward(new ABigInteger(x.remainder(y)).a);
-                case STRICT_OR -> op2.b.forward(new ABigInteger(x.or(y)).a);
-                case STRICT_AND -> op2.b.forward(new ABigInteger(x.and(y)).a);
-                case STRICT_XOR -> op2.b.forward(new ABigInteger(x.xor(y)).a);
-                case SHIFT_LEFT -> op2.b.forward(new ABigInteger(x.shiftLeft(y)).a);
-                case SHIFT_RIGHT -> op2.b.forward(new ABigInteger(x.shiftRight(y)).a);
-                case EQUALS -> op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case NOT_EQUALS ->
-                    op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case LESS ->
-                    op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case LESS_OR_EQUALS ->
-                    op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case GREATER ->
-                    op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case GREATER_OR_EQUALS ->
-                    op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case ADD -> forwardBigInteger(op2.b, x.add(y));
+                case SUBTRACT -> forwardBigInteger(op2.b, x.subtract(y));
+                case MULTIPLY -> forwardBigInteger(op2.b, x.multiply(y));
+                case DIVIDE -> forwardBigInteger(op2.b, x.divide(y));
+                case REMAINDER -> forwardBigInteger(op2.b, x.remainder(y));
+                case STRICT_OR -> forwardBigInteger(op2.b, x.or(y));
+                case STRICT_AND -> forwardBigInteger(op2.b, x.and(y));
+                case STRICT_XOR -> forwardBigInteger(op2.b, x.xor(y));
+                case SHIFT_LEFT -> forwardBigInteger(op2.b, x.shiftLeft(y));
+                case SHIFT_RIGHT -> forwardBigInteger(op2.b, x.shiftRight(y));
+                case EQUALS -> forwardBoolean(op2.b, x.equals(y));
+                case NOT_EQUALS -> forwardBoolean(op2.b, !x.equals(y));
+                case LESS -> forwardBoolean(op2.b, x.compareTo(y) < 0);
+                case LESS_OR_EQUALS -> forwardBoolean(op2.b, x.compareTo(y) <= 0);
+                case GREATER -> forwardBoolean(op2.b, x.compareTo(y) > 0);
+                case GREATER_OR_EQUALS -> forwardBoolean(op2.b, x.compareTo(y) >= 0);
                 case MIN -> op2.b.forward(x.compareTo(y) <= 0 ? i1.a : i2.a);
                 case MAX -> op2.b.forward(x.compareTo(y) >= 0 ? i1.a : i2.a);
                 case OFTYPE -> op2.b.forward(i2.a);
@@ -1094,11 +1055,7 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
                 case SLICE -> {
-                    try {
-                        op2.b.forward(new ABigInteger(i1.data.slice(rng.start)).a);
-                    } catch (final IndexOutOfBoundsException _) {
-                        panic("Range out of bounds: %s", op2.op.describe());
-                    }
+                    forwardBigInteger(op2.b, i1.data.slice(rng.start));
                 }
                 default -> {
                     reject(i1, rng);
@@ -1146,176 +1103,172 @@ public final class Motor {
 
         private void interact(final AString s1, final AInteger i) {
             final AStrictOp2 op2 = this;
-            try {
-                switch (op2.op) {
-                    case INDEX -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(U8.of(s1.data.at(i.value()))).a);
+            switch (op2.op) {
+                case INDEX -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
                     }
-                    case STRCHR -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        final int c = i.data.toInt();
-                        op2.b.forward(new AInteger(I64.of(s1.data.strchr(c))).a);
-                    }
-                    case STRRCHR -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        final int c = i.data.toInt();
-                        op2.b.forward(new AInteger(I64.of(s1.data.strrchr(c))).a);
-                    }
-                    case PREPEND8 -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.prependPacked8(i.value())).a);
-                    }
-                    case PREPEND16 -> {
-                        if (i.ty() != U16) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.prependPacked16(i.value())).a);
-                    }
-                    case PREPEND32 -> {
-                        if (i.ty() != U32) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.prependPacked32(i.value())).a);
-                    }
-                    case PREPEND64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.prependPacked64(i.value())).a);
-                    }
-                    case APPEND8 -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.appendPacked8(i.value())).a);
-                    }
-                    case APPEND16 -> {
-                        if (i.ty() != U16) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.appendPacked16(i.value())).a);
-                    }
-                    case APPEND32 -> {
-                        if (i.ty() != U32) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.appendPacked32(i.value())).a);
-                    }
-                    case APPEND64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.appendPacked64(i.value())).a);
-                    }
-                    case REMOVE8 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.removePacked8(i.value())).a);
-                    }
-                    case REMOVE16 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.removePacked16(i.value())).a);
-                    }
-                    case REMOVE32 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.removePacked32(i.value())).a);
-                    }
-                    case REMOVE64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AString(s1.data.removePacked64(i.value())).a);
-                    }
-                    case READ8 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(U8.of(s1.data.readPacked8(i.value()))).a);
-                    }
-                    case READ16 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(U16.of(s1.data.readPacked16(i.value()))).a);
-                    }
-                    case READ32 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(U32.of(s1.data.readPacked32(i.value()))).a);
-                    }
-                    case READ64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(U64.of(s1.data.readPacked64(i.value()))).a);
-                    }
-                    case FIND8 -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.findPacked8(i.value()))).a);
-                    }
-                    case FIND16 -> {
-                        if (i.ty() != U16) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.findPacked16(i.value()))).a);
-                    }
-                    case FIND32 -> {
-                        if (i.ty() != U32) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.findPacked32(i.value()))).a);
-                    }
-                    case FIND64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.findPacked64(i.value()))).a);
-                    }
-                    case RFIND8 -> {
-                        if (i.ty() != U8) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked8(i.value()))).a);
-                    }
-                    case RFIND16 -> {
-                        if (i.ty() != U16) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked16(i.value()))).a);
-                    }
-                    case RFIND32 -> {
-                        if (i.ty() != U32) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked32(i.value()))).a);
-                    }
-                    case RFIND64 -> {
-                        if (i.ty() != U64) {
-                            reject(s1, i);
-                        }
-                        op2.b.forward(new AInteger(I64.of(s1.data.rfindPacked64(i.value()))).a);
-                    }
-                    default -> reject(s1, i);
+                    forwardInteger(op2.b, U8.of(s1.data.at(i.value())));
                 }
-            } catch (final IndexOutOfBoundsException _) {
-                panic("Index out of bounds: %s", op2.op.describe());
+                case STRCHR -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    final int c = i.data.toInt();
+                    forwardInteger(op2.b, I64.of(s1.data.strchr(c)));
+                }
+                case STRRCHR -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    final int c = i.data.toInt();
+                    forwardInteger(op2.b, I64.of(s1.data.strrchr(c)));
+                }
+                case PREPEND8 -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.prependPacked8(i.value()));
+                }
+                case PREPEND16 -> {
+                    if (i.ty() != U16) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.prependPacked16(i.value()));
+                }
+                case PREPEND32 -> {
+                    if (i.ty() != U32) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.prependPacked32(i.value()));
+                }
+                case PREPEND64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.prependPacked64(i.value()));
+                }
+                case APPEND8 -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.appendPacked8(i.value()));
+                }
+                case APPEND16 -> {
+                    if (i.ty() != U16) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.appendPacked16(i.value()));
+                }
+                case APPEND32 -> {
+                    if (i.ty() != U32) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.appendPacked32(i.value()));
+                }
+                case APPEND64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.appendPacked64(i.value()));
+                }
+                case REMOVE8 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.removePacked8(i.value()));
+                }
+                case REMOVE16 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.removePacked16(i.value()));
+                }
+                case REMOVE32 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.removePacked32(i.value()));
+                }
+                case REMOVE64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardString(op2.b, s1.data.removePacked64(i.value()));
+                }
+                case READ8 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, U8.of(s1.data.readPacked8(i.value())));
+                }
+                case READ16 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, U16.of(s1.data.readPacked16(i.value())));
+                }
+                case READ32 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, U32.of(s1.data.readPacked32(i.value())));
+                }
+                case READ64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, U64.of(s1.data.readPacked64(i.value())));
+                }
+                case FIND8 -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.findPacked8(i.value())));
+                }
+                case FIND16 -> {
+                    if (i.ty() != U16) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.findPacked16(i.value())));
+                }
+                case FIND32 -> {
+                    if (i.ty() != U32) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.findPacked32(i.value())));
+                }
+                case FIND64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.findPacked64(i.value())));
+                }
+                case RFIND8 -> {
+                    if (i.ty() != U8) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.rfindPacked8(i.value())));
+                }
+                case RFIND16 -> {
+                    if (i.ty() != U16) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.rfindPacked16(i.value())));
+                }
+                case RFIND32 -> {
+                    if (i.ty() != U32) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.rfindPacked32(i.value())));
+                }
+                case RFIND64 -> {
+                    if (i.ty() != U64) {
+                        reject(s1, i);
+                    }
+                    forwardInteger(op2.b, I64.of(s1.data.rfindPacked64(i.value())));
+                }
+                default -> reject(s1, i);
             }
         }
 
@@ -1323,30 +1276,23 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final MyString x = s1.data, y = s2.data;
             switch (op2.op) {
-                case EQUALS -> op2.b.forward(x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case NOT_EQUALS ->
-                    op2.b.forward(!x.equals(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case LESS ->
-                    op2.b.forward(x.compareTo(y) < 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case LESS_OR_EQUALS ->
-                    op2.b.forward(x.compareTo(y) <= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case GREATER ->
-                    op2.b.forward(x.compareTo(y) > 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case GREATER_OR_EQUALS ->
-                    op2.b.forward(x.compareTo(y) >= 0 ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case EQUALS -> forwardBoolean(op2.b, x.equals(y));
+                case NOT_EQUALS -> forwardBoolean(op2.b, !x.equals(y));
+                case LESS -> forwardBoolean(op2.b, x.compareTo(y) < 0);
+                case LESS_OR_EQUALS -> forwardBoolean(op2.b, x.compareTo(y) <= 0);
+                case GREATER -> forwardBoolean(op2.b, x.compareTo(y) > 0);
+                case GREATER_OR_EQUALS -> forwardBoolean(op2.b, x.compareTo(y) >= 0);
                 case MIN -> op2.b.forward(x.compareTo(y) <= 0 ? s1.a : s2.a);
                 case MAX -> op2.b.forward(x.compareTo(y) >= 0 ? s1.a : s2.a);
                 case OFTYPE -> op2.b.forward(s2.a);
-                case PLUS_PLUS -> op2.b.forward(new AString(x.concat(y)).a);
-                case STRCMP -> op2.b.forward(new AInteger(I64.of(x.compareTo(y))).a);
-                case STRSTR -> op2.b.forward(new AInteger(I64.of(x.strstr(y))).a);
-                case STRSPN -> op2.b.forward(new AInteger(I64.of(x.strspn(y))).a);
-                case STRCSPN -> op2.b.forward(new AInteger(I64.of(x.strcspn(y))).a);
-                case STRPBRK -> op2.b.forward(new AInteger(I64.of(x.strpbrk(y))).a);
-                case STARTSWITH ->
-                    op2.b.forward(x.startswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
-                case ENDSWITH ->
-                    op2.b.forward(x.endswith(y) ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+                case PLUS_PLUS -> forwardString(op2.b, x.concat(y));
+                case STRCMP -> forwardInteger(op2.b, I64.of(x.compareTo(y)));
+                case STRSTR -> forwardInteger(op2.b, I64.of(x.strstr(y)));
+                case STRSPN -> forwardInteger(op2.b, I64.of(x.strspn(y)));
+                case STRCSPN -> forwardInteger(op2.b, I64.of(x.strcspn(y)));
+                case STRPBRK -> forwardInteger(op2.b, I64.of(x.strpbrk(y)));
+                case STARTSWITH -> forwardBoolean(op2.b, x.startswith(y));
+                case ENDSWITH -> forwardBoolean(op2.b, x.endswith(y));
                 default -> reject(s1, s2);
             }
         }
@@ -1355,36 +1301,32 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final long i = upd.index;
             final Value v = upd.value;
-            try {
-                switch (op2.op) {
-                    case UPDATE8 -> {
-                        if (v.ty() != U8) {
-                            reject(s1, upd);
-                        }
-                        op2.b.forward(new AString(s1.data.updatePacked8(i, v.a())).a);
+            switch (op2.op) {
+                case UPDATE8 -> {
+                    if (v.ty() != U8) {
+                        reject(s1, upd);
                     }
-                    case UPDATE16 -> {
-                        if (v.ty() != U16) {
-                            reject(s1, upd);
-                        }
-                        op2.b.forward(new AString(s1.data.updatePacked16(i, v.a())).a);
-                    }
-                    case UPDATE32 -> {
-                        if (v.ty() != U32) {
-                            reject(s1, upd);
-                        }
-                        op2.b.forward(new AString(s1.data.updatePacked32(i, v.a())).a);
-                    }
-                    case UPDATE64 -> {
-                        if (v.ty() != U64) {
-                            reject(s1, upd);
-                        }
-                        op2.b.forward(new AString(s1.data.updatePacked64(i, v.a())).a);
-                    }
-                    default -> reject(s1, upd);
+                    forwardString(op2.b, s1.data.updatePacked8(i, v.a()));
                 }
-            } catch (final IndexOutOfBoundsException _) {
-                panic("Index out of bounds: %s", op2.op.describe());
+                case UPDATE16 -> {
+                    if (v.ty() != U16) {
+                        reject(s1, upd);
+                    }
+                    forwardString(op2.b, s1.data.updatePacked16(i, v.a()));
+                }
+                case UPDATE32 -> {
+                    if (v.ty() != U32) {
+                        reject(s1, upd);
+                    }
+                    forwardString(op2.b, s1.data.updatePacked32(i, v.a()));
+                }
+                case UPDATE64 -> {
+                    if (v.ty() != U64) {
+                        reject(s1, upd);
+                    }
+                    forwardString(op2.b, s1.data.updatePacked64(i, v.a()));
+                }
+                default -> reject(s1, upd);
             }
         }
 
@@ -1392,36 +1334,32 @@ public final class Motor {
             final AStrictOp2 op2 = this;
             final long i = ins.index;
             final Value v = ins.value;
-            try {
-                switch (op2.op) {
-                    case INSERT8 -> {
-                        if (v.ty() != U8) {
-                            reject(s1, ins);
-                        }
-                        op2.b.forward(new AString(s1.data.insertPacked8(i, v.a())).a);
+            switch (op2.op) {
+                case INSERT8 -> {
+                    if (v.ty() != U8) {
+                        reject(s1, ins);
                     }
-                    case INSERT16 -> {
-                        if (v.ty() != U16) {
-                            reject(s1, ins);
-                        }
-                        op2.b.forward(new AString(s1.data.insertPacked16(i, v.a())).a);
-                    }
-                    case INSERT32 -> {
-                        if (v.ty() != U32) {
-                            reject(s1, ins);
-                        }
-                        op2.b.forward(new AString(s1.data.insertPacked32(i, v.a())).a);
-                    }
-                    case INSERT64 -> {
-                        if (v.ty() != U64) {
-                            reject(s1, ins);
-                        }
-                        op2.b.forward(new AString(s1.data.insertPacked64(i, v.a())).a);
-                    }
-                    default -> reject(s1, ins);
+                    forwardString(op2.b, s1.data.insertPacked8(i, v.a()));
                 }
-            } catch (final IndexOutOfBoundsException _) {
-                panic("Index out of bounds: %s", op2.op.describe());
+                case INSERT16 -> {
+                    if (v.ty() != U16) {
+                        reject(s1, ins);
+                    }
+                    forwardString(op2.b, s1.data.insertPacked16(i, v.a()));
+                }
+                case INSERT32 -> {
+                    if (v.ty() != U32) {
+                        reject(s1, ins);
+                    }
+                    forwardString(op2.b, s1.data.insertPacked32(i, v.a()));
+                }
+                case INSERT64 -> {
+                    if (v.ty() != U64) {
+                        reject(s1, ins);
+                    }
+                    forwardString(op2.b, s1.data.insertPacked64(i, v.a()));
+                }
+                default -> reject(s1, ins);
             }
         }
 
@@ -1648,8 +1586,8 @@ public final class Motor {
             switch (data) {
                 case ATrue _ -> not.b.forward(AFalse.INSTANCE.a);
                 case AFalse _ -> not.b.forward(ATrue.INSTANCE.a);
-                case AInteger i -> not.b.forward(new AInteger(i.data.not()).a);
-                case ABigInteger i -> not.b.forward(new ABigInteger(i.data.not()).a);
+                case AInteger i -> forwardInteger(not.b, i.data.not());
+                case ABigInteger i -> forwardBigInteger(not.b, i.data.not());
                 case ASuperposition sup -> {
                     final var notx = new ANot();
                     final var notxx = new ANot();
@@ -2735,23 +2673,11 @@ public final class Motor {
             return data.a();
         }
 
-        public static AInteger zero(final IntegerTy ty) {
-            return new AInteger(ty.zero());
-        }
-
-        public static AInteger one(final IntegerTy ty) {
-            return new AInteger(ty.one());
-        }
-
         public AInteger slice(final long start, final long end, final boolean inclusive) {
             if (inclusive && end == -1L) {
-                return panic("Range out of bounds: %s", SLICE.describe());
+                throw new Primitives.RangeOutOfBounds();
             }
-            try {
-                return new AInteger(this.data.slice(start, inclusive ? end + 1 : end));
-            } catch (final IndexOutOfBoundsException _) {
-                return panic("Range out of bounds: %s", SLICE.describe());
-            }
+            return new AInteger(this.data.slice(start, inclusive ? end + 1 : end));
         }
     }
 
@@ -2765,23 +2691,11 @@ public final class Motor {
             this.a = new Producer(this);
         }
 
-        public static ABigInteger zero() {
-            return new ABigInteger(MyBigInteger.zero());
-        }
-
-        public static ABigInteger one() {
-            return new ABigInteger(MyBigInteger.one());
-        }
-
         public ABigInteger slice(final long start, final long end, final boolean inclusive) {
             if (inclusive && end == -1L) {
-                return panic("Range out of bounds: %s", SLICE.describe());
+                throw new Primitives.RangeOutOfBounds();
             }
-            try {
-                return new ABigInteger(this.data.slice(start, inclusive ? end + 1 : end));
-            } catch (final IndexOutOfBoundsException _) {
-                return panic("Range out of bounds: %s", SLICE.describe());
-            }
+            return new ABigInteger(this.data.slice(start, inclusive ? end + 1 : end));
         }
     }
 
@@ -2801,13 +2715,9 @@ public final class Motor {
 
         public AString slice(final long start, final long end, final boolean inclusive) {
             if (inclusive && end == -1L) {
-                return panic("Range out of bounds: %s", SLICE.describe());
+                throw new Primitives.RangeOutOfBounds();
             }
-            try {
-                return new AString(this.data.slice(start, inclusive ? end + 1 : end));
-            } catch (final IndexOutOfBoundsException _) {
-                return panic("Range out of bounds: %s", SLICE.describe());
-            }
+            return new AString(this.data.slice(start, inclusive ? end + 1 : end));
         }
     }
 
@@ -3033,5 +2943,25 @@ public final class Motor {
         final var message = Arrays.stream(arguments).map(Motor::describe)
                 .collect(Collectors.joining(", "));
         return panic("Type error: %s: %s", op, message);
+    }
+
+    private static void forwardBoolean(final Producer p, final boolean value) {
+        p.forward(value ? ATrue.INSTANCE.a : AFalse.INSTANCE.a);
+    }
+
+    private static void forwardInteger(final Producer p, final Value value) {
+        p.forward(new AInteger(value).a);
+    }
+
+    private static void forwardBigInteger(final Producer p, final MyBigInteger value) {
+        p.forward(new ABigInteger(value).a);
+    }
+
+    private static void forwardString(final Producer p, final MyString value) {
+        p.forward(new AString(value).a);
+    }
+
+    private static void forwardString(final Producer p, final String value) {
+        p.forward(new AString(value).a);
     }
 }
