@@ -123,6 +123,22 @@ public final class MyString {
         return PackedHelpers.update(this, index, element, 64);
     }
 
+    public MyString insertPacked8(final long index, final long element) {
+        return PackedHelpers.insert(this, index, element, 8);
+    }
+
+    public MyString insertPacked16(final long index, final long element) {
+        return PackedHelpers.insert(this, index, element, 16);
+    }
+
+    public MyString insertPacked32(final long index, final long element) {
+        return PackedHelpers.insert(this, index, element, 32);
+    }
+
+    public MyString insertPacked64(final long index, final long element) {
+        return PackedHelpers.insert(this, index, element, 64);
+    }
+
     public long readPacked8(final long index) {
         return this.at(index);
     }
@@ -325,7 +341,12 @@ public final class MyString {
                 final long index,
                 final long element,
                 final int nbits) {
-            final int width = checkAlignment(packed, index, nbits);
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
             final int start = (int) index * width;
             var result = packed.data;
             for (int i = 0; i < width; i++) {
@@ -334,8 +355,29 @@ public final class MyString {
             return new MyString(result);
         }
 
+        private static MyString insert(
+                final MyString packed,
+                final long index,
+                final long element,
+                final int nbits) {
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) > 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
+            final int start = (int) index * width;
+            final var result = packed.data.insertAll(start, encode(width, element));
+            return new MyString(result);
+        }
+
         private static long read(final MyString packed, final long index, final int nbits) {
-            final int width = checkAlignment(packed, index, nbits);
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
             final int start = (int) index * width;
             return decode(width, i -> packed.data.get(start + i));
         }
@@ -353,19 +395,6 @@ public final class MyString {
                 }
             }
             return -1;
-        }
-
-        private static int checkAlignment(
-                final MyString packed,
-                final long index,
-                final int nbits) {
-            final int width = nbits / 8;
-            final boolean misalignment = packed.length() % width != 0;
-            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
-            if (misalignment || outOfBounds) {
-                throw new IndexOutOfBoundsException();
-            }
-            return width;
         }
 
         // Reads bytes one after another, from `0` to `width - 1`, without re-reading.

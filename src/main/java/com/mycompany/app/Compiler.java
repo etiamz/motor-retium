@@ -241,6 +241,10 @@ public final class Compiler {
                     case UPDATE16 -> compileUpdate(builder, UPDATE16, t1, t2, t3, output);
                     case UPDATE32 -> compileUpdate(builder, UPDATE32, t1, t2, t3, output);
                     case UPDATE64 -> compileUpdate(builder, UPDATE64, t1, t2, t3, output);
+                    case INSERT8 -> compileInsert(builder, INSERT8, t1, t2, t3, output);
+                    case INSERT16 -> compileInsert(builder, INSERT16, t1, t2, t3, output);
+                    case INSERT32 -> compileInsert(builder, INSERT32, t1, t2, t3, output);
+                    case INSERT64 -> compileInsert(builder, INSERT64, t1, t2, t3, output);
                 };
             }
             case Term.BooleanLiteral(var b) -> {
@@ -276,6 +280,23 @@ public final class Compiler {
         final var fvSet = compile(builder, t1, agent.a());
         merge(fvSet, compile(builder, t2, doUpd.a()));
         merge(fvSet, compile(builder, t3, doUpd.c()));
+        return fvSet;
+    }
+
+    private TermInterface compileInsert(
+            final Template.Builder builder,
+            final Primitives.StrictOp2 op,
+            final Term t1,
+            final Term t2,
+            final Term t3,
+            final Consumer output) {
+        final var agent = builder.mkStrictOp2(op);
+        final var doIns = builder.mkDoInsert();
+        output.setProducer(agent.b());
+        agent.c().setProducer(doIns.b());
+        final var fvSet = compile(builder, t1, agent.a());
+        merge(fvSet, compile(builder, t2, doIns.a()));
+        merge(fvSet, compile(builder, t3, doIns.c()));
         return fvSet;
     }
 

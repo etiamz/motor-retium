@@ -112,6 +112,7 @@ intrinsic2
 
 intrinsic3
     : '$update8' | '$update16' | '$update32' | '$update64'
+    | '$insert8' | '$insert16' | '$insert32' | '$insert64'
     ;
 
 // Literals.

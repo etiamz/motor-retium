@@ -20,8 +20,8 @@ public final class Template {
             PRoot,
             // Operators.
             PReference, PStrictOp1, PStrictOp2, PIfThenElse, PExpansion, PNot, PAnd, POr, PDoUpdate,
-            PDoRange, PDoRangeFrom, PDoRangeTo, PApplicator, PStrictApplicator, PResolver, PCapture,
-            PMatch, PConstructorResolver, PSelect, PDuplicator,
+            PDoInsert, PDoRange, PDoRangeFrom, PDoRangeTo, PApplicator, PStrictApplicator,
+            PResolver, PCapture, PMatch, PConstructorResolver, PSelect, PDuplicator,
             // Data.
             PLambda, PEndOfList, PTrue, PFalse, PInteger, PBigInteger, PString, PRangeFull,
             PIdentity, PConstructor {
@@ -55,6 +55,9 @@ public final class Template {
     }
 
     private record PDoUpdate() implements Payload {
+    }
+
+    private record PDoInsert() implements Payload {
     }
 
     private record PDoRange(boolean inclusive) implements Payload {
@@ -210,6 +213,12 @@ public final class Template {
                 }
                 case PDoUpdate _ -> {
                     final var agent = new Motor.ADoUpdate();
+                    consumers[i++] = agent.a;
+                    producers[j++] = agent.b;
+                    consumers[i++] = agent.c;
+                }
+                case PDoInsert _ -> {
+                    final var agent = new Motor.ADoInsert();
                     consumers[i++] = agent.a;
                     producers[j++] = agent.b;
                     consumers[i++] = agent.c;
@@ -370,8 +379,9 @@ public final class Template {
                 ARoot,
                 // Operators.
                 AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr,
-                ADoUpdate, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator,
-                AResolver, ACapture, AMatcher, AConstructorResolver, ASelector, ADuplicator,
+                ADoUpdate, ADoInsert, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator,
+                AStrictApplicator, AResolver, ACapture, AMatcher, AConstructorResolver, ASelector,
+                ADuplicator,
                 // Data.
                 ALambda, AEndOfList, ATrue, AFalse, AInteger, ABigInteger, AString, ARangeFull,
                 AIdentity, AConstructor {
@@ -616,6 +626,30 @@ public final class Template {
             private final Consumer c;
 
             private ADoUpdate() {
+                this.a = new Consumer(null);
+                this.b = new Producer(this);
+                this.c = new Consumer(null);
+            }
+
+            public Consumer a() {
+                return a;
+            }
+
+            public Producer b() {
+                return b;
+            }
+
+            public Consumer c() {
+                return c;
+            }
+        }
+
+        public static final class ADoInsert implements Agent {
+            private final Consumer a;
+            private final Producer b;
+            private final Consumer c;
+
+            private ADoInsert() {
                 this.a = new Consumer(null);
                 this.b = new Producer(this);
                 this.c = new Consumer(null);
@@ -1144,6 +1178,10 @@ public final class Template {
             return new ADoUpdate();
         }
 
+        public ADoInsert mkDoInsert() {
+            return new ADoInsert();
+        }
+
         public ADoRange mkDoRange(final boolean inclusive) {
             return new ADoRange(inclusive);
         }
@@ -1250,6 +1288,7 @@ public final class Template {
                 case AAnd and -> List.of(and.a, and.c);
                 case AOr or -> List.of(or.a, or.c);
                 case ADoUpdate doUpd -> List.of(doUpd.a, doUpd.c);
+                case ADoInsert doIns -> List.of(doIns.a, doIns.c);
                 case ADoRange doRng -> List.of(doRng.a, doRng.c);
                 case ADoRangeFrom doRng -> List.of(doRng.a);
                 case ADoRangeTo doRng -> List.of(doRng.a);
@@ -1298,6 +1337,7 @@ public final class Template {
                 case AAnd and -> List.of(and.b);
                 case AOr or -> List.of(or.b);
                 case ADoUpdate doUpd -> List.of(doUpd.b);
+                case ADoInsert doIns -> List.of(doIns.b);
                 case ADoRange doRng -> List.of(doRng.b);
                 case ADoRangeFrom doRng -> List.of(doRng.b);
                 case ADoRangeTo doRng -> List.of(doRng.b);
@@ -1344,6 +1384,7 @@ public final class Template {
                 case AAnd _ -> new PAnd();
                 case AOr _ -> new POr();
                 case ADoUpdate _ -> new PDoUpdate();
+                case ADoInsert _ -> new PDoInsert();
                 case ADoRange doRng -> new PDoRange(doRng.inclusive);
                 case ADoRangeFrom _ -> new PDoRangeFrom();
                 case ADoRangeTo doRng -> new PDoRangeTo(doRng.inclusive);
@@ -1451,6 +1492,10 @@ public final class Template {
                         resolveCaptures(doUpd.a, visitedSet);
                         resolveCaptures(doUpd.c, visitedSet);
                     }
+                    case ADoInsert doIns -> {
+                        resolveCaptures(doIns.a, visitedSet);
+                        resolveCaptures(doIns.c, visitedSet);
+                    }
                     case ADoRange doRng -> {
                         resolveCaptures(doRng.a, visitedSet);
                         resolveCaptures(doRng.c, visitedSet);
@@ -1486,7 +1531,7 @@ public final class Template {
                             case ARangeFull _ -> true;
                             case AIdentity _ -> true;
                             case AConstructor _ -> true;
-                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AEndOfList _ ->
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoInsert _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AEndOfList _ ->
                                 false;
                             case null -> false;
                         };
@@ -1573,6 +1618,10 @@ public final class Template {
                     case ADoUpdate doUpd -> {
                         resolveLambdas(doUpd.a, visitedSet);
                         resolveLambdas(doUpd.c, visitedSet);
+                    }
+                    case ADoInsert doIns -> {
+                        resolveLambdas(doIns.a, visitedSet);
+                        resolveLambdas(doIns.c, visitedSet);
                     }
                     case ADoRange doRng -> {
                         resolveLambdas(doRng.a, visitedSet);
@@ -1684,6 +1733,10 @@ public final class Template {
                     case ADoUpdate doUpd -> {
                         resolveConstructors(doUpd.a, visitedSet);
                         resolveConstructors(doUpd.c, visitedSet);
+                    }
+                    case ADoInsert doIns -> {
+                        resolveConstructors(doIns.a, visitedSet);
+                        resolveConstructors(doIns.c, visitedSet);
                     }
                     case ADoRange doRng -> {
                         resolveConstructors(doRng.a, visitedSet);
@@ -1797,6 +1850,10 @@ public final class Template {
                         duplicateAtoms(doUpd.a, visitedSet);
                         duplicateAtoms(doUpd.c, visitedSet);
                     }
+                    case ADoInsert doIns -> {
+                        duplicateAtoms(doIns.a, visitedSet);
+                        duplicateAtoms(doIns.c, visitedSet);
+                    }
                     case ADoRange doRng -> {
                         duplicateAtoms(doRng.a, visitedSet);
                         duplicateAtoms(doRng.c, visitedSet);
@@ -1854,7 +1911,7 @@ public final class Template {
                             case AIdentity _ -> new AIdentity().a;
                             case AConstructor ctr when ctr.isNullary() ->
                                 new AConstructor(ctr.name, 0).a;
-                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AConstructor _ ->
+                            case ARoot _,AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoInsert _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,ALambda _,AConstructor _ ->
                                 null;
                             case null -> null;
                         };
@@ -1921,6 +1978,10 @@ public final class Template {
                     case ADoUpdate doUpd -> {
                         betaReduce(doUpd.a, visitedSet);
                         betaReduce(doUpd.c, visitedSet);
+                    }
+                    case ADoInsert doIns -> {
+                        betaReduce(doIns.a, visitedSet);
+                        betaReduce(doIns.c, visitedSet);
                     }
                     case ADoRange doRng -> {
                         betaReduce(doRng.a, visitedSet);

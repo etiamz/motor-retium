@@ -122,6 +122,10 @@ public final class Primitives {
         UPDATE16("16-bit packed update"),
         UPDATE32("32-bit packed update"),
         UPDATE64("64-bit packed update"),
+        INSERT8("8-bit packed insert"),
+        INSERT16("16-bit packed insert"),
+        INSERT32("32-bit packed insert"),
+        INSERT64("64-bit packed insert"),
         READ8("8-bit packed read"),
         READ16("16-bit packed read"),
         READ32("32-bit packed read"),
@@ -154,8 +158,9 @@ public final class Primitives {
                         SHIFT_LEFT, SHIFT_RIGHT, MIN, MAX, OFTYPE, INDEX, SLICE, PLUS_PLUS, STRCMP,
                         STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH,
                         PREPEND8, PREPEND16, PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32,
-                        APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, READ8, READ16, READ32,
-                        READ64, FIND8, FIND16, FIND32, FIND64 ->
+                        APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, INSERT8, INSERT16,
+                        INSERT32, INSERT64, READ8, READ16, READ32, READ64, FIND8, FIND16, FIND32,
+                        FIND64 ->
                     false;
             };
         }
@@ -166,7 +171,11 @@ public final class Primitives {
         UPDATE8("8-bit packed update"),
         UPDATE16("16-bit packed update"),
         UPDATE32("32-bit packed update"),
-        UPDATE64("64-bit packed update");
+        UPDATE64("64-bit packed update"),
+        INSERT8("8-bit packed insert"),
+        INSERT16("16-bit packed insert"),
+        INSERT32("32-bit packed insert"),
+        INSERT64("64-bit packed insert");
         // @formatter:on
 
         private final String description;

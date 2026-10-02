@@ -102,7 +102,11 @@ public final class Parser {
             Map.entry("$update8", Primitives.StrictOp3.UPDATE8),
             Map.entry("$update16", Primitives.StrictOp3.UPDATE16),
             Map.entry("$update32", Primitives.StrictOp3.UPDATE32),
-            Map.entry("$update64", Primitives.StrictOp3.UPDATE64));
+            Map.entry("$update64", Primitives.StrictOp3.UPDATE64),
+            Map.entry("$insert8", Primitives.StrictOp3.INSERT8),
+            Map.entry("$insert16", Primitives.StrictOp3.INSERT16),
+            Map.entry("$insert32", Primitives.StrictOp3.INSERT32),
+            Map.entry("$insert64", Primitives.StrictOp3.INSERT64));
 
     private static final Set<Class<?>> RANGE_CONTEXTS = Set.of(
             MotorParser.RangeTermContext.class,

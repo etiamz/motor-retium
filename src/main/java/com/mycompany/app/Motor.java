@@ -261,6 +261,10 @@ public final class Motor {
                 final var rator = (ADoUpdate) agent;
                 yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
             }
+            case K_DO_INSERT -> {
+                final var rator = (ADoInsert) agent;
+                yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
+            }
             case K_DO_RANGE -> {
                 final var rator = (ADoRange) agent;
                 yield duplex(rator.a, rator.c, rator::interact, p, thunk, heart);
@@ -410,24 +414,24 @@ public final class Motor {
     private static final byte
     // Operators.
     K_REFERENCE = 0, K_STRICT_OP1 = 1, K_STRICT_OP2 = 2, K_IF_THEN_ELSE = 3, K_EXPANSION = 4,
-            K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_UPDATE = 8, K_DO_RANGE = 9, K_DO_RANGE_FROM = 10,
-            K_DO_RANGE_TO = 11, K_APPLICATOR = 12, K_STRICT_APPLICATOR = 13, K_RESOLVER = 14,
-            K_CAPTURE = 15, K_MATCH = 16, K_CONSTRUCTOR_RESOLVER = 17, K_SELECT = 18,
-            K_DUPLICATOR = 19,
+            K_NOT = 5, K_AND = 6, K_OR = 7, K_DO_UPDATE = 8, K_DO_INSERT = 9, K_DO_RANGE = 10,
+            K_DO_RANGE_FROM = 11, K_DO_RANGE_TO = 12, K_APPLICATOR = 13, K_STRICT_APPLICATOR = 14,
+            K_RESOLVER = 15, K_CAPTURE = 16, K_MATCH = 17, K_CONSTRUCTOR_RESOLVER = 18,
+            K_SELECT = 19, K_DUPLICATOR = 20,
             // Data.
-            K_LAMBDA = 20, K_END_OF_LIST = 21, K_TRUE = 22, K_FALSE = 23, K_INTEGER = 24,
-            K_BIG_INTEGER = 25, K_STRING = 26, K_UPDATE = 27, K_RANGE = 28, K_RANGE_FROM = 29,
-            K_RANGE_TO = 30, K_RANGE_FULL = 31, K_IDENTITY = 32, K_CONSTRUCTOR = 33,
-            K_SUPERPOSITION = 34;
+            K_LAMBDA = 21, K_END_OF_LIST = 22, K_TRUE = 23, K_FALSE = 24, K_INTEGER = 25,
+            K_BIG_INTEGER = 26, K_STRING = 27, K_UPDATE = 28, K_INSERT = 29, K_RANGE = 30,
+            K_RANGE_FROM = 31, K_RANGE_TO = 32, K_RANGE_FULL = 33, K_IDENTITY = 34,
+            K_CONSTRUCTOR = 35, K_SUPERPOSITION = 36;
 
     public abstract static sealed class Agent permits
             // Operators.
             AReference, AStrictOp1, AStrictOp2, AIfThenElse, AExpansion, ANot, AAnd, AOr, ADoUpdate,
-            ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator, AResolver, ACapture,
-            AMatcher, AConstructorResolver, ASelector, ADuplicator,
+            ADoInsert, ADoRange, ADoRangeFrom, ADoRangeTo, AApplicator, AStrictApplicator,
+            AResolver, ACapture, AMatcher, AConstructorResolver, ASelector, ADuplicator,
             // Data.
-            ALambda, AEndOfList, ATrue, AFalse, AInteger, ABigInteger, AString, AUpdate, ARange,
-            ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
+            ALambda, AEndOfList, ATrue, AFalse, AInteger, ABigInteger, AString, AUpdate, AInsert,
+            ARange, ARangeFrom, ARangeTo, ARangeFull, AIdentity, AConstructor, ASuperposition {
         // The agent kind for faster dispatch.
         public final byte kind;
 
@@ -723,6 +727,7 @@ public final class Motor {
                         case AInteger i -> interact(s1, i);
                         case AString s2 -> interact(s1, s2);
                         case AUpdate upd -> interact(s1, upd);
+                        case AInsert ins -> interact(s1, ins);
                         case ARange rng -> interact(s1, rng);
                         case ARangeFrom rng -> interact(s1, rng);
                         case ARangeTo rng -> interact(s1, rng);
@@ -1335,6 +1340,43 @@ public final class Motor {
             }
         }
 
+        private void interact(final AString s1, final AInsert ins) {
+            final AStrictOp2 op2 = this;
+            final long i = ins.index;
+            final Value v = ins.value;
+            try {
+                switch (op2.op) {
+                    case INSERT8 -> {
+                        if (v.ty() != U8) {
+                            reject(s1, ins);
+                        }
+                        op2.b.forward(new AString(s1.data.insertPacked8(i, v.a())).a);
+                    }
+                    case INSERT16 -> {
+                        if (v.ty() != U16) {
+                            reject(s1, ins);
+                        }
+                        op2.b.forward(new AString(s1.data.insertPacked16(i, v.a())).a);
+                    }
+                    case INSERT32 -> {
+                        if (v.ty() != U32) {
+                            reject(s1, ins);
+                        }
+                        op2.b.forward(new AString(s1.data.insertPacked32(i, v.a())).a);
+                    }
+                    case INSERT64 -> {
+                        if (v.ty() != U64) {
+                            reject(s1, ins);
+                        }
+                        op2.b.forward(new AString(s1.data.insertPacked64(i, v.a())).a);
+                    }
+                    default -> reject(s1, ins);
+                }
+            } catch (final IndexOutOfBoundsException _) {
+                panic("Index out of bounds: %s", op2.op.describe());
+            }
+        }
+
         private void interact(final AString s1, final ARange rng) {
             final AStrictOp2 op2 = this;
             switch (op2.op) {
@@ -1739,6 +1781,66 @@ public final class Motor {
         }
     }
 
+    public static final class ADoInsert extends Agent {
+        public final Consumer a;
+        public final Producer b;
+        public final Consumer c;
+
+        public ADoInsert() {
+            super(K_DO_INSERT);
+            this.a = new Consumer(null);
+            this.b = new Producer(this);
+            this.c = new Consumer(null);
+        }
+
+        private void interact() {
+            final ADoInsert doIns = this;
+            final Agent left = doIns.a.chase();
+            final Agent right = doIns.c.chase();
+            if (left instanceof AInteger i1 && right instanceof AInteger i2 && i1.ty() == U64) {
+                final var ins = new AInsert(i1.value(), i2.data);
+                doIns.b.forward(ins.a);
+            } else if (left instanceof ASuperposition sup) {
+                final var doInsx = new ADoInsert();
+                final var doInsxx = new ADoInsert();
+                final var supx = sup;
+                final var dup = new ADuplicator(Label.DELTA);
+                doIns.b.forward(supx.a);
+                dup.a.setProducer(doIns.c.producer());
+                doInsx.a.setProducer(sup.b.producer());
+                doInsxx.a.setProducer(sup.c.producer());
+                supx.b.setProducer(doInsx.b);
+                supx.c.setProducer(doInsxx.b);
+                doInsx.c.setProducer(dup.b);
+                doInsxx.c.setProducer(dup.c);
+            } else if (left instanceof AInteger i && i.ty() == U64
+                    && right instanceof ASuperposition sup) {
+                final var doInsx = new ADoInsert();
+                final var doInsxx = new ADoInsert();
+                final var supx = sup;
+                doIns.b.forward(supx.a);
+                doInsx.c.setProducer(sup.b.producer());
+                doInsxx.c.setProducer(sup.c.producer());
+                supx.b.setProducer(doInsx.b);
+                supx.c.setProducer(doInsxx.b);
+                doInsx.a.setProducer(i.a);
+                doInsxx.a.setProducer(i.a);
+            } else if (isMachineData(left)) {
+                crash("First operand not welcome: %s", describe(left));
+            } else if (isMachineData(right) && !(right instanceof ASuperposition)) {
+                crash("Second operand not welcome: %s", describe(right));
+            } else if (isUserData(left) || isUserData(right)) {
+                typeError(describe(doIns), left, right);
+            } else if (isOperator(left)) {
+                crash("First operand unresolved: %s", describe(left));
+            } else if (isOperator(right)) {
+                crash("Second operand unresolved: %s", describe(right));
+            } else {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
     public static final class ADoRange extends Agent {
         public final Consumer a;
         public final Producer b;
@@ -2093,6 +2195,10 @@ public final class Motor {
                 }
                 case AUpdate upd -> {
                     cap.c.forward(upd.a);
+                    cap.b.forward(cap.d.producer());
+                }
+                case AInsert ins -> {
+                    cap.c.forward(ins.a);
                     cap.b.forward(cap.d.producer());
                 }
                 case ARange rng -> {
@@ -2482,6 +2588,10 @@ public final class Motor {
                     dup.b.forward(upd.a);
                     dup.c.forward(upd.a);
                 }
+                case AInsert ins -> {
+                    dup.b.forward(ins.a);
+                    dup.c.forward(ins.a);
+                }
                 case ARange rng -> {
                     dup.b.forward(rng.a);
                     dup.c.forward(rng.a);
@@ -2666,6 +2776,19 @@ public final class Motor {
         }
     }
 
+    public static final class AInsert extends Agent {
+        public final long index;
+        public final Value value;
+        public final Producer a;
+
+        public AInsert(final long index, final Value value) {
+            super(K_INSERT);
+            this.index = index;
+            this.value = value;
+            this.a = new Producer(this);
+        }
+    }
+
     public static final class ARange extends Agent {
         public final long start, end;
         public final boolean inclusive;
@@ -2774,18 +2897,18 @@ public final class Motor {
 
     private static boolean isOperator(final Agent agent) {
         return switch (agent) {
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoInsert _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _ ->
                 true;
-            case ALambda _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,AUpdate _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
+            case ALambda _,AEndOfList _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,AUpdate _,AInsert _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _,ASuperposition _ ->
                 false;
         };
     }
 
     private static boolean isUserData(final Agent agent) {
         return switch (agent) {
-            case ALambda _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,AUpdate _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
+            case ALambda _,ATrue _,AFalse _,AInteger _,ABigInteger _,AString _,AUpdate _,AInsert _,ARange _,ARangeFrom _,ARangeTo _,ARangeFull _,AIdentity _,AConstructor _ ->
                 true;
-            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,AEndOfList _,ASuperposition _ ->
+            case AReference _,AStrictOp1 _,AStrictOp2 _,AIfThenElse _,AExpansion _,ANot _,AAnd _,AOr _,ADoUpdate _,ADoInsert _,ADoRange _,ADoRangeFrom _,ADoRangeTo _,AApplicator _,AStrictApplicator _,AResolver _,ACapture _,AMatcher _,AConstructorResolver _,ASelector _,ADuplicator _,AEndOfList _,ASuperposition _ ->
                 false;
         };
     }
@@ -2809,6 +2932,7 @@ public final class Motor {
             case AAnd _ -> "logical conjunction";
             case AOr _ -> "logical disjunction";
             case ADoUpdate _ -> "update construction";
+            case ADoInsert _ -> "insert construction";
             case ADoRange _ -> "bounded-range construction";
             case ADoRangeFrom _ -> "from-range construction";
             case ADoRangeTo _ -> "to-range construction";
@@ -2834,6 +2958,11 @@ public final class Motor {
                     Primitives.describe(upd.value.ty()),
                     Long.toUnsignedString(upd.index),
                     upd.value.show());
+            case AInsert ins -> String.format(
+                    "%s insert at index %s with %s",
+                    Primitives.describe(ins.value.ty()),
+                    Long.toUnsignedString(ins.index),
+                    ins.value.show());
             case ARange _ -> "a bounded range";
             case ARangeFrom _ -> "a from-range";
             case ARangeTo _ -> "a to-range";
