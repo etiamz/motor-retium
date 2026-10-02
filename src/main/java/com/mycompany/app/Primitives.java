@@ -126,6 +126,10 @@ public final class Primitives {
         INSERT16("16-bit packed insert"),
         INSERT32("32-bit packed insert"),
         INSERT64("64-bit packed insert"),
+        REMOVE8("8-bit packed remove"),
+        REMOVE16("16-bit packed remove"),
+        REMOVE32("32-bit packed remove"),
+        REMOVE64("64-bit packed remove"),
         READ8("8-bit packed read"),
         READ16("16-bit packed read"),
         READ32("32-bit packed read"),
@@ -159,8 +163,8 @@ public final class Primitives {
                         STRCHR, STRRCHR, STRSTR, STRSPN, STRCSPN, STRPBRK, STARTSWITH, ENDSWITH,
                         PREPEND8, PREPEND16, PREPEND32, PREPEND64, APPEND8, APPEND16, APPEND32,
                         APPEND64, UPDATE8, UPDATE16, UPDATE32, UPDATE64, INSERT8, INSERT16,
-                        INSERT32, INSERT64, READ8, READ16, READ32, READ64, FIND8, FIND16, FIND32,
-                        FIND64 ->
+                        INSERT32, INSERT64, REMOVE8, REMOVE16, REMOVE32, REMOVE64, READ8, READ16,
+                        READ32, READ64, FIND8, FIND16, FIND32, FIND64 ->
                     false;
             };
         }

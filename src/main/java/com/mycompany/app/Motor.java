@@ -1216,6 +1216,30 @@ public final class Motor {
                         }
                         op2.b.forward(new AString(s1.data.appendPacked64(i.value())).a);
                     }
+                    case REMOVE8 -> {
+                        if (i.ty() != U64) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AString(s1.data.removePacked8(i.value())).a);
+                    }
+                    case REMOVE16 -> {
+                        if (i.ty() != U64) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AString(s1.data.removePacked16(i.value())).a);
+                    }
+                    case REMOVE32 -> {
+                        if (i.ty() != U64) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AString(s1.data.removePacked32(i.value())).a);
+                    }
+                    case REMOVE64 -> {
+                        if (i.ty() != U64) {
+                            reject(s1, i);
+                        }
+                        op2.b.forward(new AString(s1.data.removePacked64(i.value())).a);
+                    }
                     case READ8 -> {
                         if (i.ty() != U64) {
                             reject(s1, i);

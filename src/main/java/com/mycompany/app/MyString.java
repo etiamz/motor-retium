@@ -139,6 +139,22 @@ public final class MyString {
         return PackedHelpers.insert(this, index, element, 64);
     }
 
+    public MyString removePacked8(final long index) {
+        return PackedHelpers.remove(this, index, 8);
+    }
+
+    public MyString removePacked16(final long index) {
+        return PackedHelpers.remove(this, index, 16);
+    }
+
+    public MyString removePacked32(final long index) {
+        return PackedHelpers.remove(this, index, 32);
+    }
+
+    public MyString removePacked64(final long index) {
+        return PackedHelpers.remove(this, index, 64);
+    }
+
     public long readPacked8(final long index) {
         return this.at(index);
     }
@@ -368,6 +384,23 @@ public final class MyString {
             }
             final int start = (int) index * width;
             final var result = packed.data.insertAll(start, encode(width, element));
+            return new MyString(result);
+        }
+
+        private static MyString remove(final MyString packed, final long index, final int nbits) {
+            final int width = nbits / 8;
+            final boolean misalignment = packed.length() % width != 0;
+            final boolean outOfBounds = Long.compareUnsigned(index, packed.length() / width) >= 0;
+            if (misalignment || outOfBounds) {
+                throw new IndexOutOfBoundsException();
+            }
+            final int start = (int) index * width;
+            final var before = packed.data.take(start);
+            final var after = packed.data.drop(start + width);
+            // The argument vector is copied, so make sure we passe the smaller vector.
+            final var result = before.size() > after.size()
+                    ? before.appendAll(after)
+                    : after.prependAll(before);
             return new MyString(result);
         }
 
