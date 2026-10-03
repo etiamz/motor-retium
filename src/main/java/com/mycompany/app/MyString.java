@@ -79,20 +79,20 @@ public final class MyString {
         return new MyString(this.data.appendAll(other.data));
     }
 
-    public static MyString replicatePacked8(final long count, final long element) {
-        return PackedHelpers.replicate(count, element, 8);
+    public static MyString makePacked8(final long count, final long element) {
+        return PackedHelpers.make(count, element, 8);
     }
 
-    public static MyString replicatePacked16(final long count, final long element) {
-        return PackedHelpers.replicate(count, element, 16);
+    public static MyString makePacked16(final long count, final long element) {
+        return PackedHelpers.make(count, element, 16);
     }
 
-    public static MyString replicatePacked32(final long count, final long element) {
-        return PackedHelpers.replicate(count, element, 32);
+    public static MyString makePacked32(final long count, final long element) {
+        return PackedHelpers.make(count, element, 32);
     }
 
-    public static MyString replicatePacked64(final long count, final long element) {
-        return PackedHelpers.replicate(count, element, 64);
+    public static MyString makePacked64(final long count, final long element) {
+        return PackedHelpers.make(count, element, 64);
     }
 
     public MyString prependPacked8(final long element) {
@@ -373,7 +373,7 @@ public final class MyString {
     }
 
     private static class PackedHelpers {
-        private static MyString replicate(final long count, final long element, final int nbits) {
+        private static MyString make(final long count, final long element, final int nbits) {
             final int width = nbits / 8;
             if (Long.compareUnsigned(count, Integer.MAX_VALUE / width) > 0) {
                 throw new LengthTooBig();

@@ -832,37 +832,37 @@ public final class Motor {
                     }
                     forwardBoolean(op2.b, i1.data.at(i2.value()));
                 }
-                case REPLICATE8 -> {
+                case MAKE8 -> {
                     if (i1.ty() != U64 || i2.ty() != U8) {
                         reject(i1, i2);
                     }
                     final long count = i1.value();
                     final long element = i2.value();
-                    forwardString(op2.b, MyString.replicatePacked8(count, element));
+                    forwardString(op2.b, MyString.makePacked8(count, element));
                 }
-                case REPLICATE16 -> {
+                case MAKE16 -> {
                     if (i1.ty() != U64 || i2.ty() != U16) {
                         reject(i1, i2);
                     }
                     final long count = i1.value();
                     final long element = i2.value();
-                    forwardString(op2.b, MyString.replicatePacked16(count, element));
+                    forwardString(op2.b, MyString.makePacked16(count, element));
                 }
-                case REPLICATE32 -> {
+                case MAKE32 -> {
                     if (i1.ty() != U64 || i2.ty() != U32) {
                         reject(i1, i2);
                     }
                     final long count = i1.value();
                     final long element = i2.value();
-                    forwardString(op2.b, MyString.replicatePacked32(count, element));
+                    forwardString(op2.b, MyString.makePacked32(count, element));
                 }
-                case REPLICATE64 -> {
+                case MAKE64 -> {
                     if (i1.ty() != U64 || i2.ty() != U64) {
                         reject(i1, i2);
                     }
                     final long count = i1.value();
                     final long element = i2.value();
-                    forwardString(op2.b, MyString.replicatePacked64(count, element));
+                    forwardString(op2.b, MyString.makePacked64(count, element));
                 }
                 default -> {
                     if (i1.ty() != i2.ty()) {

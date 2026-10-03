@@ -104,7 +104,7 @@ intrinsic1
 intrinsic2
     : '$min' | '$max' | '$oftype'
     | '$strcmp' | '$strchr' | '$strrchr' | '$strstr' | '$strspn' | '$strcspn' | '$strpbrk' | '$startswith' | '$endswith'
-    | '$replicate8' | '$replicate16' | '$replicate32' | '$replicate64'
+    | '$make8' | '$make16' | '$make32' | '$make64'
     | '$prepend8' | '$prepend16' | '$prepend32' | '$prepend64'
     | '$append8' | '$append16' | '$append32' | '$append64'
     | '$remove8' | '$remove16' | '$remove32' | '$remove64'
