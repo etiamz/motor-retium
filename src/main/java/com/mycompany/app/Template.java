@@ -181,10 +181,8 @@ public final class Template {
                     for (final var port : agent.values) {
                         consumers[i++] = port;
                     }
-                    for (final var row : agent.binders) {
-                        for (final var port : row) {
-                            producers[j++] = port;
-                        }
+                    for (final var port : agent.binders) {
+                        producers[j++] = port;
                     }
                 }
                 case PExpansion p -> {
@@ -272,18 +270,14 @@ public final class Template {
                     for (final var port : agent.handlers) {
                         consumers[i++] = port;
                     }
-                    for (final var row : agent.parameters) {
-                        for (final var port : row) {
-                            producers[j++] = port;
-                        }
+                    for (final var port : agent.parameters) {
+                        producers[j++] = port;
                     }
                     for (final var port : agent.values) {
                         consumers[i++] = port;
                     }
-                    for (final var row : agent.binders) {
-                        for (final var port : row) {
-                            producers[j++] = port;
-                        }
+                    for (final var port : agent.binders) {
+                        producers[j++] = port;
                     }
                 }
                 case PConstructorResolver p -> {
@@ -1327,8 +1321,10 @@ public final class Template {
                 case AIfThenElse ite -> {
                     final var result = new ArrayList<Producer>();
                     result.add(ite.b);
-                    for (final var row : ite.binders) {
-                        result.addAll(List.of(row));
+                    for (int j = 0; j < 2; j++) {
+                        for (final var row : ite.binders) {
+                            result.add(row[j]);
+                        }
                     }
                     yield result;
                 }
@@ -1351,8 +1347,10 @@ public final class Template {
                     for (final var row : mat.parameters) {
                         result.addAll(List.of(row));
                     }
-                    for (final var row : mat.binders) {
-                        result.addAll(List.of(row));
+                    for (int j = 0; j < mat.names.length; j++) {
+                        for (final var row : mat.binders) {
+                            result.add(row[j]);
+                        }
                     }
                     yield result;
                 }

@@ -1466,7 +1466,8 @@ public final class Motor {
         public final Consumer c;
         public final Consumer d;
         public final Consumer[] values;
-        public final Producer[][] binders;
+        // The consequent branch's binders, then the alternative branch's binders.
+        public final Producer[] binders;
 
         public AIfThenElse(final int nshared) {
             super(K_IF_THEN_ELSE);
@@ -1475,11 +1476,12 @@ public final class Motor {
             this.c = new Consumer(null);
             this.d = new Consumer(null);
             this.values = new Consumer[nshared];
-            this.binders = new Producer[nshared][2];
+            this.binders = new Producer[2 * nshared];
             for (int i = 0; i < nshared; i++) {
                 this.values[i] = new Consumer(null);
-                this.binders[i][0] = new Producer(this);
-                this.binders[i][1] = new Producer(this);
+            }
+            for (int i = 0; i < binders.length; i++) {
+                this.binders[i] = new Producer(this);
             }
         }
 
@@ -1488,16 +1490,22 @@ public final class Motor {
             final Agent data = ite.a.chase();
             switch (data) {
                 case ATrue _ -> {
+                    int k = 0;
+                    for (final Consumer value : ite.values) {
+                        ite.binders[k++].forward(value.producer());
+                    }
                     for (int i = 0; i < ite.values.length; i++) {
-                        ite.binders[i][0].forward(ite.values[i].producer());
-                        ite.binders[i][1].erase();
+                        ite.binders[k++].erase();
                     }
                     ite.b.forward(ite.d.producer());
                 }
                 case AFalse _ -> {
+                    int k = 0;
                     for (int i = 0; i < ite.values.length; i++) {
-                        ite.binders[i][1].forward(ite.values[i].producer());
-                        ite.binders[i][0].erase();
+                        ite.binders[k++].erase();
+                    }
+                    for (final Consumer value : ite.values) {
+                        ite.binders[k++].forward(value.producer());
                     }
                     ite.b.forward(ite.c.producer());
                 }
@@ -1523,12 +1531,12 @@ public final class Motor {
                         dupv.a.setProducer(ite.values[i].producer());
                         itex.values[i].setProducer(dupv.b);
                         itexx.values[i].setProducer(dupv.c);
-                        for (int k = 0; k < 2; k++) {
-                            final var supv = new ASuperposition();
-                            ite.binders[i][k].forward(supv.a);
-                            supv.b.setProducer(itex.binders[i][k]);
-                            supv.c.setProducer(itexx.binders[i][k]);
-                        }
+                    }
+                    for (int i = 0; i < ite.binders.length; i++) {
+                        final var supv = new ASuperposition();
+                        ite.binders[i].forward(supv.a);
+                        supv.b.setProducer(itex.binders[i]);
+                        supv.c.setProducer(itexx.binders[i]);
                     }
                 }
                 default -> {
@@ -2246,9 +2254,11 @@ public final class Motor {
         public final Producer b;
         public final Consumer[] handlers;
         public final int[] arities;
-        public final Producer[][] parameters;
+        // The first case's parameters, the second case's parameters, etc.
+        public final Producer[] parameters;
         public final Consumer[] values;
-        public final Producer[][] binders;
+        // The first case's binders, the second case's binders, etc.
+        public final Producer[] binders;
 
         public AMatcher(final String[] names, final int[] arities, final int nshared) {
             super(K_MATCH);
@@ -2257,23 +2267,24 @@ public final class Motor {
             this.b = new Producer(this);
             this.handlers = new Consumer[names.length];
             this.arities = arities;
-            this.parameters = new Producer[names.length][];
+            int nparameters = 0;
             for (int i = 0; i < names.length; i++) {
                 assert names[i] == names[i].intern()
                         : String.format("Match case name not interned: `%s`", names[i]);
                 handlers[i] = new Consumer(null);
-                parameters[i] = new Producer[arities[i]];
-                for (int j = 0; j < arities[i]; j++) {
-                    parameters[i][j] = new Producer(this);
-                }
+                nparameters += arities[i];
             }
+            this.parameters = new Producer[nparameters];
             this.values = new Consumer[nshared];
-            this.binders = new Producer[nshared][names.length];
+            this.binders = new Producer[nshared * names.length];
+            for (int i = 0; i < nparameters; i++) {
+                this.parameters[i] = new Producer(this);
+            }
             for (int i = 0; i < nshared; i++) {
                 this.values[i] = new Consumer(null);
-                for (int j = 0; j < names.length; j++) {
-                    this.binders[i][j] = new Producer(this);
-                }
+            }
+            for (int i = 0; i < binders.length; i++) {
+                this.binders[i] = new Producer(this);
             }
         }
 
@@ -2292,27 +2303,32 @@ public final class Motor {
                     if (index == -1) {
                         panic("No matching case for the constructor `%s`", ctr.name);
                     }
-                    final Producer[] myParameters = mat.parameters[index];
-                    if (myParameters.length != ctr.arity()) {
+                    if (mat.arities[index] != ctr.arity()) {
                         crash("Arity mismatch for the constructor `%s`", ctr.name);
                     }
-                    for (int i = 0; i < myParameters.length; i++) {
-                        myParameters[i].forward(ctr.arguments[i].producer());
-                    }
-                    for (int i = 0; i < mat.values.length; i++) {
-                        mat.binders[i][index].forward(mat.values[i].producer());
-                    }
-                    mat.b.forward(mat.handlers[index].producer());
+                    int k = 0;
                     for (int i = 0; i < mat.names.length; i++) {
-                        if (i != index) {
-                            for (int j = 0; j < mat.parameters[i].length; j++) {
-                                mat.parameters[i][j].erase();
-                            }
-                            for (int j = 0; j < mat.binders.length; j++) {
-                                mat.binders[j][i].erase();
+                        for (int j = 0; j < mat.arities[i]; j++) {
+                            final Producer parameter = mat.parameters[k++];
+                            if (i == index) {
+                                parameter.forward(ctr.arguments[j].producer());
+                            } else {
+                                parameter.erase();
                             }
                         }
                     }
+                    k = 0;
+                    for (int i = 0; i < mat.names.length; i++) {
+                        for (final Consumer value : mat.values) {
+                            final Producer binder = mat.binders[k++];
+                            if (i == index) {
+                                binder.forward(value.producer());
+                            } else {
+                                binder.erase();
+                            }
+                        }
+                    }
+                    mat.b.forward(mat.handlers[index].producer());
                 }
                 case ASuperposition sup -> {
                     final var matx = new AMatcher(mat.names, mat.arities, mat.values.length);
@@ -2328,24 +2344,24 @@ public final class Motor {
                         dup.a.setProducer(mat.handlers[i].producer());
                         matx.handlers[i].setProducer(dup.b);
                         matxx.handlers[i].setProducer(dup.c);
-                        for (int j = 0; j < mat.parameters[i].length; j++) {
-                            final var supp = new ASuperposition();
-                            mat.parameters[i][j].forward(supp.a);
-                            supp.b.setProducer(matx.parameters[i][j]);
-                            supp.c.setProducer(matxx.parameters[i][j]);
-                        }
+                    }
+                    for (int i = 0; i < mat.parameters.length; i++) {
+                        final var supp = new ASuperposition();
+                        mat.parameters[i].forward(supp.a);
+                        supp.b.setProducer(matx.parameters[i]);
+                        supp.c.setProducer(matxx.parameters[i]);
                     }
                     for (int i = 0; i < mat.values.length; i++) {
                         final var dupv = new ADuplicator(Label.DELTA);
                         dupv.a.setProducer(mat.values[i].producer());
                         matx.values[i].setProducer(dupv.b);
                         matxx.values[i].setProducer(dupv.c);
-                        for (int j = 0; j < mat.names.length; j++) {
-                            final var supv = new ASuperposition();
-                            mat.binders[i][j].forward(supv.a);
-                            supv.b.setProducer(matx.binders[i][j]);
-                            supv.c.setProducer(matxx.binders[i][j]);
-                        }
+                    }
+                    for (int i = 0; i < mat.binders.length; i++) {
+                        final var supv = new ASuperposition();
+                        mat.binders[i].forward(supv.a);
+                        supv.b.setProducer(matx.binders[i]);
+                        supv.c.setProducer(matxx.binders[i]);
                     }
                 }
                 default -> {
